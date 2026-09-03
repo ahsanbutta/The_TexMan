@@ -51,9 +51,16 @@
 /* Glassmorphism custom styling for counselor card */
 .glass-panel {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-navbar {
+  background: rgba(2, 27, 58, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Scrollbar styling */
@@ -63,16 +70,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #F8FAFC;
+  background: #011126;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: rgba(0, 200, 83, 0.4);
 }
 
 /* Custom animations for toast notifications */
@@ -89,6 +96,36 @@
 
 .animate-toastSlideIn {
   animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Subtle Floating Animation for Hero Elements */
+@keyframes floatSubtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-subtle {
+  animation: floatSubtle 4.5s ease-in-out infinite;
+}
+
+/* Shimmer Keyframe for Skeleton Loaders */
+@keyframes shimmerWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmerWave 2s infinite;
 }
 
 /* Premium Page Transitions (Fade & Lift) */
@@ -130,7 +167,88 @@
 
 .premium-card-hover:hover {
   transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 
-              0 0 20px 0 rgba(0, 200, 83, 0.05);
-  border-color: rgba(0, 200, 83, 0.25);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15), 
+              0 0 20px 0 rgba(0, 200, 83, 0.08);
+  border-color: rgba(0, 200, 83, 0.35);
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   HIGH-FIDELITY PRINT & PDF GENERATION RULES
+   Guarantees clean 1-page output for standard CVs and exact page count without trailing blank pages.
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0mm;
+  }
+
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Completely remove the screen application tree, headers, buttons, and tools */
+  body > *:not(#cv-print-portal) {
+    display: none !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Display ONLY the dedicated print portal */
+  #cv-print-portal {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Cancel all min-heights from print tree so short CVs stay strictly 1 page */
+  #cv-print-portal,
+  #cv-print-portal * {
+    min-height: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Clean section breaks for natural multi-page flow without awkward clipping */
+  #cv-print-portal section,
+  #cv-print-portal li,
+  #cv-print-portal tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+@media screen {
+  #cv-print-portal {
+    display: none !important;
+  }
 }

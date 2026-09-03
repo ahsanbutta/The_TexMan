@@ -29,25 +29,51 @@ export const getResumeById = asyncHandler(async (req, res) => {
  * POST /api/cv
  */
 export const createResume = asyncHandler(async (req, res) => {
-  const { title, personalInformation, qualification, attempts, education, papersCleared, experience, skills, certifications, languages, template } = req.body;
+  const {
+    title,
+    templateId,
+    template,
+    profileImage,
+    personalInformation,
+    qualification,
+    professionalQualifications,
+    attempts,
+    education,
+    academics,
+    papersCleared,
+    experience,
+    skills,
+    certifications,
+    achievements,
+    extraCurricular,
+    languages,
+    reference
+  } = req.body;
 
   const resume = await Resume.create({
     user: req.user._id,
     title: title || 'CA Trainee Resume',
+    templateId: templateId || template || 'classic-black',
+    template: template || templateId || 'classic-black',
+    profileImage: profileImage || '',
     personalInformation: personalInformation || {
       name: req.user.name,
       email: req.user.email,
       phone: req.user.phone || ''
     },
     qualification: qualification || req.user.qualification || 'CAF',
+    professionalQualifications: professionalQualifications || [],
     attempts: attempts || 'First Attempt Passed',
     education: education || [],
+    academics: academics || [],
     papersCleared: papersCleared || [],
     experience: experience || [],
     skills: skills || ['Financial Reporting', 'IFRS', 'MS Excel', 'Audit Standards'],
     certifications: certifications || [],
+    achievements: achievements || [],
+    extraCurricular: extraCurricular || [],
     languages: languages || ['English', 'Urdu'],
-    template: template || 'Big4_Classic'
+    reference: reference || {}
   });
 
   return new ApiResponse(201, resume, 'CV saved successfully').send(res);

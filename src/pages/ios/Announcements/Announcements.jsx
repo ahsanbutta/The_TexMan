@@ -20,6 +20,7 @@ import {
 
 
 import { api } from '../../../services/api';
+import { requireAuth } from '../../../services/authService';
 
 export default function Announcements({ initialAnnouncementId, onClearInitialAnnouncement }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -894,7 +895,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
                 </div>
 
                 <button
-                  onClick={() => alert('Preferences saved!')}
+                  onClick={() => {
+                    if (!requireAuth('save your custom notification preferences')) return;
+                    alert('Preferences saved successfully!');
+                  }}
                   className="w-full py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white text-xs font-extrabold rounded-xl transition-all duration-200 shadow-md shadow-emerald-500/10 cursor-pointer"
                 >
                   Save Preferences

@@ -3,6 +3,7 @@ import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import PortalModal from '../../../components/PortalModal';
 import { api } from '../../../services/api';
 import { submitContactForm } from '../../../services/submissionService';
+import { requireAuth } from '../../../services/authService';
 import {
   Calendar,
   Clock,
@@ -120,7 +121,7 @@ export default function Events() {
       duration: '3.5 Hours',
       platform: 'YouTube Recording',
       attendees: 1240,
-      recordingUrl: 'https://youtube.com',
+      recordingUrl: 'https://www.youtube.com/watch?v=L_LUpnjgPso',
       slidesUrl: '#'
     },
     {
@@ -141,7 +142,7 @@ export default function Events() {
       duration: '3 Hours',
       platform: 'Vimeo Archive',
       attendees: 890,
-      recordingUrl: 'https://vimeo.com',
+      recordingUrl: 'https://www.youtube.com/watch?v=5qap5aO4i9A',
       slidesUrl: '#'
     },
     {
@@ -162,7 +163,7 @@ export default function Events() {
       duration: '2 Hours',
       platform: 'YouTube Archive',
       attendees: 512,
-      recordingUrl: 'https://youtube.com',
+      recordingUrl: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
       slidesUrl: '#'
     }
   ];
@@ -250,6 +251,9 @@ export default function Events() {
   };
 
   const handleOpenRegistration = (evt) => {
+    if (!requireAuth('register for live webinars and masterclasses')) {
+      return;
+    }
     setSelectedEventForModal(evt);
     setIsRegisteredSuccess(false);
     setRegistrationForm({

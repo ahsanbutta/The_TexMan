@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import PortalModal from '../../../components/PortalModal';
+import { requireAuth } from '../../../services/authService';
 import {
   Users,
   MessageSquare,
@@ -172,6 +173,9 @@ export default function Community({ initialCommunityId, onClearInitialCommunity 
   }, [initialCommunityId, onClearInitialCommunity, communitiesList]);
 
   const handleJoinClick = (comm) => {
+    if (!requireAuth('join our student community study groups and WhatsApp rooms')) {
+      return;
+    }
     setSelectedCommunity(comm);
     setIsJoinModalOpen(true);
   };

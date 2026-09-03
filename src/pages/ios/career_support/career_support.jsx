@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import PortalModal from '../../../components/PortalModal';
 import { submitMentorshipBooking } from '../../../services/submissionService';
+import { requireAuth } from '../../../services/authService';
 import {
   Users,
   FileText,
@@ -189,6 +190,9 @@ export default function Counseling() {
   useBodyScrollLock(isModalOpen || !!selectedServiceForDetail);
 
   const openModal = (type, serviceTitle = '') => {
+    if (!requireAuth(type === 'book' ? 'book a 1-on-1 mentorship session' : 'submit a career guidance query')) {
+      return;
+    }
     setModalType(type);
     setSelectedService(serviceTitle);
     setIsModalOpen(true);

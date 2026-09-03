@@ -3,6 +3,7 @@ import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import PortalModal from '../../../components/PortalModal';
 import { downloadResourceFile, requestResource, fetchResources } from '../../../services/resourceService';
 import { subscribeNewsletter } from '../../../services/submissionService';
+import { requireAuth } from '../../../services/authService';
 import {
   Search,
   BookOpen,
@@ -178,6 +179,9 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
   ];
 
   const handleDownload = async (resourceOrTitle) => {
+    if (!requireAuth('download study resources and templates')) {
+      return;
+    }
     const resourceObj = typeof resourceOrTitle === 'string'
       ? { title: resourceOrTitle, desc: 'Official study resource and guidance note.' }
       : resourceOrTitle;
@@ -207,6 +211,9 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
+    if (!requireAuth('request custom study materials or notes')) {
+      return;
+    }
     setRequestSubmitted(true);
     try {
       await requestResource(requestForm);
@@ -456,7 +463,7 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
       </section>
 
       {/* ── 3. Main Split Column Content ── */}
-      <section className="py-12 bg-bgLight">
+      <section id="resources-catalog-section" className="py-12 bg-bgLight">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
@@ -613,8 +620,16 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
                 </div>
 
                 <button
-                  onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-                  className="z-10 px-6 py-4 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold transition-all duration-200 text-xs shadow-lg shadow-emerald-500/20 whitespace-nowrap flex items-center justify-center"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setSearchQuery('');
+                    setCurrentPage(1);
+                    setTimeout(() => {
+                      const el = document.getElementById('resources-catalog-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }, 50);
+                  }}
+                  className="z-10 px-6 py-4 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold transition-all duration-200 text-xs shadow-lg shadow-emerald-500/20 whitespace-nowrap flex items-center justify-center cursor-pointer"
                 >
                   Explore All Resources <ArrowRight className="w-4 h-4 ml-1.5" />
                 </button>

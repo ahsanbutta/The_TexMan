@@ -23,6 +23,38 @@ const notifyListeners = (session) => {
 };
 
 /**
+ * Synchronously check if user is logged in
+ */
+export const isUserLoggedIn = () => {
+  try {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const rawUser = localStorage.getItem(USER_KEY);
+    const rawSession = localStorage.getItem(SESSION_KEY);
+    return !!(token || rawUser || rawSession);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Guard utility for protected actions across the website.
+ * If user is authenticated, runs the callback or returns true.
+ * If not authenticated, alerts user and redirects to #login.
+ */
+export const requireAuth = (actionDescription = 'access this protected feature', callback = null) => {
+  if (isUserLoggedIn()) {
+    if (typeof callback === 'function') {
+      return callback();
+    }
+    return true;
+  }
+
+  alert(`Authentication Required:\nPlease log in or sign up to ${actionDescription}.`);
+  window.location.hash = '#login';
+  return false;
+};
+
+/**
  * Get current session synchronously from localStorage with offline resilience
  */
 export const getCurrentSession = async () => {
@@ -104,35 +136,21 @@ export const onAuthChange = (callback) => {
 export const registerUser = async (email, password, username, full_name, qualification = 'CAF', role = 'student') => {
   try {
     const res = await api.post('/auth/register', {
-      email,
+      email: email.trim(),
       password,
-      username,
-      name: full_name,
-      fullName: full_name,
+      username: username.trim(),
+      name: full_name.trim(),
+      fullName: full_name.trim(),
       qualification,
       level: qualification,
       role
     });
 
-    return res?.data || res;
+    const responseData = res?.data?.data || res?.data || res;
+    return responseData;
   } catch (apiErr) {
-    // If backend is restarting or offline, provide a fallback registration cache
-    console.warn('[AuthService] Backend registration fallback:', apiErr.message);
-    const mockUser = {
-      id: 'usr_' + Date.now(),
-      email,
-      username: username || email.split('@')[0],
-      name: full_name || username || 'Student',
-      fullName: full_name || username || 'Student',
-      role: email.toLowerCase().includes('admin') ? 'admin' : role || 'student',
-      qualification,
-      level: qualification
-    };
-    return {
-      user: mockUser,
-      token: 'local_token_' + Date.now(),
-      message: 'Registration successful! Please log in.'
-    };
+    const message = apiErr.response?.data?.message || apiErr.message || 'Registration failed. Please check your details and try again.';
+    throw new Error(message);
   }
 };
 
@@ -141,10 +159,17 @@ export const registerUser = async (email, password, username, full_name, qualifi
  */
 export const loginUser = async (email, password) => {
   try {
-    const res = await api.post('/auth/login', { email, password });
-    const responseData = res?.data || res;
+    const res = await api.post('/auth/login', {
+      email: email.trim(),
+      password
+    });
+    const responseData = res?.data?.data || res?.data || res;
     const user = responseData.user;
     const token = responseData.token;
+
+    if (!user || !token) {
+      throw new Error('Invalid response received from authentication server.');
+    }
 
     const session = {
       access_token: token,
@@ -177,41 +202,8 @@ export const loginUser = async (email, password) => {
     notifyListeners(session);
     return session;
   } catch (apiErr) {
-    // Fallback for known demo credentials if backend API is temporarily offline
-    console.warn('[AuthService] Backend login fallback:', apiErr.message);
-
-    const isAdmin = email.toLowerCase().includes('admin');
-    const mockUser = {
-      id: isAdmin ? 'admin_1' : 'user_' + Date.now(),
-      email,
-      name: isAdmin ? 'Saboor Ahmad (Admin)' : (email.split('@')[0].toUpperCase()),
-      fullName: isAdmin ? 'Saboor Ahmad (Admin)' : (email.split('@')[0].toUpperCase()),
-      username: email.split('@')[0],
-      role: isAdmin ? 'admin' : 'student',
-      avatar_url: '',
-      profileImage: '',
-      qualification: isAdmin ? 'Qualified' : 'CAF',
-      level: isAdmin ? 'Qualified' : 'CAF',
-      user_metadata: {
-        full_name: isAdmin ? 'Saboor Ahmad (Admin)' : (email.split('@')[0].toUpperCase()),
-        username: email.split('@')[0],
-        role: isAdmin ? 'admin' : 'student'
-      }
-    };
-
-    const token = 'local_token_' + Date.now();
-    const session = {
-      access_token: token,
-      token,
-      user: mockUser
-    };
-
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(session.user));
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-
-    notifyListeners(session);
-    return session;
+    const message = apiErr.response?.data?.message || apiErr.message || 'Login failed. Please verify your email and password.';
+    throw new Error(message);
   }
 };
 

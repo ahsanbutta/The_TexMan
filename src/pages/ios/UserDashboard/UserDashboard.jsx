@@ -109,37 +109,24 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
           setUserQueries(allMessages);
         }
 
-        // Fetch user's qualification level from profile metadata in database & auth meta & localStorage
-        if (supabase && session?.user?.id) {
-          const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        // Fetch user's qualification level and profile metadata from session and storage
+        if (session?.user?.id) {
           const storedProfileStr = localStorage.getItem(`user_profile_meta_${session.user.id}`);
           const storedProfile = storedProfileStr ? JSON.parse(storedProfileStr) : null;
-          const authMeta = session?.user?.user_metadata || {};
+          const userMeta = session.user.user_metadata || {};
 
-          if (data) {
-            setProfile(prev => ({
-              ...prev,
-              full_name: data.full_name || prev.full_name,
-              username: data.username || prev.username,
-              avatar_url: data.avatar_url || prev.avatar_url,
-              level: data.level || authMeta.level || storedProfile?.level || 'CAF',
-              phone: authMeta.phone || storedProfile?.phone || '',
-              city: authMeta.city || storedProfile?.city || 'Lahore',
-              institution: authMeta.institution || storedProfile?.institution || '',
-              papers_cleared: authMeta.papers_cleared !== undefined ? authMeta.papers_cleared : (storedProfile?.papers_cleared || 0),
-              cv_url: authMeta.cv_url || storedProfile?.cv_url || ''
-            }));
-          } else {
-            setProfile(prev => ({
-              ...prev,
-              level: authMeta.level || storedProfile?.level || 'CAF',
-              phone: authMeta.phone || storedProfile?.phone || '',
-              city: authMeta.city || storedProfile?.city || 'Lahore',
-              institution: authMeta.institution || storedProfile?.institution || '',
-              papers_cleared: authMeta.papers_cleared !== undefined ? authMeta.papers_cleared : (storedProfile?.papers_cleared || 0),
-              cv_url: authMeta.cv_url || storedProfile?.cv_url || ''
-            }));
-          }
+          setProfile(prev => ({
+            ...prev,
+            full_name: session.user.fullName || session.user.name || prev.full_name,
+            username: session.user.username || prev.username,
+            avatar_url: session.user.avatar_url || session.user.profileImage || prev.avatar_url,
+            level: session.user.level || userMeta.level || storedProfile?.level || prev.level || 'CAF',
+            phone: session.user.phone || userMeta.phone || storedProfile?.phone || prev.phone || '',
+            city: session.user.city || userMeta.city || storedProfile?.city || prev.city || 'Lahore',
+            institution: session.user.institution || userMeta.institution || storedProfile?.institution || prev.institution || '',
+            papers_cleared: session.user.papers_cleared !== undefined ? session.user.papers_cleared : (storedProfile?.papers_cleared !== undefined ? storedProfile.papers_cleared : prev.papers_cleared),
+            cv_url: session.user.cv_url || userMeta.cv_url || storedProfile?.cv_url || prev.cv_url || ''
+          }));
         }
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -148,7 +135,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
       }
     }
     loadDashboardData();
-  }, [session, profile.full_name]);
+  }, [session]);
 
   // Handle avatar upload
   const handleImageChange = (e) => {
@@ -171,45 +158,14 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
     e.preventDefault();
     setSavingProfile(true);
     try {
-      if (supabase && session?.user?.id) {
-        // Update public.profiles table (without level/phone/etc to avoid missing column SQL errors)
-        const { error } = await supabase.from('profiles').update({
-          full_name: profile.full_name,
-          username: profile.username,
-          avatar_url: profile.avatar_url
-        }).eq('id', session.user.id);
-        if (error) throw error;
-
-        // Try updating level column in profiles, if it exists
-        try {
-          await supabase.from('profiles').update({ level: profile.level }).eq('id', session.user.id);
-        } catch (dbErr) {
-          console.warn('Could not update level in profiles:', dbErr);
-        }
-
-        // Also update Auth metadata (unstructured, safe for custom attributes)
-        await supabase.auth.updateUser({
-          data: {
-            full_name: profile.full_name,
-            username: profile.username,
-            avatar_url: profile.avatar_url,
-            level: profile.level,
-            phone: profile.phone,
-            city: profile.city,
-            institution: profile.institution,
-            papers_cleared: profile.papers_cleared,
-            cv_url: profile.cv_url
-          }
-        });
-      }
-
-      // Sync local userProfile wrapper
       if (session?.user?.id) {
-        await updateUserProfile(session.user.id, {
+        await updateUserProfile({
           full_name: profile.full_name,
+          name: profile.full_name,
           username: profile.username,
           avatar_url: profile.avatar_url,
           level: profile.level,
+          qualification: profile.level,
           phone: profile.phone,
           city: profile.city,
           institution: profile.institution,
@@ -217,7 +173,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
           cv_url: profile.cv_url
         });
 
-        // Save level and all custom metadata fallbacks locally
+        // Save level and all custom metadata locally for instant retrieval
         localStorage.setItem(`user_level_${session.user.id}`, profile.level);
         localStorage.setItem(`user_profile_meta_${session.user.id}`, JSON.stringify({
           level: profile.level,
@@ -245,7 +201,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
 
       alert("Profile updated successfully!");
     } catch (err) {
-      alert(`Error updating profile: ${err.message}`);
+      alert(`Failed to save profile: ${err.message}`);
     } finally {
       setSavingProfile(false);
     }
@@ -746,8 +702,17 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       ))}
                       {requests.length === 0 && (
                         <tr>
-                          <td colSpan="4" className="p-8 text-center text-gray-400 italic">
-                            No study resources requested. Go to Resources page to submit a request!
+                          <td colSpan="4" className="p-8 text-center text-gray-400">
+                            <p className="italic mb-3">No study resources requested yet.</p>
+                            <button
+                              onClick={() => {
+                                window.location.hash = '#resources';
+                              }}
+                              className="px-4 py-2 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/10 inline-flex items-center space-x-1.5 cursor-pointer"
+                            >
+                              <span>Explore Resources</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                           </td>
                         </tr>
                       )}

@@ -74,80 +74,19 @@ export const login = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Please provide both email and password.');
   }
 
-  // Find user and explicitly select password
-  let user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+  // Find user in database and explicitly select password
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
   if (!user) {
-    if (email.toLowerCase() === 'admin@taxmancapital.com' && (password === 'AdminPassword123!' || password === 'admin123')) {
-      user = await User.create({
-        name: 'Saboor Ahmad CA',
-        username: 'admin',
-        email: 'admin@taxmancapital.com',
-        password: password,
-        role: 'admin',
-        qualification: 'Qualified',
-        level: 'Qualified'
-      });
-    } else if (email.toLowerCase() === 'student@taxmancapital.com' && password === 'StudentPassword123!') {
-      user = await User.create({
-        name: 'Muhammad Ahmed',
-        username: 'student',
-        email: 'student@taxmancapital.com',
-        password: password,
-        role: 'student',
-        qualification: 'CAF',
-        level: 'CAF'
-      });
-    } else if (email.toLowerCase() === 'mentor@taxmancapital.com' && password === 'MentorPassword123!') {
-      user = await User.create({
-        name: 'Usman Saleem',
-        username: 'mentor',
-        email: 'mentor@taxmancapital.com',
-        password: password,
-        role: 'mentor',
-        qualification: 'Qualified',
-        level: 'Qualified'
-      });
-    } else {
-      throw new ApiError(401, 'Invalid credentials. No account found with this email.');
-    }
+    throw new ApiError(401, 'No account found with this email. Please sign up first.');
   }
 
   if (!user.isActive) {
     throw new ApiError(403, 'Account is deactivated. Please contact support.');
   }
 
-  let isPasswordCorrect = false;
-  try {
-    isPasswordCorrect = await user.comparePassword(password);
-  } catch {}
-
-  // Fallback for default seed accounts
-  if (!isPasswordCorrect) {
-    if (email.toLowerCase() === 'admin@taxmancapital.com' && (password === 'AdminPassword123!' || password === 'admin123')) {
-      isPasswordCorrect = true;
-      user.password = password;
-      user.role = 'admin';
-      await user.save();
-    } else if (email.toLowerCase() === 'student@taxmancapital.com' && password === 'StudentPassword123!') {
-      isPasswordCorrect = true;
-      user.password = password;
-      user.role = 'student';
-      await user.save();
-    } else if (email.toLowerCase() === 'mentor@taxmancapital.com' && password === 'MentorPassword123!') {
-      isPasswordCorrect = true;
-      user.password = password;
-      user.role = 'mentor';
-      await user.save();
-    }
-  }
-
+  const isPasswordCorrect = await user.comparePassword(password);
   if (!isPasswordCorrect) {
     throw new ApiError(401, 'Invalid credentials. Incorrect password.');
-  }
-
-  if (email.toLowerCase() === 'admin@taxmancapital.com' && user.role !== 'admin') {
-    user.role = 'admin';
-    await user.save();
   }
 
   const token = user.generateAuthToken();

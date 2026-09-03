@@ -36,9 +36,18 @@ import {
   Check,
   Zap,
   HelpCircle,
-  UserCheck
+  UserCheck,
+  Target,
+  Users,
+  Shield,
+  Layers
 } from 'lucide-react';
 import AudioVisualizer from '../../../components/AudioVisualizer';
+import AIInterviewStudio from '../../../components/interview/AIInterviewStudio';
+import InterviewScorecardReport from '../../../components/interview/InterviewScorecardReport';
+import { useVideoBehaviorAnalyzer } from '../../../hooks/useVideoBehaviorAnalyzer';
+import { useVoiceInterviewEngine } from '../../../hooks/useVoiceInterviewEngine';
+import { useMediaDeviceManager } from '../../../hooks/useMediaDeviceManager';
 import {
   startInterviewSession,
   sendInterviewAnswer,
@@ -47,6 +56,9 @@ import {
   deleteInterviewSession,
   getInterviewSession
 } from '../../../services/interviewService';
+import { requireAuth } from '../../../services/authService';
+import ArticleshipCVBuilder from '../../../components/ArticleshipCVBuilder';
+import StudyTutorChat from '../../../components/study/StudyTutorChat';
 
 export default function CareerTools() {
   const [activeSubTab, setActiveSubTab] = useState('directory');
@@ -57,9 +69,13 @@ export default function CareerTools() {
   const [directorySearch, setDirectorySearch] = useState('');
 
   // ==========================================
-  // AI MOCK INTERVIEW ENGINE & REAL-TIME STUDIO
+  // AI MOCK INTERVIEW FINITE STATE MACHINE (FSM)
   // ==========================================
-  const [mockMode, setMockMode] = useState('studio'); // 'studio' | 'chat' | 'history'
+  // 'IDLE' | 'REQUESTING_PERMISSIONS' | 'DEVICE_READY' | 'AI_GREETING' | 'WAITING_FOR_READY' |
+  // 'INTERVIEW_ACTIVE' | 'AI_SPEAKING' | 'LISTENING_TO_USER' | 'ANALYZING_ANSWER' |
+  // 'FOLLOW_UP' | 'INTERVIEW_COMPLETED' | 'GENERATING_REPORT' | 'REPORT_READY' | 'ERROR'
+  const [interviewState, setInterviewState] = useState('IDLE');
+  const [mockMode, setMockMode] = useState('studio'); // 'studio' | 'voice_only' | 'chat' | 'history'
 
   // Setup Options
   const [interviewRole, setInterviewRole] = useState('Audit Trainee (Articleship)');
@@ -70,38 +86,32 @@ export default function CareerTools() {
   const [questionCountChoice, setQuestionCountChoice] = useState('5');
   const [customQuestionCount, setCustomQuestionCount] = useState(5);
   const [interviewDurationMinutes, setInterviewDurationMinutes] = useState(15);
+  const [panelMode, setPanelMode] = useState(false); // Two-Agent Panel (Senior Audit Manager + HR Lead)
+  const [isBig4, setIsBig4] = useState(true); // Big 4 Challenge Simulator Mode
+  const [enableCamera, setEnableCamera] = useState(true);
 
   // Active Session State
   const [sessionId, setSessionId] = useState(null);
-  const [isStudioActive, setIsStudioActive] = useState(false);
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
   const [isFinalizingSession, setIsFinalizingSession] = useState(false);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [totalQuestionsTarget, setTotalQuestionsTarget] = useState(5);
   const [currentQuestionText, setCurrentQuestionText] = useState('');
-  const [interviewerStatus, setInterviewerStatus] = useState('CONNECTED'); // 'CONNECTED' | 'AI SPEAKING' | 'LISTENING' | 'PROCESSING' | 'THINKING' | 'DISCONNECTED'
+  const [currentSpeaker, setCurrentSpeaker] = useState(null);
+  const [bankQuestions, setBankQuestions] = useState([]);
 
   // Transcript & Turn Tracking
   const [userAnswer, setUserAnswer] = useState('');
   const [transcript, setTranscript] = useState([]);
   const [turnEvaluations, setTurnEvaluations] = useState([]);
-  const [sessionFinished, setSessionFinished] = useState(false);
   const [finalScorecard, setFinalScorecard] = useState(null);
-  const [expandedEvalIdx, setExpandedEvalIdx] = useState(null);
 
-  // Audio, Voice & Microphone State
-  const [isMicListening, setIsMicListening] = useState(false);
-  const [micPermissionError, setMicPermissionError] = useState(null);
-  const [speechSupported, setSpeechSupported] = useState(true);
-  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  // Audio & Voice State
   const [aiAudioEnabled, setAiAudioEnabled] = useState(true);
-  const [audioStream, setAudioStream] = useState(null);
 
-  // Real-time Timer & Pace Metrics
+  // Real-time Timer
   const [timerRemaining, setTimerRemaining] = useState(900); // in seconds
-  const [elapsedSessionTime, setElapsedSessionTime] = useState(0);
-  const [turnSpeakingTime, setTurnSpeakingTime] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
   // History State
@@ -110,20 +120,24 @@ export default function CareerTools() {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
-  // Chat Mode Specific
-  const [chatEvaluation, setChatEvaluation] = useState(null);
+  // Coordinated Hardware & Engine Hooks
+  const deviceManager = useMediaDeviceManager({ enableCamera: enableCamera && mockMode === 'studio' });
+  const videoAnalyzer = useVideoBehaviorAnalyzer({
+    stream: deviceManager.stream,
+    isStudioActive: interviewState !== 'IDLE' && interviewState !== 'REPORT_READY',
+    isCameraActive: deviceManager.isCameraActive
+  });
+  const voiceEngine = useVoiceInterviewEngine({
+    aiAudioEnabled,
+    onSpeechFinalized: () => {}
+  });
 
-  // DOM Refs
-  const recognitionRef = useRef(null);
-  const transcriptEndRef = useRef(null);
-  const audioStreamRef = useRef(null);
-
-  // Auto-scroll transcript
+  // Sync voice transcript with input box
   useEffect(() => {
-    if (transcriptEndRef.current) {
-      transcriptEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (voiceEngine.liveTranscript) {
+      setUserAnswer(voiceEngine.liveTranscript);
     }
-  }, [transcript, isSubmittingAnswer]);
+  }, [voiceEngine.liveTranscript]);
 
   // Load Past Interview History when History view is accessed
   const fetchHistory = async () => {
@@ -144,53 +158,6 @@ export default function CareerTools() {
     }
   }, [mockMode]);
 
-  // Setup Web Speech API for Real-Time Speech Recognition
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setSpeechSupported(false);
-    } else {
-      setSpeechSupported(true);
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
-        }
-        if (currentTranscript.trim()) {
-          setUserAnswer(currentTranscript);
-        }
-      };
-
-      recognition.onerror = (event) => {
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          setMicPermissionError('Microphone access was denied. Please allow microphone permissions in your browser address bar.');
-          setIsMicListening(false);
-        } else if (event.error !== 'aborted') {
-          console.warn('Speech recognition warning:', event.error);
-        }
-      };
-
-      recognition.onend = () => {
-        setIsMicListening(false);
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
-      }
-    };
-  }, []);
-
   // Timer Countdown Effect
   useEffect(() => {
     let interval = null;
@@ -198,211 +165,223 @@ export default function CareerTools() {
       interval = setInterval(() => {
         setTimerRemaining((prev) => {
           if (prev <= 1) {
-            // Auto complete interview when duration is reached
             handleFinalizeInterview();
             return 0;
           }
           return prev - 1;
         });
-        setElapsedSessionTime((prev) => prev + 1);
-        if (isMicListening) {
-          setTurnSpeakingTime((prev) => prev + 1);
-        }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerActive, timerRemaining, isMicListening]);
+  }, [isTimerActive, timerRemaining]);
 
-  // AI Speech Synthesis (Natural Voice Output)
-  const speakText = (text) => {
-    if (!aiAudioEnabled || !('speechSynthesis' in window) || !text) return;
-    try {
-      window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*_#`]/g, '').trim();
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 0.96;
-      utterance.pitch = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const englishVoice = voices.find(
-        (v) =>
-          v.lang.includes('en') &&
-          (v.name.includes('Natural') ||
-            v.name.includes('Google') ||
-            v.name.includes('David') ||
-            v.name.includes('Zira') ||
-            v.name.includes('Male'))
-      );
-      if (englishVoice) utterance.voice = englishVoice;
-
-      setIsAiSpeaking(true);
-      setInterviewerStatus('AI SPEAKING');
-
-      utterance.onend = () => {
-        setIsAiSpeaking(false);
-        setInterviewerStatus('LISTENING');
-        // Auto start listening after AI finishes speaking in studio mode
-        if (isStudioActive && mockMode === 'studio') {
-          startMicrophoneCapture();
-        }
-      };
-
-      utterance.onerror = () => {
-        setIsAiSpeaking(false);
-        setInterviewerStatus('LISTENING');
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.warn('Speech synthesis error:', err);
-      setIsAiSpeaking(false);
-    }
-  };
-
-  // Start Real-Time Microphone Capture & Web Audio Stream
-  const startMicrophoneCapture = async () => {
-    setMicPermissionError(null);
-    try {
-      let stream = audioStreamRef.current;
-      if (!stream) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioStreamRef.current = stream;
-        setAudioStream(stream);
-      }
-
-      if (recognitionRef.current && !isMicListening) {
-        try {
-          recognitionRef.current.start();
-          setIsMicListening(true);
-          setInterviewerStatus('LISTENING');
-        } catch (e) {
-          // Ignore already started errors
-          setIsMicListening(true);
-        }
-      }
-    } catch (err) {
-      console.warn('Microphone permission error:', err);
-      setMicPermissionError(
-        'Microphone permission is blocked or unavailable. Click the lock/permission icon in your browser URL bar to allow microphone access, or type your answer below.'
-      );
-      setIsMicListening(false);
-    }
-  };
-
-  // Stop Microphone
-  const stopMicrophoneCapture = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
-    }
-    setIsMicListening(false);
-  };
-
-  // Toggle Microphone
-  const handleToggleMic = () => {
-    if (isMicListening) {
-      stopMicrophoneCapture();
-    } else {
-      startMicrophoneCapture();
-    }
-  };
-
-  // Live Metrics Helpers
-  const getFillerCount = (text) => {
-    if (!text) return 0;
-    const fillers = ['um', 'uh', 'like', 'actually', 'basically', 'you know', 'mean', 'sort of', 'kind of'];
-    const lower = text.toLowerCase();
-    let count = 0;
-    fillers.forEach((f) => {
-      const regex = new RegExp(`\\b${f}\\b`, 'g');
-      const matches = lower.match(regex);
-      if (matches) count += matches.length;
-    });
-    return count;
-  };
-
-  const getWordCount = (text) => {
-    if (!text || !text.trim()) return 0;
-    return text.trim().split(/\s+/).filter(Boolean).length;
-  };
-
-  const calculateWPM = (text, elapsedSeconds) => {
-    const words = getWordCount(text);
-    if (elapsedSeconds <= 0 || words === 0) return 0;
-    return Math.round((words / elapsedSeconds) * 60);
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Resolved Target Role
+  // Resolved Target Role & Question Count
   const targetRoleResolved =
     interviewRole === 'Custom Role' ? customRole.trim() || 'Chartered Accountant Trainee' : interviewRole;
   const targetCountResolved =
     questionCountChoice === 'Custom' ? Number(customQuestionCount) || 5 : Number(questionCountChoice) || 5;
 
   // ==========================================
-  // START INTERVIEW SESSION (VOICE OR CHAT)
+  // NATURAL LANGUAGE READINESS LISTENER
   // ==========================================
-  const handleStartInterview = async () => {
+  useEffect(() => {
+    if (interviewState !== 'WAITING_FOR_READY') return;
+
+    const text = (voiceEngine.liveTranscript || userAnswer || '').trim().toLowerCase();
+    if (!text || text.length < 2) return;
+
+    const readyRegex = /\b(yes|yeah|yep|yup|ready|i am ready|i'm ready|sure|start|begin|go ahead|let's do it|lets go|lets start|yes sir|yes ma'am|all set|absolutely)\b/i;
+    const notReadyRegex = /\b(no|not yet|wait|hold on|give me a moment|give me a second|one minute|1 minute|not ready|stop|pause)\b/i;
+
+    if (readyRegex.test(text)) {
+      handleConfirmReady(text);
+    } else if (notReadyRegex.test(text)) {
+      handleConfirmNotReady(text);
+    }
+  }, [interviewState, voiceEngine.liveTranscript, userAnswer]);
+
+  // ==========================================
+  // START INTERVIEW SESSION (INITIALIZE HARDWARE -> GREETING -> WAITING FOR READY)
+  // ==========================================
+  const handleStartInterview = async (customParams = {}) => {
+    if (!requireAuth('start an AI Mock Interview session')) {
+      return;
+    }
     setIsStartingSession(true);
-    setMicPermissionError(null);
     setFinalScorecard(null);
-    setSessionFinished(false);
     setTurnEvaluations([]);
     setUserAnswer('');
+    voiceEngine.resetTurnMetrics();
     setCurrentQuestionIdx(0);
-    setTotalQuestionsTarget(targetCountResolved);
-    setElapsedSessionTime(0);
-    setTurnSpeakingTime(0);
+    setInterviewState('REQUESTING_PERMISSIONS');
 
-    const maxSeconds = Number(interviewDurationMinutes) * 60;
+    const count = customParams.questionCount || targetCountResolved;
+    setTotalQuestionsTarget(count);
+
+    const durationMin = customParams.duration || interviewDurationMinutes;
+    const maxSeconds = Number(durationMin) * 60;
     setTimerRemaining(maxSeconds);
 
+    const role = customParams.targetRole || targetRoleResolved;
+    const stage = customParams.interviewStage || interviewStage;
+    const diff = customParams.difficulty || difficulty;
+    const type = customParams.interviewType || interviewType;
+    const isPanel = customParams.panelMode !== undefined ? customParams.panelMode : panelMode;
+    const big4 = customParams.isBig4 !== undefined ? customParams.isBig4 : isBig4;
+
     try {
+      // 1. Request Camera & Microphone access coordinated
+      const wantCam = mockMode === 'studio' && enableCamera;
+      await deviceManager.requestMediaDevices({ enableCamera: wantCam });
+
+      // 2. Start session with grounded question bank on backend
       const response = await startInterviewSession({
-        targetRole: targetRoleResolved,
-        interviewStage,
-        difficulty,
-        interviewType,
-        questionCount: targetCountResolved,
-        duration: interviewDurationMinutes
+        targetRole: role,
+        interviewStage: stage,
+        difficulty: diff,
+        interviewType: type,
+        questionCount: count,
+        duration: durationMin,
+        panelMode: isPanel,
+        isBig4: big4
       });
 
       const sid = response.sessionId || response.session?._id;
       setSessionId(sid);
+      const bankQs = response.bankQuestions || response.session?.bankQuestions || [];
+      setBankQuestions(bankQs);
 
-      const greetingText = response.greeting || response.questionText || 'Good morning and welcome to your simulated interview.';
-      setCurrentQuestionText(greetingText);
+      const speaker = response.currentSpeaker || {
+        role: isPanel ? 'Senior Audit Manager (Technical)' : 'Senior Interviewer',
+        name: isPanel ? 'Asim Raza' : 'Senior Interview Panel'
+      };
+      setCurrentSpeaker(speaker);
+
+      // 3. Realistic GREETING dialogue (Does NOT ask technical question yet)
+      const greetingDialogue =
+        "Good morning. Welcome to your simulated CA/ACCA interview. I will be conducting today's session. Before we begin, are you ready?";
+      setCurrentQuestionText(greetingDialogue);
 
       setTranscript([
         {
           speaker: 'ai',
-          text: greetingText,
+          text: greetingDialogue,
+          speakerRole: speaker.role,
+          speakerName: speaker.name,
           timestamp: new Date(),
           duration: 0
         }
       ]);
 
-      setIsStudioActive(true);
-      setIsTimerActive(true);
-      setInterviewerStatus('AI SPEAKING');
+      setInterviewState('AI_GREETING');
 
-      // AI speaks introduction automatically
-      if (mockMode === 'studio') {
-        speakText(greetingText);
+      // 4. Speak greeting, then enter WAITING_FOR_READY
+      if (mockMode === 'studio' || mockMode === 'voice_only') {
+        voiceEngine.speakText(greetingDialogue, speaker.role, () => {
+          setInterviewState('WAITING_FOR_READY');
+          voiceEngine.startListening();
+        });
       } else {
-        setInterviewerStatus('LISTENING');
+        setInterviewState('WAITING_FOR_READY');
       }
     } catch (err) {
       console.error('Failed to start interview:', err);
-      alert('Unable to start interview session. Please check your internet connection and try again.');
+      alert('Unable to initialize interview room. Please check device permissions and try again.');
+      setInterviewState('IDLE');
     } finally {
       setIsStartingSession(false);
+    }
+  };
+
+  // Candidate confirms READY -> AI confirms and starts Question 1
+  const handleConfirmReady = (confirmationText = 'Yes, I am ready.') => {
+    voiceEngine.stopListening();
+    setUserAnswer('');
+    voiceEngine.resetTurnMetrics();
+
+    // Append candidate readiness
+    setTranscript((prev) => [
+      ...prev,
+      {
+        speaker: 'candidate',
+        text: confirmationText,
+        timestamp: new Date(),
+        duration: 2
+      }
+    ]);
+
+    setInterviewState('AI_SPEAKING');
+
+    const firstQuestionObj = bankQuestions[0] || {
+      question: 'To begin, could you briefly introduce yourself and highlight your academic or practical experience in accounting and audit?',
+      category: 'Behavioral & HR'
+    };
+
+    const ackAndQ1 = `Excellent. Let's begin. Question 1: ${firstQuestionObj.question}`;
+    setCurrentQuestionText(ackAndQ1);
+
+    setTranscript((prev) => [
+      ...prev,
+      {
+        speaker: 'ai',
+        text: ackAndQ1,
+        speakerRole: currentSpeaker?.role || 'Senior Interviewer',
+        speakerName: currentSpeaker?.name || 'Interview Panel',
+        timestamp: new Date(),
+        duration: 0
+      }
+    ]);
+
+    if (mockMode === 'studio' || mockMode === 'voice_only') {
+      voiceEngine.speakText(ackAndQ1, currentSpeaker?.role, () => {
+        setInterviewState('INTERVIEW_ACTIVE');
+        setIsTimerActive(true);
+        voiceEngine.startListening();
+      });
+    } else {
+      setInterviewState('INTERVIEW_ACTIVE');
+      setIsTimerActive(true);
+    }
+  };
+
+  // Candidate says NOT READY -> AI acknowledges and continues waiting
+  const handleConfirmNotReady = (denialText = 'Not yet, please wait.') => {
+    voiceEngine.stopListening();
+    setUserAnswer('');
+    voiceEngine.resetTurnMetrics();
+
+    setTranscript((prev) => [
+      ...prev,
+      {
+        speaker: 'candidate',
+        text: denialText,
+        timestamp: new Date(),
+        duration: 2
+      }
+    ]);
+
+    const waitReply = "No problem. Take your time. Let me know when you're ready.";
+    setCurrentQuestionText(waitReply);
+
+    setTranscript((prev) => [
+      ...prev,
+      {
+        speaker: 'ai',
+        text: waitReply,
+        speakerRole: currentSpeaker?.role || 'Senior Interviewer',
+        speakerName: currentSpeaker?.name || 'Interview Panel',
+        timestamp: new Date(),
+        duration: 0
+      }
+    ]);
+
+    if (mockMode === 'studio' || mockMode === 'voice_only') {
+      voiceEngine.speakText(waitReply, currentSpeaker?.role, () => {
+        setInterviewState('WAITING_FOR_READY');
+        voiceEngine.startListening();
+      });
+    } else {
+      setInterviewState('WAITING_FOR_READY');
     }
   };
 
@@ -413,81 +392,97 @@ export default function CareerTools() {
     if (e) e.preventDefault();
     if (isSubmittingAnswer || isFinalizingSession) return;
 
-    const answer = userAnswer.trim();
+    const answer = (userAnswer || voiceEngine.liveTranscript || '').trim();
     if (!answer && mockMode === 'chat') return;
 
-    stopMicrophoneCapture();
+    voiceEngine.stopListening();
     setIsSubmittingAnswer(true);
-    setInterviewerStatus('PROCESSING');
+    setInterviewState('ANALYZING_ANSWER');
 
-    // Calculate metrics
-    const fillers = getFillerCount(answer);
-    const words = getWordCount(answer);
-    const wpm = calculateWPM(answer, Math.max(1, turnSpeakingTime));
-
-    // Append candidate message to transcript
     const candidateMsg = {
       speaker: 'candidate',
       text: answer || '(No verbal response recorded)',
       timestamp: new Date(),
-      duration: turnSpeakingTime,
-      metrics: { wpm, fillerCount: fillers, wordCount: words }
+      duration: voiceEngine.turnSpeakingTime,
+      metrics: {
+        wpm: voiceEngine.wpm,
+        fillerCount: voiceEngine.fillerCount,
+        wordCount: answer.split(/\s+/).filter(Boolean).length
+      }
     };
     setTranscript((prev) => [...prev, candidateMsg]);
     setUserAnswer('');
-    setTurnSpeakingTime(0);
+    const turnDuration = voiceEngine.turnSpeakingTime;
+    voiceEngine.resetTurnMetrics();
 
     try {
       const response = await sendInterviewAnswer({
         sessionId,
         candidateAnswer: answer,
-        duration: turnSpeakingTime,
-        metrics: { wpm, fillerCount: fillers, wordCount: words }
+        duration: turnDuration,
+        currentQuestionIndex: currentQuestionIdx,
+        bankQuestions,
+        panelMode,
+        totalQuestions: totalQuestionsTarget,
+        metrics: {
+          wpm: voiceEngine.wpm,
+          fillerCount: voiceEngine.fillerCount,
+          cameraEngagement: videoAnalyzer.metrics.cameraEngagement,
+          postureStability: videoAnalyzer.metrics.postureStability,
+          presenceScore: videoAnalyzer.metrics.presenceScore
+        }
       });
 
       if (response.turnEvaluation) {
         setTurnEvaluations((prev) => [...prev, response.turnEvaluation]);
-        if (mockMode === 'chat') {
-          setChatEvaluation(response.turnEvaluation);
-        }
       }
 
-      const nextReply = response.interviewerReply || "Thank you. Let's proceed to the next technical question.";
+      const nextReply = response.interviewerReply || "Thank you. Let's proceed to the next question.";
       setCurrentQuestionText(nextReply);
+      if (response.currentSpeaker) {
+        setCurrentSpeaker(response.currentSpeaker);
+      }
 
-      // Append AI response to transcript
       setTranscript((prev) => [
         ...prev,
         {
           speaker: 'ai',
           text: nextReply,
+          speakerRole: response.currentSpeaker?.role || currentSpeaker?.role,
+          speakerName: response.currentSpeaker?.name || currentSpeaker?.name,
           timestamp: new Date(),
           duration: 0
         }
       ]);
 
-      const nextIdx = (response.currentQuestionIndex || currentQuestionIdx + 1);
+      const nextIdx = response.currentQuestionIndex !== undefined ? response.currentQuestionIndex : currentQuestionIdx + 1;
       setCurrentQuestionIdx(nextIdx);
 
       const isComplete = response.isInterviewComplete || nextIdx >= totalQuestionsTarget;
 
       if (isComplete) {
-        if (mockMode === 'studio') {
-          speakText(nextReply);
-        }
-        await handleFinalizeInterview();
-      } else {
-        if (mockMode === 'studio') {
-          speakText(nextReply);
+        if (mockMode === 'studio' || mockMode === 'voice_only') {
+          voiceEngine.speakText(nextReply, response.currentSpeaker?.role, async () => {
+            await handleFinalizeInterview();
+          });
         } else {
-          setInterviewerStatus('LISTENING');
+          await handleFinalizeInterview();
+        }
+      } else {
+        if (mockMode === 'studio' || mockMode === 'voice_only') {
+          setInterviewState('AI_SPEAKING');
+          voiceEngine.speakText(nextReply, response.currentSpeaker?.role, () => {
+            setInterviewState('INTERVIEW_ACTIVE');
+            voiceEngine.startListening();
+          });
+        } else {
+          setInterviewState('INTERVIEW_ACTIVE');
         }
       }
     } catch (err) {
       console.error('Error submitting answer:', err);
-      // Resilience fallback
       setCurrentQuestionIdx((prev) => prev + 1);
-      setInterviewerStatus('LISTENING');
+      setInterviewState('INTERVIEW_ACTIVE');
     } finally {
       setIsSubmittingAnswer(false);
     }
@@ -498,30 +493,62 @@ export default function CareerTools() {
   // ==========================================
   const handleFinalizeInterview = async () => {
     setIsFinalizingSession(true);
+    setInterviewState('GENERATING_REPORT');
     setIsTimerActive(false);
-    stopMicrophoneCapture();
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    voiceEngine.stopListening();
+    voiceEngine.stopSpeaking();
 
     try {
-      const response = await completeInterviewSession(sessionId);
+      const response = await completeInterviewSession(sessionId, {
+        avgWpm: voiceEngine.wpm,
+        totalFillers: voiceEngine.fillerCount,
+        cameraEngagement: videoAnalyzer.metrics.cameraEngagement,
+        postureStability: videoAnalyzer.metrics.postureStability,
+        presenceScore: videoAnalyzer.metrics.presenceScore
+      });
       const scorecard = response.evaluation || response.session?.evaluation;
       setFinalScorecard(scorecard);
-      setSessionFinished(true);
+      setInterviewState('REPORT_READY');
       fetchHistory();
     } catch (err) {
       console.error('Failed to complete interview:', err);
+      setInterviewState('REPORT_READY');
     } finally {
       setIsFinalizingSession(false);
     }
   };
 
-  // Exit Studio & Reset
+  // Toggles for hardware
+  const handleToggleMic = () => {
+    deviceManager.toggleMicrophone();
+    voiceEngine.toggleMic();
+  };
+
+  const handleToggleCamera = () => {
+    deviceManager.toggleCamera();
+  };
+
+  // Practice Weak Areas Handler
+  const handlePracticeWeakAreas = (weakTopics = []) => {
+    setFinalScorecard(null);
+    setTranscript([]);
+    setTurnEvaluations([]);
+    handleStartInterview({
+      targetRole: targetRoleResolved,
+      interviewStage: 'Manager Technical Round',
+      difficulty: 'Advanced',
+      interviewType: 'Technical',
+      questionCount: 3,
+      duration: 10
+    });
+  };
+
+  // Exit Studio & Complete Hardware Cleanup
   const handleExitStudio = () => {
-    setIsStudioActive(false);
+    deviceManager.cleanupAllStreams();
+    voiceEngine.cleanupVoiceEngine();
     setIsTimerActive(false);
-    stopMicrophoneCapture();
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    setSessionFinished(false);
+    setInterviewState('IDLE');
     setTranscript([]);
     setTurnEvaluations([]);
     setFinalScorecard(null);
@@ -878,6 +905,19 @@ export default function CareerTools() {
                 </button>
                 <button
                   onClick={() => {
+                    if (!isStudioActive) setMockMode('voice_only');
+                  }}
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    mockMode === 'voice_only'
+                      ? 'bg-brandGreen text-white shadow-md shadow-brandGreen/20'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>Voice Only</span>
+                </button>
+                <button
+                  onClick={() => {
                     if (!isStudioActive) setMockMode('chat');
                   }}
                   className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
@@ -887,11 +927,11 @@ export default function CareerTools() {
                   }`}
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  <span>Text Chat Mode</span>
+                  <span>Text Chat</span>
                 </button>
                 <button
                   onClick={() => {
-                    if (!isStudioActive) {
+                    if (interviewState === 'IDLE') {
                       setMockMode('history');
                       fetchHistory();
                     }
@@ -909,20 +949,28 @@ export default function CareerTools() {
             </div>
 
             {/* VIEW 1: INTERVIEW SETUP & LAUNCH CARD */}
-            {!isStudioActive && !sessionFinished && mockMode !== 'history' && (
+            {interviewState === 'IDLE' && mockMode !== 'history' && (
               <div className="bg-navy-dark p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6 relative overflow-hidden">
-                <div className="absolute -top-12 -right-12 w-64 h-64 bg-brandGreen/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -top-12 -right-12 w-72 h-72 bg-brandGreen/10 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="max-w-3xl space-y-3 relative z-10">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider inline-flex items-center space-x-1.5">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Big 4-Style Simulated AI Interview</span>
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider inline-flex items-center space-x-1.5">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Physical Simulation • 324 CA Question Bank Grounded</span>
+                    </span>
+                    {panelMode && (
+                      <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold uppercase tracking-wider inline-flex items-center space-x-1">
+                        <Users className="w-3 h-3" />
+                        <span>Two AI Panelists Active</span>
+                      </span>
+                    )}
+                  </div>
                   <h2 className="text-xl sm:text-3xl font-extrabold text-white">
                     Simulate Your Professional CA / ACCA Interview
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                    Configure your interview profile below. The AI Interviewer will introduce itself automatically, evaluate your answers on technical precision under IFRS/ISA, track your speech pace and filler words, and generate a Big 4 Partner Scorecard!
+                    Experience a realistic face-to-face partner interview. The AI speaks its questions out loud, listens to your verbal responses in real-time, monitors engagement and composure through your camera locally, and scores you against verified CA firm criteria.
                   </p>
                 </div>
 
@@ -930,7 +978,10 @@ export default function CareerTools() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                   {/* Target Role */}
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
-                    <label className="block text-xs font-bold text-gray-300">Target Role</label>
+                    <label className="block text-xs font-bold text-gray-300 flex items-center space-x-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-brandGreen" />
+                      <span>Target Role</span>
+                    </label>
                     <select
                       value={interviewRole}
                       onChange={(e) => setInterviewRole(e.target.value)}
@@ -940,7 +991,7 @@ export default function CareerTools() {
                       <option value="Audit Associate">Audit Associate</option>
                       <option value="Tax Trainee">Tax Trainee</option>
                       <option value="Tax Associate">Tax Associate</option>
-                      <option value="CA Articleship">CA Articleship</option>
+                      <option value="CA Articleship">CA Articleship (General)</option>
                       <option value="ACCA Trainee">ACCA Trainee</option>
                       <option value="Financial Analyst">Financial Analyst</option>
                       <option value="Accounting Associate">Accounting Associate</option>
@@ -962,40 +1013,46 @@ export default function CareerTools() {
 
                   {/* Interview Stage */}
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
-                    <label className="block text-xs font-bold text-gray-300">Interview Stage</label>
+                    <label className="block text-xs font-bold text-gray-300 flex items-center space-x-1.5">
+                      <Target className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Interview Stage</span>
+                    </label>
                     <select
                       value={interviewStage}
                       onChange={(e) => setInterviewStage(e.target.value)}
                       className="w-full px-3 py-2.5 bg-navy border border-white/10 rounded-xl text-xs text-white focus:border-brandGreen focus:outline-none"
                     >
-                      <option value="HR Round">HR Round</option>
-                      <option value="Screening Round">Screening Round</option>
-                      <option value="Technical Round">Technical Round</option>
-                      <option value="Manager Technical Round">Manager Technical Round</option>
-                      <option value="Behavioral Round">Behavioral Round</option>
-                      <option value="Partner Round">Partner Round</option>
-                      <option value="Final Round">Final Round</option>
+                      <option value="HR Round">HR Round (Culture & Motivation)</option>
+                      <option value="Screening Round">Screening Round (Fundamentals)</option>
+                      <option value="Technical Round">Technical Round (Core Accounting & Tax)</option>
+                      <option value="Manager Technical Round">Manager Technical Round (In-depth Standards)</option>
+                      <option value="Behavioral Round">Behavioral Round (Ethics & STAR)</option>
+                      <option value="Partner Round">Partner Round (High-level Judgment)</option>
+                      <option value="Final Round">Final Induction Round</option>
                     </select>
                   </div>
 
                   {/* Difficulty */}
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
-                    <label className="block text-xs font-bold text-gray-300">Difficulty Level</label>
+                    <label className="block text-xs font-bold text-gray-300 flex items-center space-x-1.5">
+                      <Layers className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Difficulty Level</span>
+                    </label>
                     <select
                       value={difficulty}
                       onChange={(e) => setDifficulty(e.target.value)}
                       className="w-full px-3 py-2.5 bg-navy border border-white/10 rounded-xl text-xs text-white focus:border-brandGreen focus:outline-none"
                     >
-                      <option value="Beginner">Beginner (Foundational concepts)</option>
+                      <option value="Beginner">Beginner (Foundational definitions)</option>
                       <option value="Intermediate">Intermediate (Standard CAF/ACCA questions)</option>
-                      <option value="Advanced">Advanced (Complex IFRS/ISA & Big 4 scenarios)</option>
-                      <option value="Expert">Expert (Partner-level judgment & ethics)</option>
+                      <option value="Advanced">Advanced (Complex IFRS/ISA scenarios)</option>
+                      <option value="Expert">Expert (Partner-level dilemma & ethics)</option>
                     </select>
                   </div>
 
                   {/* Interview Type */}
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
-                    <label className="block text-xs font-bold text-gray-300">Interview Type</label>
+                    <label className="block text-xs font-bold text-gray-300">Question Focus Area</label>
                     <select
                       value={interviewType}
                       onChange={(e) => setInterviewType(e.target.value)}
@@ -1017,9 +1074,9 @@ export default function CareerTools() {
                       onChange={(e) => setQuestionCountChoice(e.target.value)}
                       className="w-full px-3 py-2.5 bg-navy border border-white/10 rounded-xl text-xs text-white focus:border-brandGreen focus:outline-none"
                     >
-                      <option value="5">5 Questions (Fast practice)</option>
-                      <option value="10">10 Questions (Standard interview)</option>
-                      <option value="15">15 Questions (Full intensive session)</option>
+                      <option value="3">3 Questions (Rapid warmup)</option>
+                      <option value="5">5 Questions (Standard simulation)</option>
+                      <option value="10">10 Questions (Comprehensive Big 4 panel)</option>
                       <option value="Custom">Custom count...</option>
                     </select>
 
@@ -1027,9 +1084,9 @@ export default function CareerTools() {
                       <input
                         type="number"
                         min="2"
-                        max="25"
+                        max="20"
                         value={customQuestionCount}
-                        onChange={(e) => setCustomQuestionCount(Math.max(2, Math.min(25, Number(e.target.value))))}
+                        onChange={(e) => setCustomQuestionCount(Math.max(2, Math.min(20, Number(e.target.value))))}
                         className="w-full mt-2 px-3 py-2 bg-navy border border-brandGreen/40 rounded-xl text-xs text-white focus:outline-none"
                       />
                     )}
@@ -1051,498 +1108,199 @@ export default function CareerTools() {
                   </div>
                 </div>
 
-                {/* Launch Bar */}
-                <div className="flex flex-wrap items-center gap-4 pt-2 relative z-10">
-                  <button
-                    disabled={isStartingSession}
-                    onClick={handleStartInterview}
-                    className="px-6 py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-2xl font-extrabold text-xs sm:text-sm transition-all shadow-xl shadow-brandGreen/25 flex items-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                {/* Simulation Modifiers & Toggles */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 relative z-10">
+                  {/* Two AI Agent Panel Mode */}
+                  <div
+                    onClick={() => setPanelMode(!panelMode)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start space-x-3 ${
+                      panelMode
+                        ? 'bg-blue-500/10 border-blue-500/40 text-white shadow-lg shadow-blue-500/10'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
+                    }`}
                   >
-                    {isStartingSession ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Play className="w-4 h-4 fill-current" />
-                    )}
-                    <span>
-                      {isStartingSession
-                        ? 'Initializing AI Interviewer...'
-                        : mockMode === 'studio'
-                        ? 'Start Real-Time Voice Studio'
-                        : 'Start Text Chat Interview'}
-                    </span>
-                  </button>
+                    <div className={`p-2 rounded-xl mt-0.5 ${panelMode ? 'bg-blue-500 text-white' : 'bg-white/10 text-gray-400'}`}>
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-white">Two-Agent Interview Panel</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${panelMode ? 'bg-blue-500 text-white' : 'bg-white/10 text-gray-400'}`}>
+                          {panelMode ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 leading-snug">
+                        Senior Audit Manager (Technical) and HR Lead take turns asking questions naturally.
+                      </p>
+                    </div>
+                  </div>
 
-                  {mockMode === 'studio' && (
+                  {/* Big 4 Simulation Challenge */}
+                  <div
+                    onClick={() => setIsBig4(!isBig4)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start space-x-3 ${
+                      isBig4
+                        ? 'bg-brandGreen/10 border-brandGreen/40 text-white shadow-lg shadow-brandGreen/10'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl mt-0.5 ${isBig4 ? 'bg-brandGreen text-white' : 'bg-white/10 text-gray-400'}`}>
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-white">Big 4 Firm Challenge</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isBig4 ? 'bg-brandGreen text-white' : 'bg-white/10 text-gray-400'}`}>
+                          {isBig4 ? 'ACTIVE' : 'OFF'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 leading-snug">
+                        Evaluates responses strictly against EY, PwC, KPMG, Deloitte hiring benchmarks.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Live Camera Non-Invasive Presence */}
+                  <div
+                    onClick={() => setEnableCamera(!enableCamera)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start space-x-3 ${
+                      enableCamera && mockMode === 'studio'
+                        ? 'bg-emerald-500/10 border-emerald-500/40 text-white shadow-lg shadow-emerald-500/10'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl mt-0.5 ${enableCamera ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-400'}`}>
+                      <Video className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-white">Live Camera Presence</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${enableCamera ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-400'}`}>
+                          {enableCamera ? 'CAMERA ON' : 'DISABLED'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 leading-snug">
+                        Analyzes eye contact and posture stability. 100% private & client-side only.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Launch Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10 relative z-10">
+                  <div className="flex items-center space-x-3">
                     <button
-                      onClick={() => setAiAudioEnabled(!aiAudioEnabled)}
-                      className="px-4 py-3.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-2xl font-semibold text-xs transition-all border border-white/10 flex items-center space-x-2 cursor-pointer"
+                      disabled={isStartingSession}
+                      onClick={() => handleStartInterview()}
+                      className="px-7 py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-2xl font-extrabold text-xs sm:text-sm transition-all shadow-xl shadow-brandGreen/25 flex items-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
                     >
-                      {aiAudioEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-red-400" />}
-                      <span>AI Voice: {aiAudioEnabled ? 'Active' : 'Muted'}</span>
+                      {isStartingSession ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-current" />
+                      )}
+                      <span>
+                        {isStartingSession
+                          ? 'Setting up Virtual Boardroom...'
+                          : mockMode === 'studio'
+                          ? 'Start Physical Simulator (Voice + Video)'
+                          : mockMode === 'voice_only'
+                          ? 'Start Voice Only Simulator'
+                          : 'Start Text Chat Simulation'}
+                      </span>
                     </button>
-                  )}
+
+                    {(mockMode === 'studio' || mockMode === 'voice_only') && (
+                      <button
+                        onClick={() => setAiAudioEnabled(!aiAudioEnabled)}
+                        className="px-4 py-3.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-2xl font-semibold text-xs transition-all border border-white/10 flex items-center space-x-2 cursor-pointer"
+                      >
+                        {aiAudioEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-red-400" />}
+                        <span>AI Voice: {aiAudioEnabled ? 'Active' : 'Muted'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="text-[11px] text-gray-400 flex items-center space-x-1.5">
+                    <ShieldCheck className="w-4 h-4 text-brandGreen" />
+                    <span>Compliant with ICAP / ACCA ethics framework • No video saved</span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* VIEW 2: ACTIVE REAL-TIME INTERVIEW STUDIO / CHAT VIEW */}
-            {isStudioActive && !sessionFinished && (
-              <div className="bg-navy-dark p-6 rounded-3xl border border-white/10 space-y-6 animate-fadeIn">
+            {/* VIEW 2: ACTIVE REAL-TIME INTERVIEW STUDIO / SIMULATION ROOM */}
+            {interviewState !== 'IDLE' && interviewState !== 'REPORT_READY' && interviewState !== 'GENERATING_REPORT' && mockMode !== 'history' && (
+              <AIInterviewStudio
+                interviewState={interviewState}
+                targetRole={targetRoleResolved}
+                interviewStage={interviewStage}
+                difficulty={difficulty}
+                interviewType={interviewType}
+                totalQuestionsTarget={totalQuestionsTarget}
+                currentQuestionIdx={currentQuestionIdx}
+                currentQuestionText={currentQuestionText}
+                currentSpeaker={currentSpeaker}
+                panelMode={panelMode}
+                isBig4={isBig4}
+                transcript={transcript}
+                userAnswer={userAnswer}
+                setUserAnswer={setUserAnswer}
+                isSubmittingAnswer={isSubmittingAnswer}
+                isFinalizingSession={isFinalizingSession}
+                timerRemaining={timerRemaining}
+                turnSpeakingTime={voiceEngine.turnSpeakingTime}
+                wpm={voiceEngine.wpm}
+                fillerCount={voiceEngine.fillerCount}
+                isMicListening={voiceEngine.isMicListening}
+                isAiSpeaking={voiceEngine.isAiSpeaking}
+                aiAudioEnabled={aiAudioEnabled}
+                audioStream={deviceManager.stream}
+                videoRef={deviceManager.videoRef}
+                cameraStatus={deviceManager.cameraStatus}
+                micStatus={deviceManager.micStatus}
+                isCameraActive={deviceManager.isCameraActive}
+                deviceError={deviceManager.deviceError}
+                voiceStatusMessage={voiceEngine.statusMessage}
+                behavioralMetrics={videoAnalyzer.metrics}
+                onConfirmReady={handleConfirmReady}
+                onConfirmNotReady={handleConfirmNotReady}
+                onToggleMic={handleToggleMic}
+                onToggleCamera={handleToggleCamera}
+                onToggleAiAudio={() => setAiAudioEnabled(!aiAudioEnabled)}
+                onSubmitAnswer={handleSubmitAnswerTurn}
+                onFinalizeInterview={handleFinalizeInterview}
+                onExitStudio={handleExitStudio}
+              />
+            )}
 
-                {/* Studio Top Control Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-                      {mockMode === 'studio' ? 'Live Real-Time Studio' : 'Active Text Chat Simulation'}
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-emerald-400 text-[10px] font-bold">
-                      Question {Math.min(currentQuestionIdx + 1, totalQuestionsTarget)} of {totalQuestionsTarget}
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-brandGreen/10 text-emerald-300 text-[10px] font-medium border border-brandGreen/20">
-                      {targetRoleResolved} • {interviewStage}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    {mockMode === 'studio' && (
-                      <button
-                        onClick={() => setAiAudioEnabled(!aiAudioEnabled)}
-                        className="p-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-all cursor-pointer"
-                        title="Toggle AI Audio Voice"
-                      >
-                        {aiAudioEnabled ? <Volume2 className="w-4 h-4 text-brandGreen" /> : <VolumeX className="w-4 h-4 text-red-400" />}
-                      </button>
-                    )}
-                    <button
-                      onClick={handleFinalizeInterview}
-                      disabled={isFinalizingSession}
-                      className="px-3 py-1.5 bg-brandGreen/20 hover:bg-brandGreen text-emerald-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-                    >
-                      {isFinalizingSession ? 'Evaluating...' : 'Finish & Score'}
-                    </button>
-                    <button
-                      onClick={handleExitStudio}
-                      className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-                    >
-                      Exit
-                    </button>
-                  </div>
-                </div>
-
-                {/* Main Interface Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                  {/* Left Column: AI Virtual Interlocutor Card */}
-                  <div className="lg:col-span-5 bg-navy p-6 rounded-2xl border border-white/10 flex flex-col items-center justify-between text-center space-y-4 relative overflow-hidden min-h-[420px]">
-                    <div className="space-y-4 flex flex-col items-center w-full">
-                      {/* Animated Avatar Ring with status aura */}
-                      <div
-                        className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500 border-4 ${
-                          isAiSpeaking
-                            ? 'border-brandGreen bg-brandGreen/20 shadow-[0_0_30px_rgba(0,200,83,0.5)] scale-105'
-                            : isMicListening
-                            ? 'border-blue-400 bg-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.5)]'
-                            : isSubmittingAnswer
-                            ? 'border-amber-400 bg-amber-500/20 shadow-[0_0_25px_rgba(245,158,11,0.4)] animate-pulse'
-                            : 'border-white/20 bg-white/5'
-                        }`}
-                      >
-                        <Bot className={`w-14 h-14 ${isAiSpeaking ? 'text-brandGreen animate-bounce' : isSubmittingAnswer ? 'text-amber-300' : 'text-white'}`} />
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="font-extrabold text-white text-base">Senior Interviewer (Big 4)</h4>
-                        <span className="text-[11px] font-semibold uppercase tracking-wider block text-brandGreen">
-                          {isAiSpeaking
-                            ? '🔊 Speaking Question...'
-                            : isSubmittingAnswer
-                            ? '💭 Evaluating & Generating Follow-up...'
-                            : isMicListening
-                            ? '🎙️ Listening to You...'
-                            : '⚡ Ready for Response'}
-                        </span>
-                      </div>
-
-                      {/* Active Live Question Card */}
-                      <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-200 leading-relaxed text-left w-full max-w-sm">
-                        <span className="font-bold text-emerald-400 block mb-1">Current Question:</span>
-                        <p className="italic font-medium text-white">{currentQuestionText}</p>
-                      </div>
-                    </div>
-
-                    {/* Waveform Visualizer */}
-                    {mockMode === 'studio' && (
-                      <div className="w-full pt-2 border-t border-white/5">
-                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block mb-1">
-                          Live Audio Frequency
-                        </span>
-                        <AudioVisualizer isListening={isMicListening} isSpeaking={isAiSpeaking} stream={audioStream} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column: Candidate Live Response Panel & HUD */}
-                  <div className="lg:col-span-7 bg-navy p-6 rounded-2xl border border-white/10 flex flex-col justify-between space-y-4">
-
-                    {/* HUD Bar: Timer, Pace WPM, Fillers, Elapsed Time */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase block">Time Remaining</span>
-                        <span className={`text-base sm:text-lg font-black ${timerRemaining < 120 ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
-                          {formatTime(timerRemaining)}
-                        </span>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase block">Live Pace</span>
-                        <span className="text-base sm:text-lg font-black text-white">
-                          {calculateWPM(userAnswer, Math.max(1, turnSpeakingTime))} WPM
-                        </span>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase block">Filler Words</span>
-                        <span className="text-base sm:text-lg font-black text-amber-400">
-                          {getFillerCount(userAnswer)}
-                        </span>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase block">Speaking Time</span>
-                        <span className="text-base sm:text-lg font-black text-blue-400">
-                          {formatTime(turnSpeakingTime)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Live Transcript Stream & Speech Box */}
-                    <div className="flex-1 flex flex-col space-y-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-gray-300">Live Transcript & Your Answer:</span>
-                        {isMicListening && (
-                          <div className="flex items-center space-x-1.5">
-                            <span className="w-2 h-2 rounded-full bg-brandGreen animate-ping" />
-                            <span className="text-[10px] text-emerald-400 font-bold">Capturing Microphone Speech...</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Permission warning banner if microphone is blocked */}
-                      {micPermissionError && (
-                        <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300 flex items-start space-x-2">
-                          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
-                          <span>{micPermissionError}</span>
-                        </div>
-                      )}
-
-                      {/* Scrolling Transcript View */}
-                      <div className="max-h-48 overflow-y-auto space-y-2 p-3 rounded-xl bg-black/20 border border-white/5 text-xs scrollbar-thin">
-                        {transcript.map((msg, i) => (
-                          <div key={i} className={`flex ${msg.speaker === 'candidate' ? 'justify-end' : 'justify-start'}`}>
-                            <div
-                              className={`max-w-[85%] p-3 rounded-xl text-xs leading-relaxed ${
-                                msg.speaker === 'candidate'
-                                  ? 'bg-brandGreen text-white rounded-br-none'
-                                  : 'bg-white/10 text-gray-200 border border-white/10 rounded-bl-none'
-                              }`}
-                            >
-                              <div className="text-[10px] opacity-75 font-bold mb-1">
-                                {msg.speaker === 'candidate' ? 'You (Candidate)' : 'AI Interviewer'}
-                              </div>
-                              <p className="whitespace-pre-line">{msg.text}</p>
-                            </div>
-                          </div>
-                        ))}
-                        {isSubmittingAnswer && (
-                          <div className="flex justify-start">
-                            <div className="p-3 rounded-xl bg-white/10 text-emerald-300 border border-emerald-500/20 text-xs flex items-center space-x-2">
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>Interviewer is evaluating your response and preparing the next question...</span>
-                            </div>
-                          </div>
-                        )}
-                        <div ref={transcriptEndRef} />
-                      </div>
-
-                      {/* Current Turn Input / Editable Transcript */}
-                      <textarea
-                        rows="3"
-                        value={userAnswer}
-                        onChange={(e) => setUserAnswer(e.target.value)}
-                        placeholder={
-                          mockMode === 'studio'
-                            ? "Speak naturally into your microphone or type your response here..."
-                            : "Type your professional response to the question..."
-                        }
-                        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brandGreen leading-relaxed"
-                      />
-                    </div>
-
-                    {/* Action Controls */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                      {mockMode === 'studio' ? (
-                        <button
-                          type="button"
-                          onClick={handleToggleMic}
-                          className={`w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-                            isMicListening
-                              ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
-                              : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-                          }`}
-                        >
-                          {isMicListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-emerald-400" />}
-                          <span>{isMicListening ? 'Stop Speaking (Mic On)' : 'Start Microphone Speaking'}</span>
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-gray-400">Press Submit or Enter to send answer</span>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={handleSubmitAnswerTurn}
-                        disabled={isSubmittingAnswer || isFinalizingSession}
-                        className="w-full sm:w-auto px-6 py-3 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-extrabold text-xs transition-all shadow-md shadow-brandGreen/20 flex items-center justify-center space-x-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                      >
-                        {isSubmittingAnswer ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Submit Answer & Next</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-
+            {/* VIEW 2.5: COMPILING REPORT SPINNER */}
+            {interviewState === 'GENERATING_REPORT' && mockMode !== 'history' && (
+              <div className="bg-[#021B3A] p-12 rounded-3xl border border-brandGreen/30 text-center space-y-4 shadow-2xl animate-pulse">
+                <RefreshCw className="w-10 h-10 animate-spin text-brandGreen mx-auto" />
+                <h3 className="text-lg font-black text-white">Compiling Big 4 Partner Scorecard...</h3>
+                <p className="text-xs text-gray-300 max-w-md mx-auto leading-relaxed">
+                  Evaluating your technical accounting standard citations, communication structure, speaking pace, and interview composure.
+                </p>
               </div>
             )}
 
             {/* VIEW 3: FINAL AI EVALUATION SCORECARD */}
-            {sessionFinished && finalScorecard && (
-              <div className="bg-navy-dark p-6 sm:p-8 rounded-3xl border border-brandGreen/30 space-y-6 animate-fadeIn">
-                {/* Scorecard Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-                  <div className="space-y-1">
-                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brandGreen/20 border border-brandGreen/40 text-emerald-400 text-xs font-bold uppercase">
-                      <Award className="w-4 h-4" />
-                      <span>{finalScorecard.hiringRecommendation || 'Interview Completed'}</span>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl font-black text-white">Big 4 Partner Evaluation Scorecard</h2>
-                    <p className="text-xs text-gray-400">
-                      {targetRoleResolved} • {interviewStage} ({difficulty} Level)
-                    </p>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => window.print()}
-                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Print / PDF</span>
-                    </button>
-                    <button
-                      onClick={handleStartInterview}
-                      className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Retake Session</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Overall Score Banner */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div className="p-5 rounded-2xl bg-brandGreen/15 border border-brandGreen/40 text-center space-y-1">
-                    <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider">Overall Score</span>
-                    <div className="text-4xl font-black text-emerald-400">{finalScorecard.overallScore} / 100</div>
-                    <span className="text-[11px] text-emerald-300 font-semibold block">
-                      {finalScorecard.overallScore >= 85
-                        ? 'Top Tier (Strong Hire)'
-                        : finalScorecard.overallScore >= 75
-                        ? 'Solid Performance (Hire)'
-                        : 'Passable (Needs Practice)'}
-                    </span>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center space-y-1">
-                    <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Technical Knowledge</span>
-                    <div className="text-3xl font-black text-white">{finalScorecard.technicalKnowledge} / 100</div>
-                    <span className="text-[10px] text-gray-400 font-bold">IFRS & ISA Standards</span>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center space-y-1">
-                    <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Communication & Clarity</span>
-                    <div className="text-3xl font-black text-white">{finalScorecard.communication} / 100</div>
-                    <span className="text-[10px] text-gray-400 font-bold">Articulate Delivery</span>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center space-y-1">
-                    <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Professional Composure</span>
-                    <div className="text-3xl font-black text-white">{finalScorecard.professionalism} / 100</div>
-                    <span className="text-[10px] text-gray-400 font-bold">Ethics & Skepticism</span>
-                  </div>
-                </div>
-
-                {/* Dimension Breakdown Progress Bars */}
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
-                  <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Performance Dimensions</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    {[
-                      { label: 'Technical Knowledge', val: finalScorecard.technicalKnowledge },
-                      { label: 'Communication & Delivery', val: finalScorecard.communication },
-                      { label: 'Answer Relevance & Focus', val: finalScorecard.answerRelevance },
-                      { label: 'Clarity & Structure', val: finalScorecard.clarity },
-                      { label: 'Problem Solving & Judgment', val: finalScorecard.problemSolving },
-                      { label: 'Professional Ethics & Skepticism', val: finalScorecard.professionalism },
-                      { label: 'Confidence Indicator', val: finalScorecard.confidenceIndicator }
-                    ].map((metric, idx) => (
-                      <div key={idx} className="space-y-1.5">
-                        <div className="flex justify-between font-semibold">
-                          <span className="text-gray-300">{metric.label}</span>
-                          <span className="text-emerald-400 font-bold">{metric.val}%</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-navy border border-white/10 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-brandGreen to-emerald-400 rounded-full transition-all duration-700"
-                            style={{ width: `${Math.min(100, Math.max(0, metric.val))}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Strengths, Weaknesses & Recommendations */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Strengths */}
-                  <div className="p-5 rounded-2xl bg-brandGreen/10 border border-brandGreen/20 space-y-3">
-                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Key Strengths</span>
-                    </h4>
-                    <ul className="space-y-2 text-xs text-gray-200">
-                      {finalScorecard.strengths?.map((s, i) => (
-                        <li key={i} className="flex items-start space-x-2">
-                          <Check className="w-3.5 h-3.5 text-brandGreen flex-shrink-0 mt-0.5" />
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Weaknesses & Gaps */}
-                  <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-3">
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
-                      <AlertCircle className="w-4 h-4" />
-                      <span>Areas for Improvement</span>
-                    </h4>
-                    <ul className="space-y-2 text-xs text-gray-200">
-                      {finalScorecard.weaknesses?.map((w, i) => (
-                        <li key={i} className="flex items-start space-x-2">
-                          <span className="text-amber-400 font-bold">•</span>
-                          <span>{w}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Recommendations */}
-                  <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 space-y-3">
-                    <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center space-x-1.5">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>Recommendations</span>
-                    </h4>
-                    <ul className="space-y-2 text-xs text-gray-200">
-                      {finalScorecard.recommendations?.map((r, i) => (
-                        <li key={i} className="flex items-start space-x-2">
-                          <ChevronRight className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Final Assessment Summary */}
-                <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-xs text-gray-300">
-                  <span className="font-bold text-white uppercase tracking-wider text-[11px] block">
-                    Partner Final Assessment Summary:
-                  </span>
-                  <p className="leading-relaxed">{finalScorecard.finalAssessment}</p>
-                </div>
-
-                {/* Question-by-Question Detailed Review */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-extrabold text-white tracking-wider uppercase">
-                    Question-by-Question Deep Dive ({finalScorecard.questionEvaluations?.length || 0} Questions)
-                  </h4>
-                  <div className="space-y-3">
-                    {finalScorecard.questionEvaluations?.map((evalItem, idx) => {
-                      const isExpanded = expandedEvalIdx === idx;
-                      return (
-                        <div
-                          key={idx}
-                          className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all space-y-3"
-                        >
-                          <div
-                            className="flex items-center justify-between cursor-pointer"
-                            onClick={() => setExpandedEvalIdx(isExpanded ? null : idx)}
-                          >
-                            <div className="space-y-1">
-                              <span className="font-extrabold text-emerald-400 text-xs sm:text-sm block">
-                                Q{evalItem.questionNumber || idx + 1}: {evalItem.question}
-                              </span>
-                              <span className="text-[11px] text-gray-400">Score: {evalItem.score} / 100</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="px-2.5 py-1 rounded-lg bg-brandGreen/20 text-emerald-400 font-bold text-xs">
-                                {evalItem.score >= 80 ? 'Exceptional' : evalItem.score >= 65 ? 'Good' : 'Needs Work'}
-                              </span>
-                              {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                            </div>
-                          </div>
-
-                          <div className="p-3 rounded-xl bg-navy text-xs text-gray-300 font-mono">
-                            <strong>Candidate Answer:</strong> "{evalItem.candidateAnswer || '(No answer recorded)'}"
-                          </div>
-
-                          <p className="text-xs text-emerald-300 italic">"{evalItem.feedback}"</p>
-
-                          {isExpanded && evalItem.idealAnswerPoints && evalItem.idealAnswerPoints.length > 0 && (
-                            <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs space-y-1.5 mt-2 animate-fadeIn">
-                              <span className="font-bold text-gray-300 text-[11px] uppercase">
-                                Recommended Answer Points:
-                              </span>
-                              <ul className="list-disc list-inside text-gray-400 space-y-1">
-                                {evalItem.idealAnswerPoints.map((pt, pIdx) => (
-                                  <li key={pIdx}>{pt}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-4 border-t border-white/10">
-                  <button
-                    onClick={handleExitStudio}
-                    className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Back to Setup
-                  </button>
-                </div>
-              </div>
+            {interviewState === 'REPORT_READY' && mockMode !== 'history' && (
+              <InterviewScorecardReport
+                scorecard={finalScorecard}
+                finalScorecard={finalScorecard}
+                targetRole={targetRoleResolved}
+                targetRoleResolved={targetRoleResolved}
+                interviewStage={interviewStage}
+                difficulty={difficulty}
+                transcript={transcript}
+                onPracticeWeakAreas={handlePracticeWeakAreas}
+                onRetakeInterview={() => handleStartInterview()}
+                onRetakeSession={() => handleStartInterview()}
+                onReset={handleExitStudio}
+                onExit={handleExitStudio}
+              />
             )}
 
             {/* VIEW 4: INTERVIEW HISTORY LIST */}
@@ -1712,111 +1470,11 @@ export default function CareerTools() {
         )}
 
         {/* ======================================================== */}
-        {/* SUB-TAB 3: ARTICLESHIP CV BUILDER */}
+        {/* SUB-TAB 3: ARTICLESHIP CV BUILDER (HAFIZ NUMAN FORMAT) */}
         {/* ======================================================== */}
         {activeSubTab === 'cv' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fadeIn">
-            {/* Form Input Column */}
-            <div className="lg:col-span-6 bg-navy-dark p-6 rounded-3xl border border-white/10 space-y-4">
-              <h3 className="text-base font-extrabold text-white flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-brandGreen" />
-                <span>Articleship CV Form</span>
-              </h3>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-gray-400 mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    value={cvData.name}
-                    onChange={(e) => setCvData({ ...cvData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brandGreen"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-gray-400 mb-1">CRN / ACCA ID</label>
-                  <input
-                    type="text"
-                    value={cvData.crn}
-                    onChange={(e) => setCvData({ ...cvData, crn: e.target.value })}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brandGreen"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-gray-400 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={cvData.email}
-                    onChange={(e) => setCvData({ ...cvData, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brandGreen"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-gray-400 mb-1">Phone</label>
-                  <input
-                    type="text"
-                    value={cvData.phone}
-                    onChange={(e) => setCvData({ ...cvData, phone: e.target.value })}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brandGreen"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">Career Objective</label>
-                <textarea
-                  rows="3"
-                  value={cvData.objective}
-                  onChange={(e) => setCvData({ ...cvData, objective: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-brandGreen"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">Technical Skills & Tools</label>
-                <input
-                  type="text"
-                  value={cvData.skills}
-                  onChange={(e) => setCvData({ ...cvData, skills: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-brandGreen"
-                />
-              </div>
-            </div>
-
-            {/* Live CV Preview */}
-            <div className="lg:col-span-6 bg-white text-navy p-8 rounded-3xl shadow-2xl space-y-6 font-sans">
-              <div className="border-b border-gray-200 pb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold uppercase text-navy tracking-tight">{cvData.name}</h2>
-                  <p className="text-xs text-brandGreen font-bold">{cvData.qualification} | {cvData.crn}</p>
-                </div>
-                <button
-                  onClick={() => window.print()}
-                  className="px-3 py-2 rounded-xl bg-navy text-white text-xs font-bold flex items-center space-x-1 hover:bg-navy-dark transition-all cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print CV</span>
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <h4 className="font-bold uppercase text-brandGreen tracking-wider mb-1">Career Objective</h4>
-                  <p className="text-gray-600 leading-relaxed">{cvData.objective}</p>
-                </div>
-
-                <div>
-                  <h4 className="font-bold uppercase text-brandGreen tracking-wider mb-1">Educational Stage & Attempts</h4>
-                  <p className="text-gray-700"><strong>Status:</strong> {cvData.qualification}</p>
-                  <p className="text-gray-700"><strong>Attempt Status:</strong> {cvData.attempts}</p>
-                </div>
-
-                <div>
-                  <h4 className="font-bold uppercase text-brandGreen tracking-wider mb-1">Skills & Certifications</h4>
-                  <p className="text-gray-700">{cvData.skills}</p>
-                </div>
-              </div>
-            </div>
+          <div className="animate-fadeIn">
+            <ArticleshipCVBuilder />
           </div>
         )}
 
@@ -1824,81 +1482,8 @@ export default function CareerTools() {
         {/* SUB-TAB 4: 24/7 AI STUDY TUTOR */}
         {/* ======================================================== */}
         {activeSubTab === 'tutor' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fadeIn">
-            <div className="lg:col-span-4 bg-navy-dark p-6 rounded-3xl border border-white/10 space-y-4">
-              <h3 className="text-base font-extrabold text-white flex items-center space-x-2">
-                <BookOpen className="w-5 h-5 text-brandGreen" />
-                <span>Subject Selection</span>
-              </h3>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Select ICAP / ACCA Paper</label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white"
-                >
-                  <option value="FAR-1 (Financial Accounting)">CAF-1 Financial Accounting & Reporting I</option>
-                  <option value="FAR-2 (Financial Accounting)">CAF-5 Financial Accounting & Reporting II</option>
-                  <option value="Audit & Assurance">CAF-6 Audit and Assurance</option>
-                  <option value="Taxation">CAF-2 Tax Practices</option>
-                  <option value="ACCA PM">ACCA Performance Management</option>
-                </select>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-xs space-y-2">
-                <span className="font-bold text-emerald-400">Quick Tutor Prompts:</span>
-                <div className="space-y-1.5 text-gray-300">
-                  <button
-                    onClick={() => setTutorQuery("Explain IAS 16 Cost vs Revaluation Model")}
-                    className="w-full text-left p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-gray-300 transition-colors cursor-pointer"
-                  >
-                    • IAS 16 Revaluation Model
-                  </button>
-                  <button
-                    onClick={() => setTutorQuery("What are the key assertions in Audit of Sales?")}
-                    className="w-full text-left p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-gray-300 transition-colors cursor-pointer"
-                  >
-                    • Audit Assertions for Revenue
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-8 bg-navy-dark p-6 rounded-3xl border border-white/10 flex flex-col h-[520px]">
-              <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
-                {tutorMessages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed ${
-                        msg.sender === 'user'
-                          ? 'bg-brandGreen text-white rounded-br-none'
-                          : 'bg-white/10 text-gray-200 border border-white/10 rounded-bl-none'
-                      }`}
-                    >
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={handleSendTutorQuery} className="mt-4 flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Ask any CAF / ACCA question..."
-                  value={tutorQuery}
-                  onChange={(e) => setTutorQuery(e.target.value)}
-                  className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:border-brandGreen"
-                />
-                <button
-                  type="submit"
-                  className="px-5 py-3 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold text-xs transition-all flex items-center space-x-1 cursor-pointer"
-                >
-                  <span>Ask Tutor</span>
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
+          <div className="animate-fadeIn">
+            <StudyTutorChat />
           </div>
         )}
 

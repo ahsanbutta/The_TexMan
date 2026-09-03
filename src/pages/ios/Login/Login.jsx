@@ -324,48 +324,6 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
                   </button>
                 </form>
 
-                {/* Quick Demo Access Bar */}
-                <div className="pt-2">
-                  <div className="flex items-center space-x-2 my-2">
-                    <div className="h-px bg-gray-200 flex-1" />
-                    <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Quick Demo Login</span>
-                    <div className="h-px bg-gray-200 flex-1" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail('admin@taxmancapital.com');
-                        setLoginPassword('AdminPassword123!');
-                      }}
-                      className="p-2 text-center rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-700 font-bold text-[11px] transition-all cursor-pointer"
-                    >
-                      👑 Admin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail('student@taxmancapital.com');
-                        setLoginPassword('StudentPassword123!');
-                      }}
-                      className="p-2 text-center rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-700 font-bold text-[11px] transition-all cursor-pointer"
-                    >
-                      🎓 Student
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail('mentor@taxmancapital.com');
-                        setLoginPassword('MentorPassword123!');
-                      }}
-                      className="p-2 text-center rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-700 font-bold text-[11px] transition-all cursor-pointer"
-                    >
-                      💼 Mentor
-                    </button>
-                  </div>
-                </div>
-
-
               </div>
 
               <div className="text-center text-xs sm:text-sm text-gray-500 pt-4 border-t border-gray-50">

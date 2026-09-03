@@ -1,9 +1,10 @@
 import api from './api';
+import { getQuestionsForInterview } from './interviewQuestionBank';
 
 /**
  * AI Mock Interview Service (Frontend)
  * Communicates with backend /api/interviews endpoints.
- * Includes local fallback resilience if the backend is temporarily offline during development.
+ * Includes local fallback resilience grounded in the 324-question bank.
  */
 
 export const startInterviewSession = async ({
@@ -12,7 +13,9 @@ export const startInterviewSession = async ({
   difficulty = 'Intermediate',
   interviewType = 'Technical',
   questionCount = 5,
-  duration = 15
+  duration = 15,
+  panelMode = false,
+  isBig4 = false
 }) => {
   try {
     const res = await api.post('/interviews/start', {
@@ -21,13 +24,29 @@ export const startInterviewSession = async ({
       difficulty,
       interviewType,
       questionCount: Number(questionCount) || 5,
-      duration: Number(duration) || 15
+      duration: Number(duration) || 15,
+      panelMode: Boolean(panelMode),
+      isBig4: Boolean(isBig4)
     });
     return res.data || res;
   } catch (err) {
     console.warn('[InterviewService] API unavailable, running client-side fallback session:', err.message);
     const mockSessionId = 'local_session_' + Date.now();
-    const initialGreeting = `Good morning and welcome to your simulated ${interviewStage} for the ${targetRole} position at The TaxMan's Capital. I will be conducting your interview today. Please answer each question naturally and clearly. To begin, could you please introduce yourself, state your academic background, and explain why you chose to pursue a career in this field?`;
+    const questions = getQuestionsForInterview({
+      targetRole,
+      interviewStage,
+      difficulty,
+      interviewType,
+      count: questionCount,
+      isBig4
+    });
+
+    const q1 = questions[0]?.question || `To begin your simulated ${interviewStage}, please introduce yourself, state your academic background, and share why you chose CA / ACCA.`;
+    const initialGreeting = `Good morning and welcome to your simulated ${interviewStage} for the ${targetRole} position at The TaxMan's Capital. I will be leading your interview today. Let's begin: ${q1}`;
+
+    const speaker = panelMode
+      ? { role: 'Senior Audit Manager (Technical)', name: 'Asim Raza (Audit Manager)' }
+      : { role: 'Senior Interviewer', name: 'Interview Panelist' };
 
     return {
       sessionId: mockSessionId,
@@ -39,12 +58,16 @@ export const startInterviewSession = async ({
         interviewType,
         questionCount,
         duration,
-        transcript: [{ speaker: 'ai', text: initialGreeting, timestamp: new Date() }]
+        panelMode,
+        bankQuestions: questions,
+        transcript: [{ speaker: 'ai', text: initialGreeting, speakerRole: speaker.role, speakerName: speaker.name, timestamp: new Date() }]
       },
       greeting: initialGreeting,
       questionNumber: 1,
       totalQuestions: questionCount,
-      questionText: initialGreeting
+      questionText: initialGreeting,
+      currentSpeaker: speaker,
+      bankQuestions: questions
     };
   }
 };
@@ -53,7 +76,11 @@ export const sendInterviewAnswer = async ({
   sessionId,
   candidateAnswer,
   metrics = {},
-  duration = 0
+  duration = 0,
+  currentQuestionIndex = 0,
+  bankQuestions = [],
+  panelMode = false,
+  totalQuestions = 5
 }) => {
   try {
     const res = await api.post(`/interviews/${sessionId}/message`, {
@@ -65,29 +92,52 @@ export const sendInterviewAnswer = async ({
   } catch (err) {
     console.warn('[InterviewService] API answer turn fallback:', err.message);
     const words = (candidateAnswer || '').trim().split(/\s+/).filter(Boolean).length;
-    const score = words > 20 ? 82 : words > 10 ? 70 : 55;
+    const score = words > 25 ? 84 : words > 10 ? 72 : 55;
+    const nextIdx = currentQuestionIndex + 1;
+    const isComplete = nextIdx >= totalQuestions;
+    const nextQ = bankQuestions[nextIdx]?.question || 'Can you share an example of how you apply professional skepticism in practical scenarios?';
+
+    const isHR = nextIdx % 2 !== 0;
+    const speaker = panelMode
+      ? isHR
+        ? { role: 'HR Manager (Behavioral & Ethics)', name: 'Sana Malik (Talent Lead)' }
+        : { role: 'Senior Audit Manager (Technical)', name: 'Asim Raza (Audit Manager)' }
+      : { role: 'Senior Interviewer', name: 'Interview Panelist' };
+
+    const reply = isComplete
+      ? 'Thank you very much for your responses. That concludes the interview. Your partner scorecard is now being compiled.'
+      : `Thank you for that response. ${panelMode ? `${speaker.name} speaking.` : ''} Let's proceed: ${nextQ}`;
 
     return {
       turnEvaluation: {
+        questionNumber: currentQuestionIndex + 1,
+        question: bankQuestions[currentQuestionIndex]?.question || 'Interview Question',
+        candidateAnswer,
         score,
         technicalAccuracy: score,
-        relevance: score + 5,
-        clarity: score,
-        completeness: score - 5,
+        relevance: Math.min(100, score + 4),
+        clarity: Math.min(100, score + 2),
+        completeness: Math.max(50, score - 4),
         feedback: words > 15
-          ? 'Good articulate answer covering relevant principles.'
-          : 'Answer was concise. Consider referencing relevant IFRS / ISA standards.',
-        idealAnswerPoints: ['Identification of core standard', 'Impact on audit procedures', 'Professional skepticism']
+          ? 'Good articulate answer demonstrating foundational knowledge.'
+          : 'Answer was concise. Elaborate on practical procedures and standard references for higher marks.',
+        idealAnswerPoints: bankQuestions[currentQuestionIndex]?.idealAnswerPoints || [
+          'Direct identification of standard principles',
+          'Application to audit/accounting mechanics'
+        ]
       },
-      interviewerReply: 'Thank you for your response. Let us proceed to the next question: Can you explain how you would evaluate internal control risks when audit evidence is inconsistent?',
-      isInterviewComplete: false
+      interviewerReply: reply,
+      currentSpeaker: speaker,
+      currentQuestionIndex: nextIdx,
+      totalQuestions,
+      isInterviewComplete: isComplete
     };
   }
 };
 
-export const completeInterviewSession = async (sessionId) => {
+export const completeInterviewSession = async (sessionId, metrics = {}) => {
   try {
-    const res = await api.post(`/interviews/${sessionId}/complete`, {});
+    const res = await api.post(`/interviews/${sessionId}/complete`, { metrics });
     return res.data || res;
   } catch (err) {
     console.warn('[InterviewService] API complete fallback:', err.message);
@@ -95,16 +145,15 @@ export const completeInterviewSession = async (sessionId) => {
       evaluation: {
         overallScore: 84,
         technicalKnowledge: 86,
+        answerQuality: 84,
         communication: 82,
-        answerRelevance: 85,
-        clarity: 80,
-        problemSolving: 84,
+        confidenceIndicator: 80,
         professionalism: 90,
-        confidenceIndicator: 85,
+        interviewPresence: 85,
         strengths: [
           'Strong conceptual grasp of IFRS and ISA audit standards',
           'Clear, articulate response delivery with good composure',
-          'Demonstrated ethical awareness under the ICAP Code of Ethics'
+          'Demonstrated ethical awareness under the ICAP / ACCA Code of Ethics'
         ],
         weaknesses: [
           'Could cite specific standard paragraph numbers in scenario answers',
@@ -119,6 +168,18 @@ export const completeInterviewSession = async (sessionId) => {
           'Substantive audit testing of complex financial instruments',
           'Deferred taxation adjustments under IAS 12'
         ],
+        speechAnalytics: {
+          avgWpm: Number(metrics.avgWpm) || 132,
+          fillerWordsCount: Number(metrics.totalFillers) || 2,
+          speakingPaceFeedback: 'Speaking pace was well modulated and natural.'
+        },
+        cameraAnalytics: {
+          cameraEngagement: Number(metrics.cameraEngagement) || 85,
+          postureStability: Number(metrics.postureStability) || 85,
+          presenceScore: Number(metrics.presenceScore) || 90,
+          behavioralFeedback: 'Candidate maintained attentive screen presence and steady posture.'
+        },
+        weakAreaTopics: ['Audit Risk Assessment', 'Deferred Taxation'],
         finalAssessment: 'Candidate demonstrated high professional aptitude, solid technical understanding, and strong problem-solving capabilities.',
         interviewSummary: 'Completed a comprehensive Big 4 simulated technical & behavioral round.',
         hiringRecommendation: 'Strong Candidate - Recommended for Induction'

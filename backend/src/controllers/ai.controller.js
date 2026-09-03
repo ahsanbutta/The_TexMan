@@ -9,15 +9,19 @@ import { asyncHandler } from '../utils/asyncHandler.js';
  * POST /api/ai/study-tutor
  */
 export const askStudyTutor = asyncHandler(async (req, res) => {
-  const { subject, query, conversationId } = req.body;
+  const { subject, query, message, history, mode, difficulty, conversationId } = req.body;
+  const userQuery = (query || message || '').trim();
 
-  if (!query) {
+  if (!userQuery) {
     throw new ApiError(400, 'Please provide your question or scenario for the AI Study Tutor.');
   }
 
   const aiAnswer = await AiService.getStudyTutorResponse({
-    subject: subject || 'FAR-1 (Financial Accounting)',
-    query
+    subject: subject || 'Financial Accounting & Reporting (CAF-1 / ACCA FR)',
+    query: userQuery,
+    history: Array.isArray(history) ? history : [],
+    mode: mode || 'normal',
+    difficulty: difficulty || 'Intermediate'
   });
 
   // If user is authenticated, save to conversation history
@@ -30,14 +34,14 @@ export const askStudyTutor = asyncHandler(async (req, res) => {
     if (!conversation) {
       conversation = await Conversation.create({
         user: req.user._id,
-        title: query.slice(0, 40) + '...',
+        title: userQuery.slice(0, 40) + '...',
         subject: subject || 'FAR-1',
         messages: []
       });
     }
 
     conversation.messages.push(
-      { sender: 'user', text: query },
+      { sender: 'user', text: userQuery },
       { sender: 'tutor', text: aiAnswer }
     );
     await conversation.save();

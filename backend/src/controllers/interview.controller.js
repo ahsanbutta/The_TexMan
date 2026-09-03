@@ -22,21 +22,24 @@ export const startInterview = asyncHandler(async (req, res) => {
     interviewType = 'Technical',
     questionCount = 5,
     duration = 15,
-    qualification
+    qualification,
+    panelMode = false
   } = req.body;
 
   const resolvedRole = targetRole || interviewRole || 'Audit Trainee (Articleship)';
   const resolvedStage = interviewStage || interviewRound || 'Manager Technical Round';
   const resolvedCount = Number(questionCount) || 5;
   const resolvedDuration = Number(duration) || 15;
+  const isPanel = Boolean(panelMode);
 
-  // Generate initial greeting & Q1 from Gemini Service
+  // Generate initial greeting & Q1 from Gemini Service grounded in question bank
   const initialData = await GeminiInterviewService.startInterviewSession({
     targetRole: resolvedRole,
     interviewStage: resolvedStage,
     difficulty,
     interviewType,
-    totalQuestions: resolvedCount
+    totalQuestions: resolvedCount,
+    panelMode: isPanel
   });
 
   const sessionData = {
@@ -49,6 +52,8 @@ export const startInterview = asyncHandler(async (req, res) => {
     interviewType,
     questionCount: resolvedCount,
     duration: resolvedDuration,
+    panelMode: isPanel,
+    bankQuestions: initialData.bankQuestions || [],
     qualification: qualification || req.user.qualification || 'CAF / ACCA',
     status: 'in_progress',
     startedAt: new Date(),
@@ -57,6 +62,8 @@ export const startInterview = asyncHandler(async (req, res) => {
       {
         speaker: 'ai',
         text: initialData.greeting,
+        speakerRole: initialData.currentSpeaker?.role || 'Senior Interviewer',
+        speakerName: initialData.currentSpeaker?.name || 'Interview Panelist',
         timestamp: new Date(),
         duration: 0
       }
@@ -66,7 +73,10 @@ export const startInterview = asyncHandler(async (req, res) => {
       avgWpm: 0,
       totalFillers: 0,
       totalSpeakingTime: 0,
-      totalDuration: 0
+      totalDuration: 0,
+      cameraEngagement: 85,
+      postureStability: 85,
+      presenceScore: 90
     }
   };
 
@@ -103,7 +113,9 @@ export const startInterview = asyncHandler(async (req, res) => {
       greeting: initialData.greeting,
       questionNumber: 1,
       totalQuestions: resolvedCount,
-      questionText: initialData.questionText
+      questionText: initialData.questionText,
+      currentSpeaker: initialData.currentSpeaker,
+      bankQuestions: initialData.bankQuestions
     },
     'Interview session initialized successfully'
   ).send(res);
@@ -168,7 +180,10 @@ export const submitAnswer = asyncHandler(async (req, res) => {
     avgWpm,
     totalFillers,
     totalSpeakingTime,
-    totalDuration: Math.round((Date.now() - new Date(session.startedAt).getTime()) / 1000)
+    totalDuration: Math.round((Date.now() - new Date(session.startedAt).getTime()) / 1000),
+    cameraEngagement: Number(metrics.cameraEngagement) || session.metrics?.cameraEngagement || 85,
+    postureStability: Number(metrics.postureStability) || session.metrics?.postureStability || 85,
+    presenceScore: Number(metrics.presenceScore) || session.metrics?.presenceScore || 90
   };
 
   // Process answer with Gemini AI Engine
@@ -181,7 +196,9 @@ export const submitAnswer = asyncHandler(async (req, res) => {
     currentQuestionIndex: session.currentQuestionIndex,
     currentQuestion: currentQuestionText,
     candidateAnswer: answerText,
-    conversationHistory: session.transcript
+    conversationHistory: session.transcript,
+    bankQuestions: session.bankQuestions,
+    panelMode: session.panelMode
   });
 
   // Store Turn Evaluation
@@ -192,6 +209,8 @@ export const submitAnswer = asyncHandler(async (req, res) => {
   session.transcript.push({
     speaker: 'ai',
     text: result.interviewerReply,
+    speakerRole: result.currentSpeaker?.role || 'Senior Interviewer',
+    speakerName: result.currentSpeaker?.name || 'Interview Panelist',
     timestamp: new Date(),
     duration: 0
   });
@@ -205,6 +224,7 @@ export const submitAnswer = asyncHandler(async (req, res) => {
     {
       turnEvaluation: result.turnEvaluation,
       interviewerReply: result.interviewerReply,
+      currentSpeaker: result.currentSpeaker,
       currentQuestionIndex: session.currentQuestionIndex,
       totalQuestions: session.questionCount,
       isInterviewComplete: result.isInterviewComplete || session.currentQuestionIndex >= session.questionCount,

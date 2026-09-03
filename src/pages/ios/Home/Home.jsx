@@ -22,8 +22,12 @@ import {
   FileCheck,
   Bookmark,
   Globe,
-  Sparkles
+  Sparkles,
+  Zap,
+  TrendingUp,
+  CheckCircle2
 } from 'lucide-react';
+import { AnimatedCounter, AnimatedSection, AnimatedCard, PageTransition, AntigravityCanvas } from '../../../components/motion/MotionSystem';
 import mentorImage from '../../../assets/mentor_portrait.png';
 import Jobs from '../Jobs/Jobs';
 import Counseling from '../career_support/career_support';
@@ -45,7 +49,7 @@ import {
   markAllNotificationsAsRead,
   deleteNotification
 } from '../../../services/notificationService';
-import { getProfiles, logoutUser, registerUser, loginUser } from '../../../services/authService';
+import { getProfiles, logoutUser, registerUser, loginUser, requireAuth } from '../../../services/authService';
 import { INITIAL_JOBS } from '../../../data/jobsData';
 
 export default function Home({ session, sessionLoading }) {
@@ -68,7 +72,7 @@ export default function Home({ session, sessionLoading }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   useEffect(() => {
-    getNotifications().then(setNotifications).catch(() => {});
+    getNotifications().then(setNotifications).catch(() => { });
   }, []);
 
   const handleMarkNotifRead = async (id) => {
@@ -106,6 +110,9 @@ export default function Home({ session, sessionLoading }) {
   }, [session]);
 
   const handleToggleSaveJob = (id) => {
+    if (!requireAuth('save or bookmark jobs to your profile')) {
+      return;
+    }
     setSavedJobs(prev => {
       const updated = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
       if (session?.user?.id) {
@@ -890,26 +897,74 @@ export default function Home({ session, sessionLoading }) {
                 />
               </div>
 
-              {/* Mobile Menu Button & Mobile Bell */}
-              <div className="lg:hidden flex items-center space-x-3.5 relative">
+              {/* Mobile Auth Actions & Menu Trigger */}
+              <div className="lg:hidden flex items-center space-x-2 sm:space-x-3 relative">
+                {isLoggedIn ? (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        if (isAdmin) {
+                          setActiveTab('AdminDashboard');
+                          window.location.hash = '#admin';
+                        } else {
+                          setUserDashboardTab('Overview');
+                          setActiveTab('UserDashboard');
+                          window.location.hash = '#dashboard';
+                        }
+                      }}
+                      className="px-2.5 py-1.5 bg-brandGreen hover:bg-brandGreen-dark text-white text-[11px] font-bold rounded-lg transition-colors shadow-sm whitespace-nowrap cursor-pointer"
+                    >
+                      {isAdmin ? 'Admin' : 'Dashboard'}
+                    </button>
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-bold flex items-center justify-center text-xs overflow-hidden border border-white/20">
+                      {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : avatarLetter}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    <button
+                      onClick={() => {
+                        setLoginStartFlipped(false);
+                        setActiveTab('Login');
+                        window.location.hash = '#login';
+                      }}
+                      className="px-2.5 py-1 border border-white/25 hover:border-brandGreen text-white text-xs font-semibold rounded-lg hover:bg-white/10 transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLoginStartFlipped(true);
+                        setActiveTab('Login');
+                        window.history.pushState(null, '', '#signup');
+                      }}
+                      className="px-2.5 py-1 bg-brandGreen hover:bg-brandGreen-dark text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer whitespace-nowrap"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+
                 <button
                   data-notification-trigger
                   onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                  className="relative p-2 text-gray-300 hover:text-white transition-colors"
+                  className="relative p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer"
                   title="Notifications"
                 >
-                  <Bell className="w-5.5 h-5.5" />
+                  <Bell className="w-5 h-5" />
                   {unreadNotifCount > 0 && (
-                    <span className="absolute top-1 right-1 w-4 h-4 bg-brandGreen text-white text-[9px] font-bold rounded-full border-2 border-navy flex items-center justify-center animate-pulse">
+                    <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-brandGreen text-white text-[8px] font-bold rounded-full border border-navy flex items-center justify-center animate-pulse">
                       {unreadNotifCount}
                     </span>
                   )}
                 </button>
+
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-1.5 text-gray-300 hover:text-white focus:outline-none"
+                  className="p-1.5 text-gray-300 hover:text-white focus:outline-none cursor-pointer"
+                  aria-label="Toggle Navigation Menu"
                 >
-                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                  {mobileMenuOpen ? <X className="w-6 h-6 text-brandGreen" /> : <Menu className="w-6 h-6" />}
                 </button>
 
                 {/* Mobile Notification Panel */}
@@ -931,7 +986,85 @@ export default function Home({ session, sessionLoading }) {
 
           {/* Mobile Navigation Menu */}
           {mobileMenuOpen && (
-            <div className="lg:hidden bg-navy-dark border-b border-white/10 py-4 px-6 space-y-4 animate-fadeIn max-h-[80vh] overflow-y-auto">
+            <div className="lg:hidden bg-navy-dark border-b border-white/10 py-4 px-5 space-y-4 animate-fadeIn max-h-[85vh] overflow-y-auto">
+
+              {/* Prominent Top Auth Section in Mobile Menu */}
+              <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
+                {isLoggedIn ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-black flex items-center justify-center text-sm shadow-md overflow-hidden">
+                        {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : avatarLetter}
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span className="text-white text-xs font-bold leading-tight">{username}</span>
+                        <span className="text-[10px] text-brandGreen font-semibold uppercase">{isAdmin ? 'Admin' : 'Student'}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          if (isAdmin) {
+                            setActiveTab('AdminDashboard');
+                            window.location.hash = '#admin';
+                          } else {
+                            setUserDashboardTab('Overview');
+                            setActiveTab('UserDashboard');
+                            window.location.hash = '#dashboard';
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                      >
+                        Dashboard
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await logoutUser();
+                          setIsLoggedIn(false);
+                          setMobileMenuOpen(false);
+                          setActiveTab('Home');
+                        }}
+                        className="px-2.5 py-1.5 border border-white/20 text-gray-300 hover:text-white text-xs font-semibold rounded-xl hover:bg-white/5 cursor-pointer"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Account Portal</span>
+                      <span className="text-[10px] text-brandGreen font-semibold">Join 15k+ Students</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setLoginStartFlipped(false);
+                          setActiveTab('Login');
+                          window.location.hash = '#login';
+                        }}
+                        className="py-2.5 px-3 border border-white/20 hover:border-brandGreen rounded-xl text-xs font-bold text-white text-center hover:bg-white/5 transition-colors cursor-pointer"
+                      >
+                        Log In
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setLoginStartFlipped(true);
+                          setActiveTab('Login');
+                          window.history.pushState(null, '', '#signup');
+                        }}
+                        className="py-2.5 px-3 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl text-xs font-bold text-center transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                      >
+                        Create Account
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Home Link */}
               <a
                 href="#"
@@ -1231,78 +1364,6 @@ export default function Home({ session, sessionLoading }) {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex flex-col space-y-2">
-                {isLoggedIn ? (
-                  <>
-                    <div className="flex items-center space-x-3 px-4 py-2.5 bg-white/5 rounded-xl mb-2">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-black flex items-center justify-center text-xs shadow-inner">
-                        {avatarLetter}
-                      </div>
-                      <span className="text-gray-300 text-sm font-bold">Hi, {username}</span>
-                    </div>
-                    {isAdmin ? (
-                      <button
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          setActiveTab('AdminDashboard');
-                          window.location.hash = '#admin';
-                        }}
-                        className="w-full text-center py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-bold rounded-lg text-sm transition-colors mb-2"
-                      >
-                        Admin Dashboard
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          setUserDashboardTab('Overview');
-                          setActiveTab('UserDashboard');
-                          window.location.hash = '#dashboard';
-                        }}
-                        className="w-full text-center py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-bold rounded-lg text-sm transition-colors mb-2"
-                      >
-                        My Dashboard
-                      </button>
-                    )}
-                    <button
-                      onClick={async () => {
-                        await logoutUser();
-                        setIsLoggedIn(false);
-                        setMobileMenuOpen(false);
-                        setActiveTab('Home');
-                      }}
-                      className="w-full text-center py-2.5 border border-white/20 rounded-lg text-sm font-medium text-white hover:bg-white/5 transition-colors"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setLoginStartFlipped(false);
-                        setActiveTab('Login');
-                        window.location.hash = '#login';
-                      }}
-                      className="w-full text-center py-2.5 border border-white/20 rounded-lg text-sm font-medium text-white hover:bg-white/5 transition-colors"
-                    >
-                      Login
-                    </button>
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setLoginStartFlipped(true);
-                        setActiveTab('Login');
-                        window.history.pushState(null, '', '#signup');
-                      }}
-                      className="w-full text-center py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Sign Up
-                    </button>
-                  </>
-                )}
-              </div>
             </div>
           )}
         </nav>
@@ -1385,14 +1446,13 @@ export default function Home({ session, sessionLoading }) {
                 </div>
                 <div className="space-y-3 pt-2">
                   <button
-                    onClick={async () => {
-                      await loginUser('admin@taxmancapital.com', 'AdminPassword123!');
-                      setIsAdmin(true);
-                      setActiveTab('AdminDashboard');
+                    onClick={() => {
+                      setActiveTab('Login');
+                      window.location.hash = '#login';
                     }}
                     className="w-full py-3 px-4 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs sm:text-sm rounded-2xl transition-all shadow-lg shadow-brandGreen/20 flex items-center justify-center space-x-2 cursor-pointer"
                   >
-                    <span>👑 Switch to Admin Account</span>
+                    <span>Log In as Administrator</span>
                   </button>
                   <button
                     onClick={() => {
@@ -1433,22 +1493,40 @@ export default function Home({ session, sessionLoading }) {
         ) : (
           <>
             {/* 2. Hero Section */}
-            <section className="skyline-bg bg-navy text-white pt-12 pb-36 relative">
+            <section className="skyline-bg bg-navy text-white pt-8 pb-20 sm:pt-10 sm:pb-24 relative overflow-hidden">
+              {/* Interactive Antigravity Physics Particle Layer */}
+              <AntigravityCanvas className="z-0 opacity-50" particleCount={22} />
+
+              {/* Ambient Background Glow Orbs */}
+              <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-brandGreen/8 rounded-full blur-[130px] pointer-events-none" />
+
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
 
                   {/* Hero Left Content */}
-                  <div className="lg:col-span-7 flex flex-col space-y-8 order-2 lg:order-1">
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+                  <div className="lg:col-span-7 flex flex-col space-y-5 order-2 lg:order-1 text-left">
+                    {/* Live Status Pill */}
+                    <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/5 border border-brandGreen/30 backdrop-blur-md w-fit shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-brandGreen animate-pulse" />
+                      <span className="text-[11px] sm:text-xs font-bold text-gray-200 tracking-wide">
+                        The Career Platform for CA & ACCA
+                      </span>
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.18] font-['Outfit',sans-serif]">
                       Helping CA & ACCA <br />
                       Students Build <br />
-                      <span className="text-brandGreen">Successful Careers</span>
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-brandGreen via-emerald-400 to-teal-300">
+                        Successful Careers
+                      </span>
                     </h1>
-                    <p className="text-lg sm:text-xl text-gray-300 max-w-xl font-normal leading-relaxed">
-                      Find jobs, inductions, free career guidance, resources and student communities across Pakistan.
+
+                    <p className="text-sm sm:text-base text-gray-300 max-w-xl font-normal leading-relaxed">
+                      Discover verified Big 4 inductions, corporate finance roles, real-time AI interview simulations, 47 ATS resume templates, and 25+ moderated student communities.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    {/* CTAs */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2.5 sm:space-y-0 sm:space-x-3.5 pt-1">
                       <a
                         href="#jobs"
                         onClick={(e) => {
@@ -1456,51 +1534,67 @@ export default function Home({ session, sessionLoading }) {
                           setActiveTab('Jobs');
                           window.location.hash = '#jobs';
                         }}
-                        className="flex items-center justify-center px-6 py-4 bg-brandGreen hover:bg-brandGreen-dark text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/25 group"
+                        className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-brandGreen to-emerald-500 hover:from-brandGreen-dark hover:to-emerald-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-200 shadow-md shadow-brandGreen/20 hover:scale-[1.02] active:scale-95 group cursor-pointer"
                       >
-                        <Briefcase className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                        Explore Jobs
+                        <Briefcase className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                        <span>Explore Opportunities</span>
                       </a>
                       <a
-                        href="#communities"
-                        className="flex items-center justify-center px-6 py-4 border border-white/30 hover:border-white hover:bg-white/5 text-white font-semibold rounded-xl transition-all duration-200"
+                        href="#careertools"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setActiveTab('Career Tools');
+                          window.location.hash = '#careertools';
+                        }}
+                        className="flex items-center justify-center px-5 py-3 border border-white/20 hover:border-brandGreen/40 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs sm:text-sm rounded-xl transition-all duration-200 backdrop-blur-md cursor-pointer group"
                       >
-                        <Users className="w-5 h-5 mr-2" />
-                        Join Community
+                        <Sparkles className="w-4 h-4 mr-2 text-brandGreen group-hover:rotate-12 transition-transform" />
+                        <span>CV Studio & AI Mock</span>
                       </a>
                     </div>
 
                     {/* Stacked Avatars and Guided Students Count */}
-                    <div className="flex items-center space-x-4 pt-4">
-                      <div className="flex -space-x-3 overflow-hidden">
-                        <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-tr from-amber-400 to-orange-500 text-xs font-bold text-white shadow-md">AS</div>
-                        <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-tr from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-md">KB</div>
-                        <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-tr from-emerald-400 to-teal-500 text-xs font-bold text-white shadow-md">ZA</div>
-                        <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-tr from-pink-500 to-rose-600 text-xs font-bold text-white shadow-md">MN</div>
+                    <div className="flex items-center space-x-3.5 pt-2 border-t border-white/10">
+                      <div className="flex -space-x-2 overflow-hidden">
+                        <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-amber-400 to-orange-500 text-[10px] font-bold text-white shadow-sm">AS</div>
+                        <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-blue-500 to-indigo-600 text-[10px] font-bold text-white shadow-sm">KB</div>
+                        <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-emerald-400 to-teal-500 text-[10px] font-bold text-white shadow-md">ZA</div>
+                        <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-pink-500 to-rose-600 text-[10px] font-bold text-white shadow-sm">MN</div>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-300">
-                          <strong className="text-brandGreen text-base">10,000+</strong> CA Students Guided
+                        <span className="text-xs sm:text-sm font-semibold text-gray-200">
+                          <AnimatedCounter target={10000} suffix="+" className="text-brandGreen text-sm sm:text-base font-extrabold mr-1" />
+                          CA & ACCA Trainees Mentored
                         </span>
-                        <div className="flex items-center space-x-1">
-                          <span className="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
-                          <span className="text-[11px] text-gray-400">Across Lahore, Karachi, Islamabad & globally</span>
+                        <div className="flex items-center space-x-1.5 text-[10px] sm:text-[11px] text-gray-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brandGreen" />
+                          <span>Across PwC, EY, KPMG, BDO, Deloitte & MNCs</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Hero Right Graphic Card (Saboor Ahmad Profile) */}
-                  <div className="lg:col-span-5 flex flex-col items-center justify-center relative translate-y-0 lg:-translate-y-24 mt-6 lg:mt-0 order-1 lg:order-2">
+                  <div className="lg:col-span-5 flex flex-col items-center justify-center relative mt-4 lg:mt-0 order-1 lg:order-2">
+
+                    {/* Floating Tech Pill: Top Right */}
+                    <div className="absolute -top-2 right-2 sm:right-6 z-30 hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-black/60 backdrop-blur-xl border border-brandGreen/30 rounded-xl shadow-lg animate-float-subtle">
+                      <Sparkles className="w-3.5 h-3.5 text-brandGreen" />
+                      <div className="text-left leading-tight">
+                        <span className="text-[9px] text-gray-400 block font-semibold">AI Interview Studio</span>
+                        <span className="text-[11px] font-bold text-emerald-300">Live Voice & Video</span>
+                      </div>
+                    </div>
+
                     {/* Profile Graphic Wrapper */}
-                    <div className="relative w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 flex items-center justify-center">
+                    <div className="relative w-60 h-60 sm:w-68 sm:h-68 lg:w-76 lg:h-76 flex items-center justify-center">
                       {/* Rotating outer dashed border */}
-                      <div className="absolute inset-0 rounded-full border-4 border-dashed border-brandGreen/40 flex items-center justify-center p-3 animate-[spin_60s_linear_infinite] pointer-events-none">
+                      <div className="absolute inset-0 rounded-full border-3 border-dashed border-brandGreen/40 flex items-center justify-center p-2.5 animate-[spin_60s_linear_infinite] pointer-events-none">
                         <div className="w-full h-full rounded-full border-2 border-brandGreen bg-navy-dark overflow-hidden pointer-events-auto"></div>
                       </div>
 
                       {/* Portrait Image container over the border */}
-                      <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 rounded-full overflow-hidden border-4 border-brandGreen shadow-2xl flex items-center justify-center bg-navy-dark hover:scale-105 transition-transform duration-300">
+                      <div className="relative w-52 h-52 sm:w-60 sm:h-60 lg:w-68 lg:h-68 rounded-full overflow-hidden border-3 border-brandGreen shadow-xl flex items-center justify-center bg-navy-dark hover:scale-105 transition-transform duration-300">
                         <img
                           src={mentorImage}
                           alt="Saboor Ahmad - Mentor Profile"
@@ -1509,19 +1603,19 @@ export default function Home({ session, sessionLoading }) {
                       </div>
                     </div>
 
-                    {/* Mentor Quote Card - Repositioned to the right side with bottom offset */}
-                    <div className="relative mt-8 w-full max-w-sm mx-auto lg:absolute lg:bottom-0 lg:right-12 lg:translate-y-[105%] lg:mt-0 glass-panel text-white p-5 rounded-2xl shadow-2xl border border-white/10 hover:border-brandGreen/40 transition-colors duration-300">
-                      <div className="flex items-start space-x-3">
-                        <div className="p-2 bg-brandGreen/10 rounded-lg flex-shrink-0">
-                          <MessageSquare className="w-5 h-5 text-brandGreen" />
+                    {/* Mentor Quote Card */}
+                    <div className="relative mt-4 w-full max-w-sm mx-auto glass-panel text-white p-3.5 sm:p-4 rounded-2xl shadow-xl border border-white/10 hover:border-brandGreen/40 transition-colors duration-300 text-left">
+                      <div className="flex items-start space-x-2.5">
+                        <div className="p-1.5 bg-brandGreen/10 rounded-lg flex-shrink-0">
+                          <MessageSquare className="w-4 h-4 text-brandGreen" />
                         </div>
-                        <div className="flex flex-col space-y-2">
-                          <p className="text-xs italic text-gray-300 leading-relaxed">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-[11px] sm:text-xs italic text-gray-300 leading-relaxed">
                             "My mission is to guide CA/ACCA students, help them build their careers and connect them with the right opportunities."
                           </p>
-                          <div className="border-t border-white/10 pt-2 flex flex-col">
-                            <span className="text-3xl font-signature text-brandGreen tracking-wide select-none leading-none pt-1">Saboor Ahmad</span>
-                            <span className="text-[10px] text-gray-400 mt-1">CA & ACCA | Career Counselor & Mentor</span>
+                          <div className="border-t border-white/10 pt-1.5 flex flex-col">
+                            <span className="text-2xl font-signature text-brandGreen tracking-wide select-none leading-none pt-0.5">Saboor Ahmad</span>
+                            <span className="text-[9px] text-gray-400 mt-0.5 font-semibold">CA & ACCA | Career Counselor & Mentor</span>
                           </div>
                         </div>
                       </div>
@@ -1533,24 +1627,49 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 3. Floating Stats Bar Section */}
-            <section className="relative -mt-16 z-20 px-4 sm:px-6 lg:px-8 reveal-on-scroll">
+            <section className="relative -mt-10 sm:-mt-12 z-20 px-4 sm:px-6 lg:px-8">
               <div className="max-w-7xl mx-auto">
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-                    {stats.map((stat, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-center space-x-4 py-4 md:py-0 md:px-6 first:pl-0 ${idx > 0 ? 'pt-6 md:pt-0' : ''}`}
-                      >
-                        <div className={`p-4 rounded-xl ${stat.bg} flex-shrink-0`}>
-                          {stat.icon}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-2xl sm:text-3xl font-extrabold text-navy font-sans leading-none">{stat.value}</span>
-                          <span className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">{stat.label}</span>
-                        </div>
+                <div className="bg-[#021B3A] rounded-3xl shadow-2xl border border-white/10 p-6 sm:p-8 backdrop-blur-xl">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-white/10 text-left">
+                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6 first:pl-0">
+                      <div className="p-4 rounded-2xl bg-emerald-500/15 border border-brandGreen/30 flex-shrink-0 text-brandGreen">
+                        <Users className="w-6 h-6" />
                       </div>
-                    ))}
+                      <div className="flex flex-col">
+                        <AnimatedCounter target={15000} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">Students Guided</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6">
+                      <div className="p-4 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex-shrink-0 text-blue-400">
+                        <Briefcase className="w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col">
+                        <AnimatedCounter target={8500} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">Opportunities Shared</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6">
+                      <div className="p-4 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex-shrink-0 text-purple-400">
+                        <MessageSquare className="w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col">
+                        <AnimatedCounter target={25} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">WhatsApp Communities</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6">
+                      <div className="p-4 rounded-2xl bg-emerald-500/15 border border-brandGreen/30 flex-shrink-0 text-emerald-400">
+                        <Globe className="w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col">
+                        <AnimatedCounter target={100} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">Top Firms Connected</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1736,116 +1855,107 @@ export default function Home({ session, sessionLoading }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {/* Card 1 */}
-                  <div className="bg-bgLight rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col justify-between premium-card-hover">
-                    <div>
-                      {/* Thumbnail Area */}
-                      <div className="relative aspect-video bg-navy-dark flex items-center justify-center overflow-hidden group/thumb">
-                        <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent z-10"></div>
-                        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,rgba(0,200,83,0.3),transparent)] group-hover/thumb:scale-110 transition-transform duration-500"></div>
-                        <div className="z-20 w-14 h-14 rounded-full bg-brandGreen/90 hover:bg-brandGreen text-white flex items-center justify-center shadow-lg cursor-pointer transform group-hover/thumb:scale-110 transition-all duration-300">
-                          <svg className="w-6 h-6 fill-current ml-1" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
+                  {[
+                    {
+                      id: 'ep-1',
+                      youtubeId: 'L_LUpnjgPso',
+                      tag: 'Interview Series',
+                      title: 'ICAP Firm Induction Guide 2026: QCR Rated vs Non-QCR Firms',
+                      desc: 'An in-depth session discussing what audit partners look for in CA & ACCA candidates during final round interviews.',
+                      duration: '42:15',
+                      author: 'Saboor Ahmad',
+                      authorInitials: 'SA',
+                      authorBg: 'bg-brandGreen'
+                    },
+                    {
+                      id: 'ep-2',
+                      youtubeId: '5qap5aO4i9A',
+                      tag: 'Test Prep',
+                      title: 'A.F. Ferguson & Co. (PwC) Test Preparation & Written Test Guidelines',
+                      desc: 'Detailed breakdown of AFF induction test syllabus, English & Accounting sections, sample questions, and strategies.',
+                      duration: '35:20',
+                      author: 'Saboor Ahmad',
+                      authorInitials: 'SA',
+                      authorBg: 'bg-brandGreen'
+                    },
+                    {
+                      id: 'ep-3',
+                      youtubeId: '3JZ_D3ELwOQ',
+                      tag: 'International Jobs',
+                      title: 'Securing Middle East Jobs for Qualified Professionals (Saudi Arabia & Gulf)',
+                      desc: 'Step-by-step roadmap for qualified professionals to secure roles in UAE, Saudi Arabia, and other Gulf regions.',
+                      duration: '48:10',
+                      author: 'Saboor Ahmad',
+                      authorInitials: 'SA',
+                      authorBg: 'bg-brandGreen'
+                    }
+                  ].map((video) => (
+                    <div
+                      key={video.id}
+                      className="bg-bgLight rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col justify-between premium-card-hover"
+                    >
+                      <div>
+                        {/* Direct YouTube Video Thumbnail Area */}
+                        <a
+                          href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative aspect-video bg-navy-dark flex items-center justify-center overflow-hidden group/thumb block cursor-pointer"
+                          title={`Watch "${video.title}" on YouTube`}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent z-10 pointer-events-none"></div>
+                          <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,rgba(0,200,83,0.3),transparent)] group-hover/thumb:scale-110 transition-transform duration-500 pointer-events-none"></div>
+                          <div className="z-20 w-14 h-14 rounded-full bg-brandGreen/90 group-hover/thumb:bg-brandGreen text-white flex items-center justify-center shadow-lg transform group-hover/thumb:scale-110 transition-all duration-300">
+                            <svg className="w-6 h-6 fill-current ml-1" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                          <span className="absolute bottom-3 right-3 bg-navy-dark/90 text-white text-[10px] font-bold px-2 py-0.5 rounded z-20">
+                            {video.duration}
+                          </span>
+                        </a>
+
+                        {/* Body */}
+                        <div className="p-6">
+                          <span className="text-brandGreen text-[10px] font-extrabold uppercase tracking-widest">
+                            {video.tag}
+                          </span>
+                          <a
+                            href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-lg font-extrabold text-navy mt-2 leading-snug hover:text-brandGreen transition-colors block"
+                          >
+                            {video.title}
+                          </a>
+                          <p className="text-gray-500 text-xs mt-3 leading-relaxed">
+                            {video.desc}
+                          </p>
                         </div>
-                        <span className="absolute bottom-3 right-3 bg-navy-dark/80 text-white text-[10px] font-bold px-2 py-0.5 rounded z-20">45:12</span>
                       </div>
 
-                      {/* Body */}
-                      <div className="p-6">
-                        <span className="text-brandGreen text-[10px] font-extrabold uppercase tracking-widest">Interview Series</span>
-                        <h3 className="text-lg font-extrabold text-navy mt-2 leading-snug">Big 4 Partner Interview Secrets & Preparation</h3>
-                        <p className="text-gray-500 text-xs mt-3 leading-relaxed">
-                          An in-depth session discussing what audit partners look for in CA & ACCA candidates during final round interviews.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="px-6 pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-brandGreen text-white font-bold flex items-center justify-center text-xs">SA</div>
-                        <span className="text-[11px] font-semibold text-gray-600">Saboor Ahmad</span>
-                      </div>
-                      <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="px-3.5 py-1.5 bg-navy hover:bg-brandGreen text-white hover:text-white rounded-lg text-xs font-bold transition-all duration-300">
-                        Watch Now
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Card 2 */}
-                  <div className="bg-bgLight rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col justify-between premium-card-hover">
-                    <div>
-                      {/* Thumbnail Area */}
-                      <div className="relative aspect-video bg-navy-dark flex items-center justify-center overflow-hidden group/thumb">
-                        <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent z-10"></div>
-                        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,rgba(0,200,83,0.3),transparent)] group-hover/thumb:scale-110 transition-transform duration-500"></div>
-                        <div className="z-20 w-14 h-14 rounded-full bg-brandGreen/90 hover:bg-brandGreen text-white flex items-center justify-center shadow-lg cursor-pointer transform group-hover/thumb:scale-110 transition-all duration-300">
-                          <svg className="w-6 h-6 fill-current ml-1" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
+                      {/* Footer */}
+                      <div className="px-6 pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-8 h-8 rounded-full ${video.authorBg} text-white font-bold flex items-center justify-center text-xs shadow-sm`}>
+                            {video.authorInitials}
+                          </div>
+                          <span className="text-[11px] font-semibold text-gray-600">{video.author}</span>
                         </div>
-                        <span className="absolute bottom-3 right-3 bg-navy-dark/80 text-white text-[10px] font-bold px-2 py-0.5 rounded z-20">32:45</span>
-                      </div>
-
-                      {/* Body */}
-                      <div className="p-6">
-                        <span className="text-brandGreen text-[10px] font-extrabold uppercase tracking-widest">Career Guidance</span>
-                        <h3 className="text-lg font-extrabold text-navy mt-2 leading-snug">CA vs ACCA: Corporate Scope & Salary Packages</h3>
-                        <p className="text-gray-500 text-xs mt-3 leading-relaxed">
-                          A detailed comparison of qualifications, training structures, and job scopes inside and outside Pakistan.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="px-6 pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">US</div>
-                        <span className="text-[11px] font-semibold text-gray-600">Usman Saleem</span>
-                      </div>
-                      <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="px-3.5 py-1.5 bg-navy hover:bg-brandGreen text-white hover:text-white rounded-lg text-xs font-bold transition-all duration-300">
-                        Watch Now
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Card 3 */}
-                  <div className="bg-bgLight rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col justify-between premium-card-hover">
-                    <div>
-                      {/* Thumbnail Area */}
-                      <div className="relative aspect-video bg-navy-dark flex items-center justify-center overflow-hidden group/thumb">
-                        <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent z-10"></div>
-                        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,rgba(0,200,83,0.3),transparent)] group-hover/thumb:scale-110 transition-transform duration-500"></div>
-                        <div className="z-20 w-14 h-14 rounded-full bg-brandGreen/90 hover:bg-brandGreen text-white flex items-center justify-center shadow-lg cursor-pointer transform group-hover/thumb:scale-110 transition-all duration-300">
-                          <svg className="w-6 h-6 fill-current ml-1" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
+                        <a
+                          href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-1.5 bg-navy hover:bg-brandGreen text-white rounded-lg text-xs font-bold transition-all duration-300 flex items-center space-x-1"
+                        >
+                          <span>Watch Now</span>
+                          <svg className="w-3.5 h-3.5 fill-current ml-0.5" viewBox="0 0 24 24">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                           </svg>
-                        </div>
-                        <span className="absolute bottom-3 right-3 bg-navy-dark/80 text-white text-[10px] font-bold px-2 py-0.5 rounded z-20">55:18</span>
-                      </div>
-
-                      {/* Body */}
-                      <div className="p-6">
-                        <span className="text-brandGreen text-[10px] font-extrabold uppercase tracking-widest">International Jobs</span>
-                        <h3 className="text-lg font-extrabold text-navy mt-2 leading-snug">Securing Middle East Jobs for Qualified Professionals</h3>
-                        <p className="text-gray-500 text-xs mt-3 leading-relaxed">
-                          Step-by-step roadmap for qualified professionals to secure roles in UAE, Saudi Arabia, and other Gulf regions.
-                        </p>
+                        </a>
                       </div>
                     </div>
-
-                    {/* Footer */}
-                    <div className="px-6 pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-brandGreen text-white font-bold flex items-center justify-center text-xs">SA</div>
-                        <span className="text-[11px] font-semibold text-gray-600">Saboor Ahmad</span>
-                      </div>
-                      <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="px-3.5 py-1.5 bg-navy hover:bg-brandGreen text-white hover:text-white rounded-lg text-xs font-bold transition-all duration-300">
-                        Watch Now
-                      </a>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </section>
@@ -1881,7 +1991,10 @@ export default function Home({ session, sessionLoading }) {
                             </div>
                             <p className="text-xs text-gray-400 leading-relaxed">{comm.desc}</p>
                             <button
-                              onClick={() => handleJoinCommunity(comm.id)}
+                              onClick={() => {
+                                if (!requireAuth('join student community rooms')) return;
+                                handleJoinCommunity(comm.id);
+                              }}
                               className="mt-4 flex items-center text-xs font-semibold text-brandGreen hover:underline cursor-pointer"
                             >
                               Join Room <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
@@ -1922,8 +2035,11 @@ export default function Home({ session, sessionLoading }) {
                               </div>
                             </div>
                             <button
-                              onClick={() => alert(`Downloading ${res.title}...`)}
-                              className="px-4 py-2 bg-gray-50 hover:bg-brandGreen hover:text-white border border-gray-200 hover:border-brandGreen rounded-lg text-xs font-semibold text-navy transition-all duration-200"
+                              onClick={() => {
+                                if (!requireAuth('download study resources')) return;
+                                alert(`Downloading ${res.title}... File is being prepared.`);
+                              }}
+                              className="px-4 py-2 bg-gray-50 hover:bg-brandGreen hover:text-white border border-gray-200 hover:border-brandGreen rounded-lg text-xs font-semibold text-navy transition-all duration-200 cursor-pointer"
                             >
                               Download
                             </button>

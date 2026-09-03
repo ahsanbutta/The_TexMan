@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { requireAuth } from '../../../services/authService';
 import {
   Play,
   Headphones,
@@ -45,6 +46,9 @@ export default function Podcasts() {
   const toggleBookmark = (id, e) => {
     e?.preventDefault();
     e?.stopPropagation();
+    if (!requireAuth('save videos to your watch later list')) {
+      return;
+    }
     if (bookmarkedIds.includes(id)) {
       setBookmarkedIds(prev => prev.filter(item => item !== id));
       showToast('Removed from saved list');
@@ -57,6 +61,9 @@ export default function Podcasts() {
   const toggleLike = (id, e) => {
     e?.preventDefault();
     e?.stopPropagation();
+    if (!requireAuth('like video episodes')) {
+      return;
+    }
     if (likedIds.includes(id)) {
       setLikedIds(prev => prev.filter(item => item !== id));
     } else {

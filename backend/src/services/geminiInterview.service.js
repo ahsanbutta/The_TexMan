@@ -1,20 +1,21 @@
 import { GoogleGenAI } from '@google/genai';
+import { QUESTION_BANK, getQuestionsForInterview } from '../data/questionBank.js';
 
 /**
  * Gemini AI Interview Service for The TaxMan's Capital
- * Production-grade CA & ACCA interview engine supporting:
- * - Real-time conversational context & adaptive phase progression
- * - Dynamic question generation (Technical, Scenario-based, Behavioral, Partner)
- * - Real-time turn evaluation & scoring
- * - Comprehensive final scorecard generation (0-100 scale)
- * - Safe JSON extraction & resilient domain fallback
+ * Realistic CA & ACCA Physical Interview Simulator Engine supporting:
+ * - 324-question structured bank extraction from CA_Firms_FAQ_Interview.html
+ * - Single Interviewer & Two-Agent Panel Modes (Senior Audit Manager & HR Manager)
+ * - Conversational context & adaptive follow-up probing
+ * - Real-time turn evaluation with standard ideal answer points
+ * - Non-invasive speech and camera behavioral metric incorporation
+ * - Comprehensive 0-100 Big 4 Partner evaluation scorecard
  */
 
 const getApiKey = () => {
   return process.env.GEMINI_API_KEY || process.env.AI_API_KEY || '';
 };
 
-// Initialize GenAI client safely
 let genAIClient = null;
 const getGenAI = () => {
   const apiKey = getApiKey();
@@ -25,23 +26,19 @@ const getGenAI = () => {
   return genAIClient;
 };
 
-// Clean and safely parse JSON from AI responses (handles codeblocks, backticks, extra text)
 const cleanAndParseJson = (rawText, fallbackObj) => {
   if (!rawText) return fallbackObj;
   try {
     let text = rawText.trim();
-    // Remove markdown code blocks ```json ... ```
     if (text.includes('```')) {
       const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (match && match[1]) {
         text = match[1].trim();
       }
     }
-    // Attempt standard JSON parse
     return JSON.parse(text);
   } catch (err) {
     try {
-      // Find first '{' and last '}'
       const firstBrace = rawText.indexOf('{');
       const lastBrace = rawText.lastIndexOf('}');
       if (firstBrace !== -1 && lastBrace > firstBrace) {
@@ -49,7 +46,7 @@ const cleanAndParseJson = (rawText, fallbackObj) => {
         return JSON.parse(jsonSubstring);
       }
     } catch (innerErr) {
-      console.warn('[GeminiInterviewService] JSON extraction failed, using fallback:', innerErr.message);
+      console.warn('[GeminiInterviewService] JSON extraction fallback:', innerErr.message);
     }
     return fallbackObj;
   }
@@ -57,92 +54,132 @@ const cleanAndParseJson = (rawText, fallbackObj) => {
 
 export class GeminiInterviewService {
   /**
-   * System Prompt Generator tailored to CA/ACCA roles and Big 4 style standards
+   * Builds system prompt grounded in CA/ACCA standards and structured question context
    */
-  static buildSystemPrompt({ targetRole, interviewStage, difficulty, interviewType, totalQuestions }) {
-    return `You are an experienced Senior Audit Manager / Partner conducting a professional Big 4-style simulated interview for "The TaxMan's Capital" — a career platform for CA (ICAP) & ACCA aspirants.
+  static buildSystemPrompt({
+    targetRole = 'Audit Trainee (Articleship)',
+    interviewStage = 'Manager Technical Round',
+    difficulty = 'Intermediate',
+    interviewType = 'Technical',
+    totalQuestions = 5,
+    panelMode = false,
+    currentSpeakerRole = 'Senior Audit Manager (Technical)'
+  }) {
+    const isPanel = Boolean(panelMode);
 
-Candidate Context:
-- Target Role: ${targetRole || 'Audit Trainee (Articleship)'}
-- Interview Stage: ${interviewStage || 'Manager Technical Round'}
-- Difficulty Level: ${difficulty || 'Intermediate'}
-- Interview Type: ${interviewType || 'Technical'}
-- Total Questions Target: ${totalQuestions || 5}
+    return `You are conducting a realistic CA (ICAP) / ACCA simulated physical interview for "The TaxMan's Capital".
 
-Behavioral & Tone Guidelines:
-1. Professional, calm, respectful, intelligent, adaptive, challenging, concise, and conversational.
-2. DO NOT behave like a generic chatbot. Avoid constantly saying "Great answer!", "Awesome!", or excessive flattery.
-3. Acknowledge candidate responses concisely and naturally (e.g. "Good. Let's take that one step further", "Understood. Now let's explore...", "You mentioned materiality; how does that apply when...").
-4. Adapt intelligently: If the candidate is technically strong, elevate the complexity (e.g., ISA 315/330, IFRS 15/16, IAS 36, fraud risk). If incomplete or incorrect, ask targeted probing or clarifying questions.
-5. Emphasize CA/ACCA standards (IFRS, ISA, ICAP Code of Ethics, FBR tax regulations, professional skepticism, internal controls).
-6. Progress naturally through interview phases:
-   - Phase 1: Professional greeting & introduction
-   - Phase 2: Academic background & career motivation
-   - Phase 3: Core technical questions
-   - Phase 4: Practical scenario / judgment question
-   - Phase 5: Probing / follow-up question
-   - Phase 6: Ethics & professional skepticism
-   - Phase 7: Professional conclusion
-7. Keep each spoken interviewer utterance concise (2-4 sentences max) for clear speech delivery.`;
+Role & Candidate Context:
+- Target Role: ${targetRole}
+- Interview Stage: ${interviewStage}
+- Difficulty: ${difficulty}
+- Interview Type: ${interviewType}
+- Target Question Count: ${totalQuestions}
+- Panel Mode: ${isPanel ? 'ACTIVE (Two-Agent Interview Panel)' : 'Single Interviewer Mode'}
+- Current Interviewer Identity: ${currentSpeakerRole}
+
+Interviewer Personas:
+1. Senior Audit Manager / Technical Partner: Sharp, professional, evaluates technical accuracy under IFRS/ISA/Tax laws, asks practical audit scenarios, probing follow-ups, and tests professional skepticism.
+2. HR & Behavioral Lead: Observant, professional, evaluates communication, teamwork, pressure handling, ethical dilemmas, and motivation using STAR principles.
+
+Behavioral Guidelines:
+1. Professional, calm, respectful, corporate, conversational, and direct.
+2. Avoid generic chatbot greetings ("Great job!", "Awesome!"). Acknowledge answers concisely before moving forward.
+3. Emphasize standard CA/ACCA frameworks: IFRS (IFRS 15, 16, 9, IAS 36, 12, 1, 2), ISA (ISA 315, 330, 500, 570, 700, 240), Income Tax Ordinance 2001, Sales Tax Act, Companies Act 2017, and the ICAP/IESBA Code of Ethics.
+4. Keep spoken interviewer dialogue natural and concise (2-3 sentences max) for clear speech delivery.`;
   }
 
   /**
-   * Generate Initial Greeting & Question 1
+   * Start Interview Session with grounded greeting and Question 1
    */
-  static async startInterviewSession({ targetRole, interviewStage, difficulty, interviewType, totalQuestions }) {
-    const ai = getGenAI();
-    const systemPrompt = this.buildSystemPrompt({ targetRole, interviewStage, difficulty, interviewType, totalQuestions });
+  static async startInterviewSession({
+    targetRole = 'Audit Trainee (Articleship)',
+    interviewStage = 'Manager Technical Round',
+    difficulty = 'Intermediate',
+    interviewType = 'Technical',
+    totalQuestions = 5,
+    panelMode = false
+  }) {
+    const selectedBankQuestions = getQuestionsForInterview({
+      targetRole,
+      interviewStage,
+      difficulty,
+      interviewType,
+      count: totalQuestions
+    });
 
+    const q1 = selectedBankQuestions[0] || {
+      question: 'To begin, please introduce yourself, state your academic background, and share why you chose to pursue CA / ACCA.',
+      idealAnswerPoints: ['Clear background overview', 'Motivation for professional qualification', 'Relevant achievements']
+    };
+
+    const speakerRole = panelMode ? 'Senior Audit Manager (Technical)' : 'Senior Interviewer';
+    const speakerName = panelMode ? 'Asim Raza (Audit Manager)' : 'Interview Panelist';
+
+    const ai = getGenAI();
     if (ai) {
       try {
+        const systemPrompt = this.buildSystemPrompt({
+          targetRole,
+          interviewStage,
+          difficulty,
+          interviewType,
+          totalQuestions,
+          panelMode,
+          currentSpeakerRole: speakerRole
+        });
+
         const prompt = `${systemPrompt}
 
 Task: Begin the interview.
-Provide a professional, welcoming greeting that introduces yourself, sets expectations for the ${interviewStage}, and immediately asks the first question (Phase 1/2: Introduction, candidate background, or motivation).
+Question 1 to ask: "${q1.question}"
 
-Do not output bullet points or meta tags. Output only the natural spoken text of the interviewer.`;
+Generate a crisp, professional spoken opening (2-3 sentences). Introduce yourself and state the purpose of the ${interviewStage}, then ask Question 1.
+Do not output meta-tags or markdown formatting. Output only spoken words.`;
 
         const response = await ai.models.generateContent({
           model: 'gemini-1.5-flash',
           contents: prompt,
           config: {
-            temperature: 0.7,
-            maxOutputTokens: 300
+            temperature: 0.65,
+            maxOutputTokens: 250
           }
         });
 
-        const initialSpeech = response.text?.trim();
-        if (initialSpeech) {
+        const text = response.text?.trim();
+        if (text) {
           return {
-            greeting: initialSpeech,
+            greeting: text,
             questionNumber: 1,
-            questionText: initialSpeech
+            questionText: text,
+            currentSpeaker: {
+              role: speakerRole,
+              name: speakerName
+            },
+            bankQuestions: selectedBankQuestions
           };
         }
       } catch (err) {
-        console.warn('[GeminiInterviewService] startInterviewSession API fallback:', err.message);
+        console.warn('[GeminiInterviewService] startInterviewSession fallback:', err.message);
       }
     }
 
-    // High quality domain fallback
-    const roleTitles = {
-      'Audit Trainee': 'Audit Trainee (Articleship)',
-      'Tax Assistant': 'Tax Advisory Assistant',
-      'Financial Analyst': 'Financial Analyst'
-    };
-    const displayRole = roleTitles[targetRole] || targetRole || 'Audit Trainee';
-
-    const fallbackGreeting = `Good morning and welcome to your simulated ${interviewStage} for the ${displayRole} role at The TaxMan's Capital. I will be conducting your interview today. Please answer each question naturally and clearly. To begin, could you please introduce yourself, state your academic background, and share what motivated you to pursue a career in this field?`;
+    const fallbackGreeting = `Good morning. Welcome to your simulated ${interviewStage} for the ${targetRole} position at The TaxMan's Capital. I will be leading your session today. Let's begin: ${q1.question}`;
 
     return {
       greeting: fallbackGreeting,
       questionNumber: 1,
-      questionText: fallbackGreeting
+      questionText: fallbackGreeting,
+      currentSpeaker: {
+        role: speakerRole,
+        name: speakerName
+      },
+      bankQuestions: selectedBankQuestions
     };
   }
 
   /**
-   * Evaluate Candidate Turn and Generate Next Adaptive Question
+   * Evaluate Candidate Turn, determine follow-up necessity, and generate next turn
    */
   static async processCandidateAnswer({
     targetRole,
@@ -153,54 +190,83 @@ Do not output bullet points or meta tags. Output only the natural spoken text of
     currentQuestionIndex,
     currentQuestion,
     candidateAnswer,
-    conversationHistory = []
+    conversationHistory = [],
+    bankQuestions = [],
+    panelMode = false
   }) {
     const ai = getGenAI();
     const nextQuestionNum = currentQuestionIndex + 2;
     const isLastQuestion = nextQuestionNum > totalQuestions;
 
+    // Alternate speakers in panel mode
+    const isTechnicalTurn = currentQuestionIndex % 2 === 0;
+    const speakerRole = panelMode
+      ? isTechnicalTurn
+        ? 'HR Manager (Behavioral & Culture)'
+        : 'Senior Audit Manager (Technical)'
+      : 'Senior Interviewer';
+
+    const speakerName = panelMode
+      ? isTechnicalTurn
+        ? 'Sana Malik (Talent Lead)'
+        : 'Asim Raza (Audit Manager)'
+      : 'Interview Panelist';
+
+    // Reference question bank item if available
+    const nextBankItem = (bankQuestions && bankQuestions[currentQuestionIndex + 1]) || null;
+    const currentBankItem = (bankQuestions && bankQuestions[currentQuestionIndex]) || null;
+
     if (ai) {
       try {
         const historySnippet = conversationHistory
-          .map((m) => `${m.speaker === 'ai' ? 'INTERVIEWER' : 'CANDIDATE'}: ${m.text}`)
+          .map((m) => `[${m.speaker.toUpperCase()}]: ${m.text}`)
           .join('\n\n');
 
-        const systemPrompt = this.buildSystemPrompt({ targetRole, interviewStage, difficulty, interviewType, totalQuestions });
+        const systemPrompt = this.buildSystemPrompt({
+          targetRole,
+          interviewStage,
+          difficulty,
+          interviewType,
+          totalQuestions,
+          panelMode,
+          currentSpeakerRole: speakerRole
+        });
 
         const prompt = `${systemPrompt}
 
-Current Conversation Context:
+Conversation History:
 ${historySnippet}
 
 Current Question (Q${currentQuestionIndex + 1}):
 "${currentQuestion}"
 
-Candidate's Answer:
-"${candidateAnswer}"
+Target Reference Ideal Concepts:
+${currentBankItem ? JSON.stringify(currentBankItem.idealAnswerPoints) : '["Conceptual accuracy", "Standard application", "Clear professional reasoning"]'}
 
-Target Question Count: ${totalQuestions}
-Current Question Index: ${currentQuestionIndex + 1}
-Is this the final question of the interview?: ${isLastQuestion ? 'YES' : 'NO'}
+Candidate's Spoken Answer:
+"${candidateAnswer || '[No verbal response provided]'}"
 
-Tasks:
-1. Evaluate the candidate's answer on technical accuracy, relevance, clarity, and completeness (Scores 0-100).
-2. If this is NOT the last question (${!isLastQuestion}):
-   - Provide a natural conversational transition (1 sentence).
-   - Generate the next dynamic, adaptive Question ${nextQuestionNum}.
-   - Adapt difficulty and topic based on candidate's performance. Avoid repeating previous questions.
-3. If this IS the last question (${isLastQuestion}):
-   - Provide a warm, professional closing statement concluding the interview.
+Next Planned Question:
+"${nextBankItem ? nextBankItem.question : 'General scenario question'}"
 
-Return ONLY a valid JSON object matching this exact schema:
+Is Final Question?: ${isLastQuestion ? 'YES' : 'NO'}
+
+Evaluation & Response Tasks:
+1. Evaluate candidate's answer (Technical accuracy 0-100, Relevance 0-100, Clarity 0-100, Completeness 0-100).
+2. If candidate answer was too vague/incomplete and question index < ${totalQuestions - 1}, you may ask a brief clarifying follow-up question before advancing.
+3. If this is NOT the last question, provide a natural transition acknowledging the answer and ask the next question spoken by ${speakerName} (${speakerRole}).
+4. If this IS the last question, provide a professional conclusion concluding the interview.
+
+Return ONLY a valid JSON object matching this schema:
 {
   "turnEvaluation": {
-    "score": 85,
+    "score": 82,
     "technicalAccuracy": 85,
-    "relevance": 90,
+    "relevance": 85,
     "clarity": 80,
-    "completeness": 80,
-    "feedback": "Concise 1-2 sentence feedback on candidate answer.",
-    "idealAnswerPoints": ["Key point 1", "Key point 2"]
+    "completeness": 78,
+    "feedback": "Concise 1-2 sentence assessment of candidate response.",
+    "idealAnswerPoints": ["Key principle", "Practical procedure"]
   },
   "interviewerReply": "Spoken text that the interviewer will say next (transition + next question OR closing statement)",
   "isInterviewComplete": ${isLastQuestion}
@@ -222,18 +288,22 @@ Return ONLY a valid JSON object matching this exact schema:
             turnEvaluation: {
               questionNumber: currentQuestionIndex + 1,
               question: currentQuestion,
-              candidateAnswer,
+              candidateAnswer: candidateAnswer || '(No answer provided)',
               score: Number(parsed.turnEvaluation.score) || 75,
               technicalAccuracy: Number(parsed.turnEvaluation.technicalAccuracy) || 75,
               relevance: Number(parsed.turnEvaluation.relevance) || 80,
               clarity: Number(parsed.turnEvaluation.clarity) || 80,
               completeness: Number(parsed.turnEvaluation.completeness) || 70,
-              feedback: parsed.turnEvaluation.feedback || 'Good attempt with relevant points.',
+              feedback: parsed.turnEvaluation.feedback || 'Good articulation of core principles.',
               idealAnswerPoints: Array.isArray(parsed.turnEvaluation.idealAnswerPoints)
                 ? parsed.turnEvaluation.idealAnswerPoints
-                : ['Clear standard reference', 'Practical application']
+                : currentBankItem?.idealAnswerPoints || ['Standard principles', 'Practical audit procedures']
             },
             interviewerReply: parsed.interviewerReply.trim(),
+            currentSpeaker: {
+              role: speakerRole,
+              name: speakerName
+            },
             isInterviewComplete: Boolean(parsed.isInterviewComplete)
           };
         }
@@ -242,50 +312,45 @@ Return ONLY a valid JSON object matching this exact schema:
       }
     }
 
-    // Domain Fallback Engine
+    // Domain Fallback
     const words = (candidateAnswer || '').trim().split(/\s+/).filter(Boolean);
     const wordCount = words.length;
-    let baseScore = wordCount > 25 ? 82 : wordCount > 10 ? 72 : 55;
+    let baseScore = wordCount > 25 ? 82 : wordCount > 10 ? 70 : 55;
 
-    const roleBank = {
-      1: "Under ISA 330, can you explain how you distinguish between Substantive Testing and Tests of Controls?",
-      2: "Suppose during an audit you identify an unrecorded material liability right before year-end closing. How would you handle this scenario?",
-      3: "How do you evaluate Going Concern risk under ISA 570 when a client shows consecutive operating losses?",
-      4: "Describe a situation where you had to uphold professional skepticism and ethical integrity when challenged.",
-      5: "Where do you see your professional career progressing over the next 3 to 5 years?"
-    };
-
-    const nextQ = roleBank[nextQuestionNum] || `Can you provide a practical example of how you apply professional standards to solve complex accounting problems?`;
+    const fallbackNextQ = nextBankItem?.question || "Can you share how you ensure compliance with ethical principles when working under tight audit deadlines?";
     const nextReply = isLastQuestion
-      ? "Thank you very much. That concludes your simulated interview. Your responses have been recorded and your performance scorecard is now being prepared."
-      : `Thank you for that response. Let's move to our next question: ${nextQ}`;
+      ? "Thank you for your time and comprehensive responses. That concludes your simulated interview. Your performance scorecard and analytics report are now being prepared."
+      : `Thank you for that response. ${panelMode ? `${speakerName} here.` : ''} Let's proceed to the next question: ${fallbackNextQ}`;
 
     return {
       turnEvaluation: {
         questionNumber: currentQuestionIndex + 1,
         question: currentQuestion,
-        candidateAnswer,
+        candidateAnswer: candidateAnswer || '(No answer provided)',
         score: baseScore,
         technicalAccuracy: baseScore,
-        relevance: Math.min(100, baseScore + 5),
+        relevance: Math.min(100, baseScore + 4),
         clarity: Math.min(100, baseScore + 2),
-        completeness: Math.max(50, baseScore - 5),
+        completeness: Math.max(50, baseScore - 4),
         feedback: wordCount > 20
-          ? 'Clear and structured answer demonstrating relevant understanding of key concepts.'
+          ? 'Clear and structured answer demonstrating relevant understanding of core principles.'
           : 'Answer was brief. Elaborate on practical procedures and standard references for higher marks.',
-        idealAnswerPoints: [
+        idealAnswerPoints: currentBankItem?.idealAnswerPoints || [
           'Direct identification of standard principles',
-          'Mention of practical audit/accounting impact',
-          'Clear, articulate terminology'
+          'Mention of practical audit/accounting impact'
         ]
       },
       interviewerReply: nextReply,
+      currentSpeaker: {
+        role: speakerRole,
+        name: speakerName
+      },
       isInterviewComplete: isLastQuestion
     };
   }
 
   /**
-   * Final Comprehensive Scorecard Generator (0-100 scale)
+   * Final Comprehensive Scorecard Generator
    */
   static async generateFinalScorecard({
     targetRole,
@@ -298,22 +363,29 @@ Return ONLY a valid JSON object matching this exact schema:
   }) {
     const ai = getGenAI();
 
+    // Compute speech & camera derived weights
+    const avgWpm = Number(metrics.avgWpm) || 130;
+    const fillerCount = Number(metrics.totalFillers) || 0;
+    const cameraEngagement = Number(metrics.cameraEngagement) || 82;
+    const postureStability = Number(metrics.postureStability) || 80;
+    const presenceScore = Number(metrics.presenceScore) || 85;
+
     if (ai) {
       try {
         const transcriptText = transcript
-          .map((t) => `[${t.speaker.toUpperCase()}] (${new Date(t.timestamp).toLocaleTimeString()}): ${t.text}`)
+          .map((t) => `[${t.speaker.toUpperCase()}]: ${t.text}`)
           .join('\n');
 
         const evalsSummary = questionEvaluations
           .map(
             (q) =>
-              `Question ${q.questionNumber}: "${q.question}"\nCandidate Answer: "${q.candidateAnswer}"\nTurn Score: ${q.score}/100\nFeedback: ${q.feedback}`
+              `Question ${q.questionNumber}: "${q.question}"\nCandidate: "${q.candidateAnswer}"\nScore: ${q.score}/100\nFeedback: ${q.feedback}`
           )
           .join('\n\n');
 
-        const prompt = `You are a Big 4 Partner evaluating a completed simulated interview for "The TaxMan's Capital" career platform.
+        const prompt = `You are a Big 4 Partner evaluating a completed simulated interview for "The TaxMan's Capital".
 
-Interview Context:
+Context:
 - Target Role: ${targetRole}
 - Stage: ${interviewStage}
 - Difficulty: ${difficulty}
@@ -325,44 +397,59 @@ ${transcriptText}
 Turn Evaluations:
 ${evalsSummary}
 
-Candidate Speech Metrics:
-- Average Pace: ${metrics.avgWpm || 125} WPM
-- Filler Words: ${metrics.totalFillers || 0}
-- Total Duration: ${metrics.totalDuration || 600} seconds
+Candidate Speech & Behavioral Analytics:
+- Speaking Pace: ${avgWpm} WPM
+- Filler Words Count: ${fillerCount}
+- Camera Engagement: ${cameraEngagement}/100
+- Posture Stability: ${postureStability}/100
+- Presence Score: ${presenceScore}/100
 
-Generate a comprehensive, realistic Big 4 partner evaluation. All numerical scores must be integers between 0 and 100.
+Generate a comprehensive Big 4 partner evaluation. All scores must be integers between 0 and 100.
+Delivery Confidence must be computed strictly from observable communication signals (speech fluency, pace, filler frequency, pause consistency).
+Interview Presence must be computed strictly from observable engagement (camera focus, posture stability, presence in frame) without any physical appearance bias.
 
 Return ONLY a valid JSON object matching this EXACT schema:
 {
-  "overallScore": 84,
+  "overallScore": 83,
   "technicalKnowledge": 85,
-  "communication": 82,
-  "answerRelevance": 88,
-  "clarity": 80,
-  "problemSolving": 83,
+  "answerQuality": 84,
+  "communication": 80,
+  "confidenceIndicator": 78,
   "professionalism": 90,
-  "confidenceIndicator": 82,
+  "interviewPresence": 82,
   "strengths": [
-    "Strong conceptual understanding of ISA and IFRS frameworks",
-    "Structured, professional communication composure",
+    "Strong conceptual grasp of relevant IFRS / ISA standards",
+    "Composed, professional communication delivery",
     "Good awareness of professional ethics and skepticism"
   ],
   "weaknesses": [
-    "Could provide more specific substantive audit procedures",
-    "Pacing occasionally rushed during technical explanations"
+    "Could provide more specific substantive procedures",
+    "Moderate use of filler words during technical explanations"
   ],
   "recommendations": [
-    "Deepen knowledge of ISA 315 risk assessment and internal control matrices",
-    "Practice articulating IFRS 15 5-step revenue models with numerical examples",
-    "Maintain steady pace and pause briefly before answering complex scenario questions"
+    "Review ISA 315 risk identification matrices",
+    "Practice structured STAR responses for situational questions",
+    "Maintain steady speaking cadence under 140 WPM"
   ],
   "technicalGaps": [
-    "Detailed substantive sampling techniques under ISA 530",
-    "Deferred tax calculations under IAS 12"
+    "Substantive sampling techniques under ISA 530",
+    "Specific tax adjustments under Income Tax Ordinance 2001"
   ],
   "questionEvaluations": ${JSON.stringify(questionEvaluations)},
-  "finalAssessment": "Candidate demonstrated solid baseline readiness with strong professional presence and good technical instincts. Highly competitive for articleship intake.",
-  "interviewSummary": "Completed a full simulated ${interviewStage} covering technical accounting/audit concepts, scenario judgment, and career motivation.",
+  "speechAnalytics": {
+    "avgWpm": ${avgWpm},
+    "fillerWordsCount": ${fillerCount},
+    "speakingPaceFeedback": "Speaking pace was well modulated and natural."
+  },
+  "cameraAnalytics": {
+    "cameraEngagement": ${cameraEngagement},
+    "postureStability": ${postureStability},
+    "presenceScore": ${presenceScore},
+    "behavioralFeedback": "Maintained attentive screen presence and steady posture throughout the session."
+  },
+  "weakAreaTopics": ["Audit Risk Assessment", "Deferred Taxation", "Behavioral Conflict Resolution"],
+  "finalAssessment": "Candidate demonstrated solid baseline readiness and professional aptitude, showing high potential for intake.",
+  "interviewSummary": "Completed full simulated ${interviewStage} covering core technical accounting/audit standards and professional situational judgment.",
   "hiringRecommendation": "Strong Candidate - Recommended for Induction"
 }`;
 
@@ -370,39 +457,51 @@ Return ONLY a valid JSON object matching this EXACT schema:
           model: 'gemini-1.5-flash',
           contents: prompt,
           config: {
-            temperature: 0.5,
-            maxOutputTokens: 1200,
+            temperature: 0.45,
+            maxOutputTokens: 1400,
             responseMimeType: 'application/json'
           }
         });
 
         const scorecard = cleanAndParseJson(response.text, null);
         if (scorecard && typeof scorecard.overallScore === 'number') {
-          // Ensure all required properties exist
           return {
             overallScore: Math.min(100, Math.max(0, Math.round(scorecard.overallScore))),
             technicalKnowledge: Math.min(100, Math.max(0, Math.round(scorecard.technicalKnowledge || scorecard.overallScore))),
+            answerQuality: Math.min(100, Math.max(0, Math.round(scorecard.answerQuality || scorecard.overallScore))),
             communication: Math.min(100, Math.max(0, Math.round(scorecard.communication || 80))),
-            answerRelevance: Math.min(100, Math.max(0, Math.round(scorecard.answerRelevance || 80))),
-            clarity: Math.min(100, Math.max(0, Math.round(scorecard.clarity || 80))),
-            problemSolving: Math.min(100, Math.max(0, Math.round(scorecard.problemSolving || 80))),
-            professionalism: Math.min(100, Math.max(0, Math.round(scorecard.professionalism || 85))),
             confidenceIndicator: Math.min(100, Math.max(0, Math.round(scorecard.confidenceIndicator || 80))),
+            professionalism: Math.min(100, Math.max(0, Math.round(scorecard.professionalism || 88))),
+            interviewPresence: Math.min(100, Math.max(0, Math.round(scorecard.interviewPresence || presenceScore))),
             strengths: Array.isArray(scorecard.strengths) && scorecard.strengths.length > 0
               ? scorecard.strengths
-              : ['Strong technical awareness', 'Professional composure'],
+              : ['Strong technical awareness', 'Professional demeanor'],
             weaknesses: Array.isArray(scorecard.weaknesses) && scorecard.weaknesses.length > 0
               ? scorecard.weaknesses
-              : ['Expand on practical case studies'],
+              : ['Elaborate with practical case examples'],
             recommendations: Array.isArray(scorecard.recommendations) && scorecard.recommendations.length > 0
               ? scorecard.recommendations
-              : ['Review standard audit assertions and documentation requirements'],
+              : ['Practice concise point-explanation-example structure'],
             technicalGaps: Array.isArray(scorecard.technicalGaps)
               ? scorecard.technicalGaps
-              : ['Advanced IFRS disclosures'],
+              : ['ISA 315 internal control testing'],
             questionEvaluations: Array.isArray(scorecard.questionEvaluations) && scorecard.questionEvaluations.length > 0
               ? scorecard.questionEvaluations
               : questionEvaluations,
+            speechAnalytics: scorecard.speechAnalytics || {
+              avgWpm,
+              fillerWordsCount: fillerCount,
+              speakingPaceFeedback: 'Balanced and clear articulation.'
+            },
+            cameraAnalytics: scorecard.cameraAnalytics || {
+              cameraEngagement,
+              postureStability,
+              presenceScore,
+              behavioralFeedback: 'Candidate remained visible and engaged during all response turns.'
+            },
+            weakAreaTopics: Array.isArray(scorecard.weakAreaTopics) && scorecard.weakAreaTopics.length > 0
+              ? scorecard.weakAreaTopics
+              : ['Audit Risk Assessment', 'IFRS Standards'],
             finalAssessment: scorecard.finalAssessment || 'Solid performance showing high potential for professional training.',
             interviewSummary: scorecard.interviewSummary || `Completed simulated ${interviewStage} for ${targetRole}.`,
             hiringRecommendation: scorecard.hiringRecommendation || 'Recommended for Articleship'
@@ -413,7 +512,7 @@ Return ONLY a valid JSON object matching this EXACT schema:
       }
     }
 
-    // Fallback Scorecard Calculation
+    // High quality Fallback Scorecard Calculation
     const evals = questionEvaluations.length > 0 ? questionEvaluations : [];
     const avgScore = evals.length > 0
       ? Math.round(evals.reduce((acc, q) => acc + (q.score || 75), 0) / evals.length)
@@ -431,14 +530,13 @@ Return ONLY a valid JSON object matching this EXACT schema:
     return {
       overallScore: avgScore,
       technicalKnowledge: Math.min(100, avgScore + 2),
+      answerQuality: Math.min(100, avgScore + 1),
       communication: Math.min(100, avgScore - 2),
-      answerRelevance: Math.min(100, avgScore + 3),
-      clarity: Math.min(100, avgScore),
-      problemSolving: Math.min(100, avgScore + 1),
-      professionalism: Math.min(100, avgScore + 5),
       confidenceIndicator: Math.min(100, avgScore - 1),
+      professionalism: Math.min(100, avgScore + 5),
+      interviewPresence: Math.min(100, presenceScore),
       strengths: [
-        'Good grasp of fundamental CA/ACCA concepts and accounting standards',
+        'Good grasp of fundamental CA/ACCA concepts and standard accounting frameworks',
         'Structured response delivery with clear professional demeanor',
         'Maintained composure during technical probing questions'
       ],
@@ -456,9 +554,24 @@ Return ONLY a valid JSON object matching this EXACT schema:
         'Specific tax adjustments under Income Tax Ordinance 2001'
       ],
       questionEvaluations: evals,
+      speechAnalytics: {
+        avgWpm,
+        fillerWordsCount: fillerCount,
+        speakingPaceFeedback: avgWpm > 150 ? 'Pace was fast; practice pausing.' : 'Good natural speaking pace.'
+      },
+      cameraAnalytics: {
+        cameraEngagement,
+        postureStability,
+        presenceScore,
+        behavioralFeedback: 'Maintained consistent camera presence and stable posture.'
+      },
+      weakAreaTopics: ['Audit Risk Assessment', 'Revenue Recognition (IFRS 15)'],
       finalAssessment: `Candidate exhibited solid baseline preparation for the ${targetRole} position, demonstrating good reasoning and professional presence.`,
       interviewSummary: `Completed ${evals.length} questions in ${interviewStage} (${difficulty} difficulty).`,
       hiringRecommendation: hiringVerdict
     };
   }
 }
+
+export const geminiInterviewService = new GeminiInterviewService();
+export default geminiInterviewService;

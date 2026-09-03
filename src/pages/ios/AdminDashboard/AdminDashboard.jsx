@@ -468,18 +468,10 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       if (newRole === 'team_head') {
         const currentTeamHead = profiles.find(p => p.role === 'team_head');
         if (currentTeamHead) {
-          if (supabase) {
-            const { error } = await supabase.from('profiles').update({ role: 'admin' }).eq('id', currentTeamHead.id);
-            if (error) throw error;
-          }
           await updateProfileRole(currentTeamHead.id, 'admin');
         }
       }
 
-      if (supabase) {
-        const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-        if (error) throw error;
-      }
       await updateProfileRole(userId, newRole);
 
       setProfiles(prev => {
@@ -502,10 +494,6 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       message: 'Are you sure you want to delete this user profile? This action is permanent.',
       onConfirm: async () => {
         try {
-          if (supabase) {
-            const { error } = await supabase.from('profiles').delete().eq('id', userId);
-            if (error) throw error;
-          }
           setProfiles(prev => prev.filter(p => p.id !== userId));
           alert("User profile deleted.");
         } catch (err) {
@@ -655,30 +643,16 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
         badge: `${communityForm.category_key.toUpperCase()} Group`
       };
 
-      if (supabase) {
-        if (selectedCommunity) {
-          // Edit
-          const { error } = await supabase.from('communities').update(commPayload).eq('id', selectedCommunity.id);
-          if (error) throw error;
-        } else {
-          // Add
-          const { error } = await supabase.from('communities').insert([commPayload]);
-          if (error) throw error;
-        }
+      if (selectedCommunity) {
+        setCommunities(prev => prev.map(c => c.id === selectedCommunity.id ? { ...c, ...commPayload } : c));
       } else {
-        // Mock add/edit
-        if (selectedCommunity) {
-          setCommunities(prev => prev.map(c => c.id === selectedCommunity.id ? { ...c, ...commPayload } : c));
-        } else {
-          setCommunities(prev => [{ id: String(Date.now()), ...commPayload }, ...prev]);
-        }
+        setCommunities(prev => [{ id: String(Date.now()), ...commPayload }, ...prev]);
       }
 
       alert(selectedCommunity ? "Community study room updated!" : "Community study room published!");
       setIsCommunityModalOpen(false);
       setSelectedCommunity(null);
       setCommunityForm({ title: '', category_key: 'caf', badge: 'CAF Group', description: '', members_count_text: '1,000+ Members', whatsapp_link: '', discord_link: '' });
-      if (supabase) loadData();
     } catch (err) {
       alert(`Error saving community: ${err.message}`);
     }
@@ -691,10 +665,6 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       message: 'Are you sure you want to delete this community study group?',
       onConfirm: async () => {
         try {
-          if (supabase) {
-            const { error } = await supabase.from('communities').delete().eq('id', commId);
-            if (error) throw error;
-          }
           setCommunities(prev => prev.filter(c => c.id !== commId));
           alert("Community room deleted.");
         } catch (err) {
