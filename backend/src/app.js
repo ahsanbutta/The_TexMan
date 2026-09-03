@@ -17,29 +17,22 @@ app.use(
   })
 );
 
-// 2. CORS Configuration
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5173',
-  process.env.CLIENT_URL
-].filter(Boolean);
-
+// 2. CORS Configuration - Fully permissive for all Vercel domains, localhost, and custom origins
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, server-to-server)
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(null, true); // Allow dev origins freely
+      // Allow all origins dynamically (reflects incoming Origin header)
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Set-Cookie']
   })
 );
+
+// Explicit Preflight Handler
+app.options('*', cors());
 
 // 3. Request Logging (Morgan)
 if (process.env.NODE_ENV !== 'test') {
@@ -51,21 +44,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// 5. Apply General Rate Limiter to API routes
+// 5. Apply General Rate Limiter
 app.use('/api', generalLimiter);
 
-// 6. Mount Master API Routes
+// 6. Mount Master API Routes on both /api and root / for total client URL compatibility
 app.use('/api', routes);
-
-// 7. Base Root Health route
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Welcome to The TaxMan's Capital Enterprise REST API Server",
-    documentation: '/api/health',
-    version: '1.0.0'
-  });
-});
+app.use('/', routes);
 
 // 8. 404 & Centralized Error Handling Middlewares
 app.use(notFound);
