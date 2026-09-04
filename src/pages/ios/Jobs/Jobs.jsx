@@ -21,6 +21,7 @@ import { INITIAL_JOBS } from '../../../data/jobsData';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import PortalModal from '../../../components/PortalModal';
 import { api } from '../../../services/api';
+import { requireAuth } from '../../../services/authService';
 
 const getJobs = async () => {
   try {
@@ -179,6 +180,9 @@ export default function Jobs({
 
   // Toggle saving a job
   const toggleSaveJob = (id) => {
+    if (!requireAuth('save or bookmark jobs to your profile')) {
+      return;
+    }
     if (onToggleSaveJob) {
       onToggleSaveJob(id);
       return;
@@ -1005,6 +1009,32 @@ export default function Jobs({
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* Modal Action Footer */}
+              <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => toggleSaveJob(selectedJob.id)}
+                  className={`px-4 py-2.5 border rounded-xl flex items-center space-x-2 text-xs font-bold transition-colors cursor-pointer ${
+                    savedJobs.includes(selectedJob.id)
+                      ? 'bg-emerald-500/10 border-brandGreen text-brandGreen'
+                      : 'border-gray-200 text-gray-500 hover:text-navy hover:bg-gray-50'
+                  }`}
+                >
+                  <Bookmark className={`w-4 h-4 ${savedJobs.includes(selectedJob.id) ? 'fill-current' : ''}`} />
+                  <span>{savedJobs.includes(selectedJob.id) ? 'Saved' : 'Save Job'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!requireAuth('apply for this job vacancy')) return;
+                    alert(`Application submitted successfully for "${selectedJob.title}" at ${selectedJob.company}! Your profile details have been shared with the firm.`);
+                    setSelectedJob(null);
+                  }}
+                  className="flex-1 py-3 bg-brandGreen hover:bg-brandGreen-dark text-white font-extrabold rounded-xl text-xs sm:text-sm transition-all shadow-md shadow-emerald-500/20 cursor-pointer text-center"
+                >
+                  Apply for this Role
+                </button>
               </div>
 
             </div>

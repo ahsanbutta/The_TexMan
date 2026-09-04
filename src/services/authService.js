@@ -50,14 +50,19 @@ export const requireAuth = (actionDescription = 'access this protected feature',
   }
 
   alert(`Authentication Required:\nPlease log in or sign up to ${actionDescription}.`);
-  window.location.hash = '#login';
+  if (typeof window !== 'undefined') {
+    if (window.location.pathname !== '/login') {
+      window.history.pushState(null, '', '/login');
+    }
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
   return false;
 };
 
 /**
  * Get current session synchronously from localStorage with offline resilience
  */
-export const getCurrentSession = async () => {
+export const getInitialSessionSync = () => {
   try {
     const rawSession = localStorage.getItem(SESSION_KEY);
     const token = localStorage.getItem(TOKEN_KEY);
@@ -105,9 +110,13 @@ export const getCurrentSession = async () => {
 
     return session;
   } catch (err) {
-    console.warn('[AuthService] Failed to read current session:', err);
+    console.warn('[AuthService] Failed to read current session synchronously:', err);
     return null;
   }
+};
+
+export const getCurrentSession = async () => {
+  return getInitialSessionSync();
 };
 
 /**
@@ -134,6 +143,45 @@ export const onAuthChange = (callback) => {
  * Note: Does not automatically log in the user, honoring the Sign Up -> Login -> Home Portal flow.
  */
 export const registerUser = async (email, password, username, full_name, qualification = 'CAF', role = 'student') => {
+  const localProfile = {
+    _id: 'usr_' + Date.now(),
+    id: 'usr_' + Date.now(),
+    name: full_name.trim(),
+    fullName: full_name.trim(),
+    full_name: full_name.trim(),
+    username: username.trim(),
+    email: email.trim().toLowerCase(),
+    role: role || 'student',
+    qualification,
+    level: qualification,
+    createdAt: new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+
+  const saveToLocalRegistry = (profile) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+      const filtered = existing.filter(u => u.email?.toLowerCase() !== profile.email.toLowerCase());
+      filtered.unshift(profile);
+      localStorage.setItem('taxman_registered_users', JSON.stringify(filtered));
+
+      const adminProfiles = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const filteredAdmin = adminProfiles.filter(p => p.email?.toLowerCase() !== profile.email.toLowerCase());
+      filteredAdmin.unshift({
+        id: profile.id || profile._id,
+        full_name: profile.name || profile.fullName,
+        username: profile.username,
+        email: profile.email,
+        role: profile.role,
+        level: profile.level,
+        created_at: profile.createdAt || profile.created_at
+      });
+      localStorage.setItem('admin_table_profiles', JSON.stringify(filteredAdmin));
+    } catch (err) {
+      console.warn('Failed to sync to local user registries:', err);
+    }
+  };
+
   try {
     const res = await api.post('/auth/register', {
       email: email.trim(),
@@ -147,8 +195,15 @@ export const registerUser = async (email, password, username, full_name, qualifi
     });
 
     const responseData = res?.data?.data || res?.data || res;
+    if (responseData?.user) {
+      localProfile.id = responseData.user._id || responseData.user.id || localProfile.id;
+      localProfile._id = localProfile.id;
+    }
+    saveToLocalRegistry(localProfile);
     return responseData;
   } catch (apiErr) {
+    // If backend is unreachable, still record locally for resilient offline workflow
+    saveToLocalRegistry(localProfile);
     const message = apiErr.response?.data?.message || apiErr.message || 'Registration failed. Please check your details and try again.';
     throw new Error(message);
   }

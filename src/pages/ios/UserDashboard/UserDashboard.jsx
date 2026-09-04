@@ -26,8 +26,10 @@ import {
 } from 'lucide-react';
 import { updateProfile } from '../../../services/authService';
 import { submitContactForm, getMyCounselingQueries } from '../../../services/submissionService';
+import DualMediaUpload from '../../../components/common/DualMediaUpload';
 import { INITIAL_JOBS } from '../../../data/jobsData';
 import NotificationPanel from '../../../components/NotificationPanel';
+import logoImg from '../../../assets/logo.png';
 import {
   getNotifications,
   markNotificationAsRead,
@@ -259,30 +261,40 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
   // Generate notifications for student dashboard
   const notificationsList = savedJobsList.map(job => ({
     id: `job-${job.id}`,
-    title: 'Saved Job Deadline',
-    description: `Don't miss the deadline for ${job.title} at ${job.company}! (${job.deadline})`,
-    time: 'Alert',
-    bg: 'bg-red-500/10 text-red-600'
+    jobId: job.id,
+    title: job.title,
+    company: job.company,
+    deadline: job.deadline,
+    description: `Application deadline approaching at ${job.company} (${job.deadline}). Tap to view.`,
+    time: 'Deadline',
+    bg: 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
   }));
 
   return (
     <div className="flex bg-[#F8F9FB] h-screen overflow-hidden text-gray-800 font-sans relative w-full">
-      
+
       {/* 1. LEFT SIDEBAR (Dark - Desktop & Mobile Drawer) */}
-      <aside className={`w-72 bg-[#090C11] text-white flex flex-col h-screen fixed lg:static left-0 top-0 z-40 flex-shrink-0 transition-transform duration-300 ${
-        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
+      <aside className={`w-72 bg-[#090C11] text-white flex flex-col h-screen fixed lg:static left-0 top-0 z-40 flex-shrink-0 transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}>
         {/* Top Logo / Slogan */}
         <div className="p-6 border-b border-white/5 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brandGreen to-emerald-400 p-[1.5px] flex items-center justify-center flex-shrink-0 shadow-[0_4px_12px_rgba(243,193,50,0.15)]">
-              <div className="w-full h-full bg-[#090C11] rounded-[10px] flex items-center justify-center">
-                <span className="text-brandGreen font-black text-base tracking-tighter">TM</span>
+          <div className="flex items-center space-x-3 select-none">
+            <img
+              src={logoImg}
+              alt="The TaxMan's Capital Logo"
+              className="h-10 w-auto object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(0,230,118,0.25)] translate-y-1"
+            />
+            <div className="flex flex-col justify-center">
+              <span className="text-white font-black text-sm tracking-tight whitespace-nowrap font-['Outfit',sans-serif]">
+                The TaxMan's
+              </span>
+              <div className="flex items-center space-x-1 mt-0.5">
+                <span className="h-[1px] w-2.5 bg-gradient-to-r from-transparent to-[#00E676]/80"></span>
+                <span className="text-[#00E676] font-bold text-[8px] tracking-[0.22em] uppercase leading-none font-['Outfit',sans-serif]">
+                  Capital
+                </span>
+                <span className="h-[1px] w-2.5 bg-gradient-to-l from-transparent to-[#00E676]/80"></span>
               </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-white font-extrabold text-sm tracking-tight whitespace-nowrap">The TaxMan's Capital</span>
-              <span className="text-brandGreen text-[8px] uppercase tracking-widest font-extrabold mt-0.5">STUDENT HUB</span>
             </div>
           </div>
         </div>
@@ -307,17 +319,17 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                 onClick={() => {
                   if (item.id === 'Career Tools') {
                     if (onGoHome) onGoHome();
-                    window.location.hash = '#careertools';
+                    window.history.pushState(null, '', '/careertools');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
                     return;
                   }
                   setActiveSubTab(item.id);
                   setMobileSidebarOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all ${
-                  isActive
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all ${isActive
                     ? 'text-brandGreen bg-brandGreen/10 border border-brandGreen/30 shadow-inner'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3.5">
                   <span className={isActive ? 'text-brandGreen' : 'text-gray-400 group-hover:text-white'}>
@@ -337,7 +349,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
 
         {/* Sidebar Footer User Card */}
         <div className="p-4 border-t border-white/5 flex-shrink-0">
-          <div 
+          <div
             onClick={() => {
               setActiveSubTab('Settings');
               setMobileSidebarOpen(false);
@@ -372,7 +384,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
 
       {/* 2. MAIN CONTENT WRAPPER */}
       <main className="flex-1 h-screen overflow-y-auto min-w-0 flex flex-col bg-[#F8F9FB] w-full">
-        
+
         {/* Header Bar */}
         <header className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20 shadow-sm flex-shrink-0">
           <div className="flex items-center space-x-4">
@@ -382,7 +394,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
             >
               <Menu className="w-5.5 h-5.5" />
             </button>
-            
+
             {/* Search Input Bar */}
             <div className="relative w-64 sm:w-80 hidden md:block">
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -405,14 +417,16 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
             </button>
 
             {/* Notification Bell */}
+            {/* Notification Bell */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setNotificationsDropdownOpen(!notificationsDropdownOpen)}
-                className="relative p-2 text-gray-500 hover:text-navy transition-colors rounded-full hover:bg-gray-50 cursor-pointer focus:outline-none"
+                className="relative p-2 text-gray-500 hover:text-navy transition-colors rounded-full hover:bg-gray-100 cursor-pointer focus:outline-none"
+                aria-label="Toggle notifications"
               >
                 <Bell className="w-5 h-5" />
                 {notificationsList.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-brandGreen text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm animate-pulse">
                     {notificationsList.length}
                   </span>
                 )}
@@ -420,43 +434,74 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
 
               {notificationsDropdownOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setNotificationsDropdownOpen(false)} />
-                  
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl py-3 z-50 animate-fadeIn text-xs">
-                    <div className="px-4 pb-2 border-b border-gray-50 flex items-center justify-between">
-                      <span className="font-extrabold text-gray-800">Alerts ({notificationsList.length})</span>
-                      <button 
-                        onClick={() => {
-                          setNotificationsDropdownOpen(false);
-                          setActiveSubTab('Saved Jobs');
-                        }}
-                        className="text-[10px] text-brandGreen hover:underline font-bold"
-                      >
-                        View Saved Jobs
-                      </button>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
-                      {notificationsList.map((n) => (
-                        <div 
-                          key={n.id} 
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent backdrop-blur-[1px] sm:backdrop-blur-none" onClick={() => setNotificationsDropdownOpen(false)} />
+
+                  {/* Responsive Dropdown Card */}
+                  <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 max-w-sm sm:max-w-md bg-white border border-gray-100/90 rounded-2xl shadow-2xl py-3 z-50 animate-scaleIn text-xs">
+                    <div className="px-4 pb-2.5 border-b border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Bell className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-extrabold text-navy text-xs sm:text-sm block leading-none">Alerts & Updates</span>
+                          <span className="text-[10px] text-gray-400 font-semibold">{notificationsList.length} job deadline alert{notificationsList.length !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
                           onClick={() => {
                             setNotificationsDropdownOpen(false);
                             setActiveSubTab('Saved Jobs');
                           }}
-                          className="px-4 py-3 hover:bg-[#F8F9FB] transition-colors cursor-pointer text-left"
+                          className="text-[11px] text-brandGreen hover:text-brandGreen-dark font-bold hover:underline cursor-pointer"
                         >
-                          <div className="flex items-center space-x-1.5 mb-1">
-                            <span className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold uppercase ${n.bg}`}>
-                              {n.time}
-                            </span>
-                            <span className="font-bold text-gray-800">{n.title}</span>
+                          View Saved Jobs
+                        </button>
+                        <button
+                          onClick={() => setNotificationsDropdownOpen(false)}
+                          className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                          aria-label="Close alerts"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                      {notificationsList.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            setNotificationsDropdownOpen(false);
+                            setActiveSubTab('Saved Jobs');
+                          }}
+                          className="p-3.5 hover:bg-[#F8F9FB] transition-colors cursor-pointer text-left flex items-start space-x-3 group"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <Clock className="w-4 h-4" />
                           </div>
-                          <p className="text-[10px] text-gray-400 font-semibold line-clamp-2">{n.description}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <span className="font-bold text-navy text-xs truncate group-hover:text-brandGreen transition-colors">
+                                {n.title}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold uppercase bg-amber-500/10 text-amber-700 border border-amber-500/20 shrink-0">
+                                {n.time}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                              Don't miss the deadline at <span className="font-semibold text-gray-700">{n.company}</span> ({n.deadline}).
+                            </p>
+                          </div>
                         </div>
                       ))}
                       {notificationsList.length === 0 && (
-                        <div className="px-4 py-6 text-center text-gray-400 italic">
-                          No active notifications.
+                        <div className="px-4 py-8 text-center text-gray-400 space-y-1.5">
+                          <Bell className="w-8 h-8 mx-auto text-gray-300 stroke-1" />
+                          <p className="text-xs font-semibold text-gray-600">No active job alerts</p>
+                          <p className="text-[10px] text-gray-400">Bookmark jobs in Placements to track upcoming deadlines here.</p>
                         </div>
                       )}
                     </div>
@@ -467,9 +512,9 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
 
             {/* Profile Dropdown */}
             <div className="relative">
-              <div 
+              <div
                 onClick={() => setHeaderDropdownOpen(!headerDropdownOpen)}
-                className="w-8.5 h-8.5 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-black flex items-center justify-center border-2 border-white shadow-md overflow-hidden cursor-pointer hover:scale-105 active:scale-95 transition-all"
+                className="w-8.5 h-8.5 rounded-full bg-[#0A2540] text-white font-black flex items-center justify-center border border-gray-200 shadow-sm overflow-hidden cursor-pointer hover:scale-105 active:scale-95 transition-all"
               >
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
@@ -481,13 +526,13 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
               {headerDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setHeaderDropdownOpen(false)} />
-                  
+
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-40 animate-fadeIn text-xs text-left">
                     <div className="px-4 py-2 border-b border-gray-50 flex flex-col">
                       <span className="font-extrabold text-gray-800">{profile.full_name}</span>
                       <span className="text-[10px] text-gray-400 font-semibold mt-0.5 truncate">{session?.user?.email}</span>
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         setHeaderDropdownOpen(false);
@@ -498,7 +543,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       <User className="w-4 h-4 text-gray-400" />
                       <span>Edit Profile</span>
                     </button>
-                    
+
                     <button
                       onClick={async () => {
                         setHeaderDropdownOpen(false);
@@ -706,7 +751,8 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                             <p className="italic mb-3">No study resources requested yet.</p>
                             <button
                               onClick={() => {
-                                window.location.hash = '#resources';
+                                window.history.pushState(null, '', '/resources');
+                                window.dispatchEvent(new PopStateEvent('popstate'));
                               }}
                               className="px-4 py-2 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/10 inline-flex items-center space-x-1.5 cursor-pointer"
                             >
@@ -731,7 +777,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                   <h1 className="text-2xl font-black text-navy">Explore Placements</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Browse active CA articleships, local inductions, and global vacancies.</p>
                 </div>
-                
+
                 {/* Search / Filter Controls */}
                 <div className="flex items-center gap-2">
                   <div className="relative">
@@ -764,7 +810,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                     const matchesSearch = job.title?.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
                       job.company?.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
                       job.location?.toLowerCase().includes(jobSearchQuery.toLowerCase());
-                    const matchesFilter = jobTypeFilter === 'All' || 
+                    const matchesFilter = jobTypeFilter === 'All' ||
                       (jobTypeFilter === 'Articleship' && job.jobType === 'Articleship') ||
                       (jobTypeFilter === 'Full-time' && job.jobType === 'Full Time') ||
                       (jobTypeFilter === 'Overseas' && job.isOverseas);
@@ -774,9 +820,8 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                     <div key={job.id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between">
-                          <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                            job.isOverseas ? 'bg-amber-500/10 text-amber-600' : 'bg-brandGreen/10 text-brandGreen-dark'
-                          }`}>
+                          <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase ${job.isOverseas ? 'bg-amber-500/10 text-amber-600' : 'bg-brandGreen/10 text-brandGreen-dark'
+                            }`}>
                             {job.isOverseas ? 'Overseas' : job.jobType}
                           </span>
                           <span className="text-[11px] font-bold text-red-500 flex items-center">
@@ -808,14 +853,14 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
           {activeSubTab === 'Ask Counselor' && !loading && (
             <div className="space-y-8 animate-fadeIn text-left">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                
+
                 {/* Ask a Question Form */}
                 <div className="lg:col-span-1 bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
                   <h3 className="text-sm font-extrabold text-navy uppercase tracking-wider flex items-center space-x-2">
                     <Mail className="w-4.5 h-4.5 text-brandGreen" />
                     <span>Ask Counseling Team</span>
                   </h3>
-                  
+
                   <form onSubmit={handleCreateQuery} className="space-y-4 text-xs">
                     <div className="flex flex-col space-y-1">
                       <label className="font-bold text-gray-400">Subject</label>
@@ -896,9 +941,8 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                               <td className="p-3 text-[10px]">{qCategory}</td>
                               <td className="p-3 font-normal text-gray-400">{qDate ? new Date(qDate).toLocaleDateString() : 'Today'}</td>
                               <td className="p-3">
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] uppercase font-black ${
-                                  hasReply ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/15 text-amber-600'
-                                }`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] uppercase font-black ${hasReply ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/15 text-amber-600'
+                                  }`}>
                                   {hasReply ? 'Answered' : 'Pending Review'}
                                 </span>
                               </td>
@@ -990,7 +1034,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       <span className="text-[10px] text-gray-400 font-extrabold leading-none uppercase">{ann.date.split(' ')[1]}</span>
                       <span className="text-lg text-navy font-black leading-none mt-1">{ann.date.split(' ')[0]}</span>
                     </div>
-                    
+
                     <div className="flex-1 space-y-1.5">
                       <div className="flex items-center space-x-2">
                         <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${ann.color}`}>
@@ -1010,7 +1054,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
           {activeSubTab === 'Settings' && !loading && (
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm max-w-2xl animate-fadeIn text-left">
               <h2 className="text-lg font-black text-navy mb-6">Profile Settings</h2>
-              
+
               <form onSubmit={handleSaveProfile} className="space-y-6 text-xs">
                 {/* Image Upload */}
                 <div className="flex items-center space-x-5 border-b border-gray-50 pb-6">
@@ -1022,20 +1066,20 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                     )}
                     <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer">
                       <span className="text-[10px] text-white font-bold text-center leading-none px-1">Upload Photo</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        accept="image/*"
                         onChange={handleImageChange}
-                        className="hidden" 
+                        className="hidden"
                       />
                     </label>
                   </div>
-                  
+
                   <div className="flex flex-col">
                     <span className="font-extrabold text-sm text-gray-800">Profile Image</span>
                     <span className="text-[10px] text-gray-400 mt-1 font-semibold">JPG, PNG or GIF. Max size 1MB.</span>
                     {profile.avatar_url && (
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setProfile(prev => ({ ...prev, avatar_url: '' }))}
                         className="text-red-500 hover:text-red-600 font-bold mt-2 text-left self-start"
@@ -1149,16 +1193,14 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                     </div>
                   </div>
 
-                  <div className="flex flex-col space-y-1">
-                    <label className="font-bold text-gray-500">CV / Resume Link (Google Drive / Online CV)</label>
-                    <input
-                      type="url"
-                      placeholder="e.g. https://drive.google.com/your-cv-link"
-                      value={profile.cv_url}
-                      onChange={(e) => setProfile({ ...profile, cv_url: e.target.value })}
-                      className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-semibold text-gray-700 text-sm"
-                    />
-                  </div>
+                  <DualMediaUpload
+                    type="file"
+                    label="CV / Resume Document (Google Drive Link or Upload from Device)"
+                    value={profile.cv_url}
+                    onChange={(val) => setProfile({ ...profile, cv_url: val })}
+                    accept=".pdf,.doc,.docx"
+                    placeholder="https://drive.google.com/your-cv-link or direct PDF URL"
+                  />
                 </div>
 
                 <div className="pt-4 flex justify-end">
@@ -1187,7 +1229,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div className="space-y-1">
               <span className="px-2.5 py-0.5 bg-brandGreen/10 text-[9px] font-black text-brandGreen-dark rounded-md uppercase">
                 {selectedJobDetail.jobType}
@@ -1257,7 +1299,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div>
               <span className="px-2 py-0.5 bg-brandGreen/10 text-brandGreen-dark text-[9px] font-black uppercase rounded-md">
                 {selectedQueryDetail.category}

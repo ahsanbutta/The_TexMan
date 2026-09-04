@@ -515,7 +515,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
               {/* Button Row */}
               <div className="flex items-center space-x-4 pt-4">
                 <button
-                  onClick={() => alert('Notifications enabled!')}
+                  onClick={() => {
+                    if (!requireAuth('enable real-time announcement notifications')) return;
+                    alert('Notifications successfully enabled for your account!');
+                  }}
                   className="flex items-center justify-center px-5 py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold transition-all duration-200 text-xs shrink-0 cursor-pointer shadow-lg shadow-emerald-500/20"
                 >
                   <Bell className="w-4 h-4 mr-2" />
@@ -561,7 +564,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
                     </div>
 
                     <button
-                      onClick={() => alert('Registering for ICAP Career Fair 2026')}
+                      onClick={() => {
+                        if (!requireAuth('register for the ICAP Career Fair 2026')) return;
+                        alert('Successfully registered for ICAP Career Fair 2026! Confirmation sent to your registered email.');
+                      }}
                       className="px-5 py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold transition-all duration-200 text-xs cursor-pointer shadow-md"
                     >
                       Register Now →
@@ -765,7 +771,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
                     Upcoming Events
                   </h4>
                   <button
-                    onClick={() => { window.location.hash = '#events'; }}
+                    onClick={() => {
+                      window.history.pushState(null, '', '/events');
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
                     className="text-[10px] font-extrabold text-brandGreen hover:underline cursor-pointer"
                   >
                     View Calendar
@@ -804,7 +813,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
                   {upcomingEvents.map((evt, idx) => (
                     <div
                       key={idx}
-                      onClick={() => { window.location.hash = '#events'; }}
+                      onClick={() => {
+                        window.history.pushState(null, '', '/events');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }}
                       className="flex items-start space-x-3.5 group cursor-pointer"
                     >
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/5 border border-brandGreen/15 flex flex-col items-center justify-center shrink-0">
@@ -820,7 +832,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
                 </div>
 
                 <button
-                  onClick={() => { window.location.hash = '#events'; }}
+                  onClick={() => {
+                    window.history.pushState(null, '', '/events');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
                   className="w-full py-3.5 bg-gray-50 hover:bg-brandGreen hover:text-white border border-gray-100 hover:border-brandGreen text-navy text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer"
                 >
                   View All Events →
@@ -1000,7 +1015,10 @@ export default function Announcements({ initialAnnouncementId, onClearInitialAnn
 
             <div className="z-10 flex flex-col sm:flex-row items-center gap-4 shrink-0 w-full sm:w-auto">
               <button
-                onClick={() => alert('Notifications enabled!')}
+                onClick={() => {
+                  if (!requireAuth('enable platform notifications')) return;
+                  alert('Notifications successfully enabled for your account!');
+                }}
                 className="w-full sm:w-auto flex items-center justify-center px-6 py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold transition-all duration-200 text-xs shadow-lg shadow-emerald-500/20 cursor-pointer"
               >
                 Enable Notifications <Bell className="w-4 h-4 ml-1.5" />

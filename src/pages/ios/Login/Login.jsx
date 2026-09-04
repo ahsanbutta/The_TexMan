@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { loginUser, registerUser } from '../../../services/authService';
 import goldenDoorway from '../../../assets/golden_doorway.png';
+import logoImg from '../../../assets/logo.png';
 
 export default function Login({ onLoginSuccess, onBack, startFlipped = false, onSignUpRedirect, onLoginRedirect }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped);
@@ -109,7 +110,7 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
 
       setSuccessMsg('Account created successfully! Please sign in with your credentials.');
       setLoginEmail(signUpEmail);
-      
+
       // Auto flip to Login tab after brief feedback
       setTimeout(() => {
         setIsFlipped(false);
@@ -133,13 +134,23 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
       <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-b from-[#02152c] to-[#010e20] p-12 xl:p-16 flex-col justify-between relative overflow-hidden border-r border-white/5">
 
         {/* Top Header Logo */}
-        <div className="flex items-center space-x-3.5 z-10">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00C853] to-[#34d399] flex items-center justify-center shadow-lg shadow-brandGreen/10">
-            <span className="text-white font-extrabold text-xl tracking-tighter">TM</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-white font-extrabold text-base xl:text-lg leading-tight tracking-wide">The TaxMan's Capital</span>
-            <span className="text-[#00C853] text-[9px] uppercase tracking-widest font-bold">Guidance. Opportunities. Success.</span>
+        <div className="flex items-center space-x-3.5 z-10 select-none">
+          <img
+            src={logoImg}
+            alt="The TaxMan's Capital Logo"
+            className="h-11 w-auto object-contain shrink-0 drop-shadow-[0_2px_12px_rgba(0,230,118,0.25)] translate-y-1"
+          />
+          <div className="flex flex-col justify-center">
+            <span className="text-white font-black text-lg xl:text-xl leading-none tracking-tight font-['Outfit',sans-serif]">
+              The TaxMan's
+            </span>
+            <div className="flex items-center space-x-1.5 mt-1">
+              <span className="h-[1px] w-4 bg-gradient-to-r from-transparent to-[#00E676]/80"></span>
+              <span className="text-[#00E676] font-bold text-[10px] tracking-[0.26em] uppercase leading-none font-['Outfit',sans-serif]">
+                Capital
+              </span>
+              <span className="h-[1px] w-4 bg-gradient-to-l from-transparent to-[#00E676]/80"></span>
+            </div>
           </div>
         </div>
 
@@ -227,267 +238,265 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
 
         {/* Sliding Panel Wrapper */}
         <div className={`max-w-md w-full relative overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-xl transition-all duration-500 ease-in-out ${isFlipped ? 'h-[650px]' : 'h-[480px]'}`}>
-          
+
           {/* ──────── FRONT FACE: LOGIN ──────── */}
           <div
-            className={`w-full h-full absolute inset-0 p-6 sm:p-8 flex flex-col justify-start gap-y-4 transition-all duration-500 ease-in-out transform ${
-              isFlipped ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100 pointer-events-auto'
-            }`}
+            className={`w-full h-full absolute inset-0 p-6 sm:p-8 flex flex-col justify-start gap-y-4 transition-all duration-500 ease-in-out transform ${isFlipped ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100 pointer-events-auto'
+              }`}
           >
 
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">Login to Your Account</h2>
-                  <div className="w-10 h-0.5 bg-[#00C853] mx-auto rounded-full" />
-                  <p className="text-xs sm:text-sm text-gray-500 font-medium mt-2">Welcome back! Please enter your details to continue.</p>
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">Login to Your Account</h2>
+                <div className="w-10 h-0.5 bg-[#00C853] mx-auto rounded-full" />
+                <p className="text-xs sm:text-sm text-gray-500 font-medium mt-2">Welcome back! Please enter your details to continue.</p>
+              </div>
+
+              {/* Alerts */}
+              {errorMsg && !isFlipped && (
+                <div className="flex items-start space-x-3 bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-medium border border-red-100">
+                  <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0 text-red-500 mt-0.5" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {successMsg && !isFlipped && (
+                <div className="flex items-start space-x-3 bg-emerald-50 text-emerald-600 px-4 py-3 rounded-2xl text-xs font-medium border border-emerald-100">
+                  <CheckCircle2 className="w-4.5 h-4.5 flex-shrink-0 text-emerald-500 mt-0.5" />
+                  <span>{successMsg}</span>
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Email Address</label>
+                  <div className="relative">
+                    <Mail className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
+                  </div>
                 </div>
 
-                {/* Alerts */}
-                {errorMsg && !isFlipped && (
-                  <div className="flex items-start space-x-3 bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-medium border border-red-100">
-                    <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0 text-red-500 mt-0.5" />
-                    <span>{errorMsg}</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Password</label>
+                    <button type="button" className="text-xs font-bold text-[#00C853] hover:underline bg-transparent cursor-pointer">Forgot Password?</button>
                   </div>
-                )}
-
-                {successMsg && !isFlipped && (
-                  <div className="flex items-start space-x-3 bg-emerald-50 text-emerald-600 px-4 py-3 rounded-2xl text-xs font-medium border border-emerald-100">
-                    <CheckCircle2 className="w-4.5 h-4.5 flex-shrink-0 text-emerald-500 mt-0.5" />
-                    <span>{successMsg}</span>
+                  <div className="relative">
+                    <Lock className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="w-full pl-11 pr-11 py-3 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-800 cursor-pointer"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    </button>
                   </div>
-                )}
+                </div>
 
-                {/* Form */}
-                <form onSubmit={handleLoginSubmit} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Email Address</label>
-                    <div className="relative">
-                      <Mail className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        required
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="Enter your email address"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
+                {/* Keep me signed in */}
+                <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 pt-1">
+                  <label className="flex items-center cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-4 h-4 rounded border-gray-300 text-[#00C853] focus:ring-[#00C853] mr-2 accent-[#00C853] cursor-pointer"
+                    />
+                    Remember me
+                  </label>
+                  <span className="text-[11px] font-medium text-gray-400">Keep me signed in</span>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Password</label>
-                      <button type="button" className="text-xs font-bold text-[#00C853] hover:underline bg-transparent cursor-pointer">Forgot Password?</button>
-                    </div>
-                    <div className="relative">
-                      <Lock className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showLoginPassword ? 'text' : 'password'}
-                        required
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="Enter your password"
-                        className="w-full pl-11 pr-11 py-3 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-800 cursor-pointer"
-                      >
-                        {showLoginPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Keep me signed in */}
-                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 pt-1">
-                    <label className="flex items-center cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 rounded border-gray-300 text-[#00C853] focus:ring-[#00C853] mr-2 accent-[#00C853] cursor-pointer"
-                      />
-                      Remember me
-                    </label>
-                    <span className="text-[11px] font-medium text-gray-400">Keep me signed in</span>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`w-full mt-3 py-3.5 bg-[#00C853] hover:bg-[#00963e] text-white font-extrabold rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-md shadow-brandGreen/10 cursor-pointer transition-all duration-300 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
-                  >
-                    <span>{isSubmitting ? 'Verifying...' : 'Login'}</span>
-                    {!isSubmitting && <ArrowRight className="w-4 h-4" />}
-                  </button>
-                </form>
-
-              </div>
-
-              <div className="text-center text-xs sm:text-sm text-gray-500 pt-4 border-t border-gray-50">
-                Don't have an account?{' '}
                 <button
-                  onClick={() => {
-                    if (onSignUpRedirect) {
-                      onSignUpRedirect();
-                    } else {
-                      setIsFlipped(true);
-                    }
-                  }}
-                  className="text-[#00C853] hover:underline font-extrabold bg-transparent cursor-pointer ml-1"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full mt-3 py-3.5 bg-[#00C853] hover:bg-[#00963e] text-white font-extrabold rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-md shadow-brandGreen/10 cursor-pointer transition-all duration-300 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
                 >
-                  Sign Up
+                  <span>{isSubmitting ? 'Verifying...' : 'Login'}</span>
+                  {!isSubmitting && <ArrowRight className="w-4 h-4" />}
                 </button>
-              </div>
+              </form>
+
+            </div>
+
+            <div className="text-center text-xs sm:text-sm text-gray-500 pt-4 border-t border-gray-50">
+              Don't have an account?{' '}
+              <button
+                onClick={() => {
+                  if (onSignUpRedirect) {
+                    onSignUpRedirect();
+                  } else {
+                    setIsFlipped(true);
+                  }
+                }}
+                className="text-[#00C853] hover:underline font-extrabold bg-transparent cursor-pointer ml-1"
+              >
+                Sign Up
+              </button>
+            </div>
 
           </div>
 
           {/* ──────── BACK FACE: SIGN UP ──────── */}
           <div
-            className={`w-full h-full absolute inset-0 p-6 sm:p-8 flex flex-col justify-start gap-y-3 overflow-hidden transition-all duration-500 ease-in-out transform ${
-              isFlipped ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none'
-            }`}
+            className={`w-full h-full absolute inset-0 p-6 sm:p-8 flex flex-col justify-start gap-y-3 overflow-hidden transition-all duration-500 ease-in-out transform ${isFlipped ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none'
+              }`}
           >
 
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">Create an Account</h2>
-                  <div className="w-10 h-0.5 bg-[#00C853] mx-auto rounded-full" />
-                  <p className="text-xs sm:text-sm text-gray-500 font-medium mt-2">Start your success journey by entering your details.</p>
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">Create an Account</h2>
+                <div className="w-10 h-0.5 bg-[#00C853] mx-auto rounded-full" />
+                <p className="text-xs sm:text-sm text-gray-500 font-medium mt-2">Start your success journey by entering your details.</p>
+              </div>
+
+              {/* Alerts */}
+              {errorMsg && isFlipped && (
+                <div className="flex items-start space-x-3 bg-red-50 text-red-600 px-4 py-2.5 rounded-2xl text-xs font-medium border border-red-100">
+                  <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0 text-red-500 mt-0.5" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {successMsg && isFlipped && (
+                <div className="flex items-start space-x-3 bg-emerald-50 text-emerald-600 px-4 py-2.5 rounded-2xl text-xs font-medium border border-emerald-100">
+                  <CheckCircle2 className="w-4.5 h-4.5 flex-shrink-0 text-emerald-500 mt-0.5" />
+                  <span>{successMsg}</span>
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSignUpSubmit} className="space-y-2">
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Full Name</label>
+                  <div className="relative">
+                    <User className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={signUpName}
+                      onChange={(e) => setSignUpName(e.target.value)}
+                      placeholder="Enter your full name"
+                      className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
+                  </div>
                 </div>
 
-                {/* Alerts */}
-                {errorMsg && isFlipped && (
-                  <div className="flex items-start space-x-3 bg-red-50 text-red-600 px-4 py-2.5 rounded-2xl text-xs font-medium border border-red-100">
-                    <ShieldAlert className="w-4.5 h-4.5 flex-shrink-0 text-red-500 mt-0.5" />
-                    <span>{errorMsg}</span>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Username</label>
+                  <div className="relative">
+                    <User className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={signUpUsername}
+                      onChange={(e) => setSignUpUsername(e.target.value)}
+                      placeholder="Enter your username"
+                      className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
                   </div>
-                )}
+                </div>
 
-                {successMsg && isFlipped && (
-                  <div className="flex items-start space-x-3 bg-emerald-50 text-emerald-600 px-4 py-2.5 rounded-2xl text-xs font-medium border border-emerald-100">
-                    <CheckCircle2 className="w-4.5 h-4.5 flex-shrink-0 text-emerald-500 mt-0.5" />
-                    <span>{successMsg}</span>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Email Address</label>
+                  <div className="relative">
+                    <Mail className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
                   </div>
-                )}
+                </div>
 
-                {/* Form */}
-                <form onSubmit={handleSignUpSubmit} className="space-y-2">
-                  <div className="space-y-1">
-                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Full Name</label>
-                    <div className="relative">
-                      <User className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        required
-                        value={signUpName}
-                        onChange={(e) => setSignUpName(e.target.value)}
-                        placeholder="Enter your full name"
-                        className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Password</label>
+                  <div className="relative">
+                    <Lock className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showSignUpPassword ? 'text' : 'password'}
+                      required
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
+                      placeholder="Create a password"
+                      className="w-full pl-11 pr-11 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-800 cursor-pointer"
+                    >
+                      {showSignUpPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    </button>
                   </div>
+                </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Username</label>
-                    <div className="relative">
-                      <User className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        required
-                        value={signUpUsername}
-                        onChange={(e) => setSignUpUsername(e.target.value)}
-                        placeholder="Enter your username"
-                        className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showSignUpPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
+                    />
                   </div>
+                </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Email Address</label>
-                    <div className="relative">
-                      <Mail className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        required
-                        value={signUpEmail}
-                        onChange={(e) => setSignUpEmail(e.target.value)}
-                        placeholder="Enter your email address"
-                        className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Password</label>
-                    <div className="relative">
-                      <Lock className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showSignUpPassword ? 'text' : 'password'}
-                        required
-                        value={signUpPassword}
-                        onChange={(e) => setSignUpPassword(e.target.value)}
-                        placeholder="Create a password"
-                        className="w-full pl-11 pr-11 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-800 cursor-pointer"
-                      >
-                        {showSignUpPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Confirm Password</label>
-                    <div className="relative">
-                      <Lock className="w-4.5 h-4.5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showSignUpPassword ? 'text' : 'password'}
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm your password"
-                        className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-2xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853]/20 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`w-full mt-2.5 py-3 bg-[#00C853] hover:bg-[#00963e] text-white font-extrabold rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-md shadow-brandGreen/10 cursor-pointer transition-all duration-300 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
-                  >
-                    <span>{isSubmitting ? 'Creating...' : 'Sign Up'}</span>
-                    {!isSubmitting && <ArrowRight className="w-4 h-4" />}
-                  </button>
-                </form>
-
-
-              </div>
-
-              {/* Bottom flip option */}
-              <div className="text-center text-xs sm:text-sm text-gray-500 pt-4 border-t border-gray-50">
-                Already have an account?{' '}
                 <button
-                  onClick={() => {
-                    if (onLoginRedirect) {
-                      onLoginRedirect();
-                    } else {
-                      setIsFlipped(false);
-                    }
-                  }}
-                  className="text-[#00C853] hover:underline font-extrabold bg-transparent cursor-pointer ml-1"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full mt-2.5 py-3 bg-[#00C853] hover:bg-[#00963e] text-white font-extrabold rounded-2xl text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-md shadow-brandGreen/10 cursor-pointer transition-all duration-300 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
                 >
-                  Log In
+                  <span>{isSubmitting ? 'Creating...' : 'Sign Up'}</span>
+                  {!isSubmitting && <ArrowRight className="w-4 h-4" />}
                 </button>
-              </div>
+              </form>
+
+
+            </div>
+
+            {/* Bottom flip option */}
+            <div className="text-center text-xs sm:text-sm text-gray-500 pt-4 border-t border-gray-50">
+              Already have an account?{' '}
+              <button
+                onClick={() => {
+                  if (onLoginRedirect) {
+                    onLoginRedirect();
+                  } else {
+                    setIsFlipped(false);
+                  }
+                }}
+                className="text-[#00C853] hover:underline font-extrabold bg-transparent cursor-pointer ml-1"
+              >
+                Log In
+              </button>
+            </div>
 
           </div>
         </div>

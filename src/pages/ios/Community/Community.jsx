@@ -158,6 +158,10 @@ export default function Community({ initialCommunityId, onClearInitialCommunity 
 
   useEffect(() => {
     if (initialCommunityId) {
+      if (!requireAuth('join our student community study groups and WhatsApp rooms')) {
+        if (onClearInitialCommunity) onClearInitialCommunity();
+        return;
+      }
       const comm = communitiesList.find((c) => c.id === initialCommunityId);
       if (comm) {
         const timer = setTimeout(() => {
@@ -656,6 +660,7 @@ export default function Community({ initialCommunityId, onClearInitialCommunity 
                 </button>
                 <button
                   onClick={() => {
+                    if (!requireAuth('join official WhatsApp student groups')) return;
                     setIsJoinModalOpen(false);
                     alert(`Redirecting to WhatsApp Group invite link for ${selectedCommunity.title}...`);
                   }}

@@ -197,7 +197,10 @@ export const updateProfile = asyncHandler(async (req, res) => {
     };
   }
 
-  return new ApiResponse(200, updatedUser, 'Profile updated successfully.').send(res);
+  const userObj = updatedUser.toObject ? updatedUser.toObject() : { ...updatedUser };
+  userObj.avatar_url = userObj.profileImage || userObj.avatarUrl || userObj.avatar_url;
+
+  return new ApiResponse(200, userObj, 'Profile updated successfully.').send(res);
 });
 
 /**

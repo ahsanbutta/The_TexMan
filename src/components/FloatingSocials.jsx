@@ -50,7 +50,7 @@ export default function FloatingSocials({
   ];
 
   return (
-    <div className="fixed right-3 sm:right-5 bottom-4 sm:bottom-6 z-[9990] flex flex-col gap-2.5 group/container">
+    <div className="fixed right-2.5 sm:right-5 bottom-3 sm:bottom-6 z-[9990] flex flex-col gap-2 sm:gap-2.5 group/container">
       {socialItems.map((item) => (
         <a
           key={item.id}
@@ -58,7 +58,7 @@ export default function FloatingSocials({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={item.tooltip}
-          className={`relative group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full sm:rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer ${item.bgClass}`}
+          className={`relative group flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full sm:rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer ${item.bgClass}`}
         >
           {item.icon}
 

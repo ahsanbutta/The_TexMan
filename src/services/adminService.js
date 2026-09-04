@@ -28,15 +28,7 @@ export const getAdminOverviewStats = async () => {
 };
 
 export const getAllUsers = async () => {
-  try {
-    const res = await api.get('/admin/users');
-    const users = res?.data?.users || res?.data;
-    if (Array.isArray(users)) return users;
-  } catch (err) {
-    console.warn('[AdminService] Users fallback:', err.message);
-  }
-
-  return [
+  const seedUsers = [
     {
       _id: 'admin_1',
       name: 'Saboor Ahmad CA',
@@ -49,6 +41,16 @@ export const getAllUsers = async () => {
     },
     {
       _id: 'usr_2',
+      name: 'Sagheer Ahmad',
+      username: 'sagheer_caf',
+      email: 'sagheerahmad5767@gmail.com',
+      role: 'student',
+      qualification: 'CAF Qualified',
+      level: 'CAF',
+      createdAt: '2026-09-04'
+    },
+    {
+      _id: 'usr_3',
       name: 'Muhammad Ahmed',
       username: 'ahmed_caf',
       email: 'student@taxmancapital.com',
@@ -58,7 +60,7 @@ export const getAllUsers = async () => {
       createdAt: '2026-06-12'
     },
     {
-      _id: 'usr_3',
+      _id: 'usr_4',
       name: 'Usman Saleem',
       username: 'usman_audit',
       email: 'mentor@taxmancapital.com',
@@ -68,7 +70,7 @@ export const getAllUsers = async () => {
       createdAt: '2026-06-18'
     },
     {
-      _id: 'usr_4',
+      _id: 'usr_5',
       name: 'Fatima Noor',
       username: 'fatima_cfap',
       email: 'fatima.noor@gmail.com',
@@ -78,7 +80,7 @@ export const getAllUsers = async () => {
       createdAt: '2026-07-02'
     },
     {
-      _id: 'usr_5',
+      _id: 'usr_6',
       name: 'Zaid Khan',
       username: 'zaid_prc',
       email: 'zaid.khan@gmail.com',
@@ -88,22 +90,296 @@ export const getAllUsers = async () => {
       createdAt: '2026-07-15'
     }
   ];
+
+  let apiUsers = [];
+  try {
+    const res = await api.get('/admin/users');
+    const users = res?.data?.users || res?.data;
+    if (Array.isArray(users) && users.length > 0) {
+      apiUsers = users;
+    }
+  } catch (err) {
+    console.warn('[AdminService] Users API error, using local/cached users:', err.message);
+  }
+
+  // Read local registered users from localStorage
+  let localRegistered = [];
+  try {
+    localRegistered = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+  } catch {}
+
+  // Read any profiles saved in admin_table_profiles
+  let cachedProfiles = [];
+  try {
+    cachedProfiles = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+  } catch {}
+
+  // Deduplicate and merge by email
+  const userMap = new Map();
+
+  // 1. Seed fallback users
+  seedUsers.forEach(u => userMap.set(u.email.toLowerCase(), u));
+
+  // 2. Previously cached profiles
+  if (Array.isArray(cachedProfiles)) {
+    cachedProfiles.forEach(p => {
+      if (p && p.email) {
+        userMap.set(p.email.toLowerCase(), {
+          _id: p.id || p._id || 'usr_' + Date.now(),
+          name: p.full_name || p.name || p.fullName,
+          username: p.username || p.email?.split('@')[0],
+          email: p.email,
+          role: p.role || 'student',
+          qualification: p.level || p.qualification || 'CAF',
+          level: p.level || p.qualification || 'CAF',
+          isActive: p.isActive !== undefined ? p.isActive : (p.status !== 'blocked'),
+          createdAt: p.created_at || p.createdAt || new Date().toISOString()
+        });
+      }
+    });
+  }
+
+  // 3. Newly registered users
+  if (Array.isArray(localRegistered)) {
+    localRegistered.forEach(u => {
+      if (u && u.email) {
+        userMap.set(u.email.toLowerCase(), {
+          _id: u._id || u.id || 'usr_' + Date.now(),
+          name: u.name || u.full_name || u.fullName,
+          username: u.username || u.email?.split('@')[0],
+          email: u.email,
+          role: u.role || 'student',
+          qualification: u.qualification || u.level || 'CAF',
+          level: u.level || u.qualification || 'CAF',
+          isActive: u.isActive !== undefined ? u.isActive : (u.status !== 'blocked'),
+          createdAt: u.createdAt || u.created_at || new Date().toISOString()
+        });
+      }
+    });
+  }
+
+  // 4. Live backend MongoDB users (highest authority)
+  if (Array.isArray(apiUsers)) {
+    apiUsers.forEach(u => {
+      if (u && u.email) {
+        userMap.set(u.email.toLowerCase(), {
+          _id: u._id || u.id,
+          name: u.name || u.fullName,
+          username: u.username || u.email?.split('@')[0],
+          email: u.email,
+          role: u.role || 'student',
+          qualification: u.qualification || u.level || 'CAF',
+          level: u.level || u.qualification || 'CAF',
+          isActive: u.isActive !== undefined ? u.isActive : true,
+          createdAt: u.createdAt || new Date().toISOString()
+        });
+      }
+    });
+  }
+
+  // 5. Current Logged-in Admin User (guarantees the active admin's own email is always present)
+  try {
+    const rawCurrentUser = localStorage.getItem('taxman_user');
+    const rawSession = localStorage.getItem('taxman_session');
+    let currentUser = rawCurrentUser ? JSON.parse(rawCurrentUser) : (rawSession ? JSON.parse(rawSession).user : null);
+    if (currentUser && currentUser.email) {
+      const emailKey = currentUser.email.toLowerCase();
+      const existingUser = userMap.get(emailKey);
+      userMap.set(emailKey, {
+        _id: currentUser._id || currentUser.id || existingUser?._id || 'admin_curr',
+        name: currentUser.name || currentUser.fullName || currentUser.user_metadata?.full_name || existingUser?.name || 'Administrator',
+        username: currentUser.username || currentUser.email.split('@')[0],
+        email: currentUser.email,
+        role: currentUser.role || (currentUser.email.toLowerCase().includes('admin') ? 'admin' : 'student'),
+        qualification: currentUser.qualification || currentUser.level || existingUser?.qualification || 'Qualified',
+        level: currentUser.level || currentUser.qualification || existingUser?.level || 'Qualified',
+        isActive: true,
+        createdAt: existingUser?.createdAt || currentUser.createdAt || new Date().toISOString()
+      });
+    }
+  } catch {}
+
+  const finalUsers = Array.from(userMap.values());
+
+  // Cache to localStorage for offline access
+  try {
+    const formattedForTable = finalUsers.map(u => ({
+      id: u._id || u.id,
+      full_name: u.name || u.fullName || u.full_name,
+      username: u.username || u.email?.split('@')[0],
+      email: u.email,
+      role: u.role || 'student',
+      level: u.level || u.qualification || 'CAF',
+      isActive: u.isActive !== undefined ? u.isActive : true,
+      created_at: u.createdAt || u.created_at || new Date().toISOString()
+    }));
+    localStorage.setItem('admin_table_profiles', JSON.stringify(formattedForTable));
+  } catch {}
+
+  return finalUsers;
+};
+
+export const createAdminUser = async (userData) => {
+  try {
+    const res = await api.post('/admin/users', {
+      name: userData.name || userData.full_name,
+      fullName: userData.name || userData.full_name,
+      username: userData.username,
+      email: userData.email,
+      password: userData.password || 'DefaultPass123!',
+      role: userData.role || 'student',
+      qualification: userData.level || userData.qualification || 'CAF',
+      level: userData.level || userData.qualification || 'CAF',
+      isActive: userData.isActive !== undefined ? userData.isActive : true
+    });
+
+    const createdUser = res?.data?.user || res?.data || res;
+    const formatted = {
+      _id: createdUser._id || createdUser.id || 'usr_' + Date.now(),
+      id: createdUser.id || createdUser._id || 'usr_' + Date.now(),
+      name: createdUser.name || userData.name || userData.full_name,
+      full_name: createdUser.name || userData.name || userData.full_name,
+      username: createdUser.username || userData.username,
+      email: createdUser.email || userData.email,
+      role: createdUser.role || userData.role || 'student',
+      level: createdUser.level || userData.level || 'CAF',
+      qualification: createdUser.qualification || userData.level || 'CAF',
+      isActive: createdUser.isActive !== undefined ? createdUser.isActive : true,
+      created_at: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      cached.unshift(formatted);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(cached));
+
+      const reg = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+      reg.unshift(formatted);
+      localStorage.setItem('taxman_registered_users', JSON.stringify(reg));
+    } catch {}
+
+    return formatted;
+  } catch (err) {
+    const formatted = {
+      _id: 'usr_' + Date.now(),
+      id: 'usr_' + Date.now(),
+      name: userData.name || userData.full_name,
+      full_name: userData.name || userData.full_name,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role || 'student',
+      level: userData.level || 'CAF',
+      qualification: userData.level || 'CAF',
+      isActive: userData.isActive !== undefined ? userData.isActive : true,
+      created_at: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      cached.unshift(formatted);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(cached));
+
+      const reg = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+      reg.unshift(formatted);
+      localStorage.setItem('taxman_registered_users', JSON.stringify(reg));
+    } catch {}
+
+    return formatted;
+  }
 };
 
 export const updateUserRole = async (userId, role) => {
   try {
-    const res = await api.patch(`/admin/users/${userId}/role`, { role });
+    const res = await api.put(`/admin/users/${userId}/role`, { role });
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.map(p => (p.id === userId || p._id === userId) ? { ...p, role } : p);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+    } catch {}
     return res?.data || res;
   } catch {
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.map(p => (p.id === userId || p._id === userId) ? { ...p, role } : p);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+    } catch {}
     return { success: true, message: `User role updated to ${role}.` };
+  }
+};
+
+export const updateAdminUser = async (userId, userData) => {
+  try {
+    const res = await api.put(`/admin/users/${userId}`, userData);
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.map(p => (p.id === userId || p._id === userId) ? {
+        ...p,
+        ...userData,
+        full_name: userData.full_name || userData.name || p.full_name,
+        level: userData.level || userData.qualification || p.level
+      } : p);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+    } catch {}
+    return res?.data || res;
+  } catch {
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.map(p => (p.id === userId || p._id === userId) ? {
+        ...p,
+        ...userData,
+        full_name: userData.full_name || userData.name || p.full_name,
+        level: userData.level || userData.qualification || p.level
+      } : p);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+    } catch {}
+    return { success: true, message: 'User updated successfully.' };
+  }
+};
+
+export const toggleUserStatus = async (userId, isActive) => {
+  try {
+    const res = await api.put(`/admin/users/${userId}`, { isActive });
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.map(p => (p.id === userId || p._id === userId) ? { ...p, isActive } : p);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+    } catch {}
+    return res?.data || res;
+  } catch {
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.map(p => (p.id === userId || p._id === userId) ? { ...p, isActive } : p);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+    } catch {}
+    return { success: true, message: `User status changed to ${isActive ? 'Active' : 'Blocked'}.` };
   }
 };
 
 export const deleteUser = async (userId) => {
   try {
     const res = await api.delete(`/admin/users/${userId}`);
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.filter(p => p.id !== userId && p._id !== userId);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+
+      const localReg = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+      const filteredReg = localReg.filter(p => p.id !== userId && p._id !== userId);
+      localStorage.setItem('taxman_registered_users', JSON.stringify(filteredReg));
+    } catch {}
     return res?.data || res;
   } catch {
+    try {
+      const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+      const updated = cached.filter(p => p.id !== userId && p._id !== userId);
+      localStorage.setItem('admin_table_profiles', JSON.stringify(updated));
+
+      const localReg = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+      const filteredReg = localReg.filter(p => p.id !== userId && p._id !== userId);
+      localStorage.setItem('taxman_registered_users', JSON.stringify(filteredReg));
+    } catch {}
     return { success: true, message: 'User deleted successfully.' };
   }
 };

@@ -1,14 +1,28 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The TaxMan's Capital | CA & ACCA Career Guidance & Jobs Platform</title>
-    <meta name="description" content="Find articleships, audit internships, career counseling, CV preparation resources, and student communities for CA & ACCA students across Pakistan at The TaxMan's Capital." />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The TaxMan's Capital | CA & ACCA Career Guidance & Jobs Platform</title>
+  <meta name="description"
+    content="Find articleships, audit internships, career counseling, CV preparation resources, and student communities for CA & ACCA students across Pakistan at The TaxMan's Capital." />
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error('Window Error:', e);
+      var root = document.getElementById('root');
+      if (root && (!root.innerHTML || root.innerHTML.trim() === '')) {
+        document.body.innerHTML = '<div style="background:#021B3A;color:#ff6b6b;padding:30px;font-family:monospace;min-height:100vh;"><h2>Loading Error</h2><pre style="white-space:pre-wrap;background:rgba(0,0,0,0.3);padding:15px;border-radius:8px;">' + (e.error ? (e.error.stack || e.error.message) : e.message) + '</pre><button onclick="window.location.reload()" style="margin-top:15px;padding:10px 20px;background:#00C853;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Reload Page</button></div>';
+      }
+    });
+  </script>
+</head>
+
+<body class="bg-[#021B3A] text-white min-h-screen">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

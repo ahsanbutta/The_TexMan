@@ -74,7 +74,7 @@ export default function NotificationPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute top-16 right-4 sm:right-12 z-[999] w-[92vw] sm:w-96 max-w-md bg-[#02152c]/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
+      className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-16 sm:right-4 md:right-12 z-[9999] w-auto sm:w-96 max-w-md bg-[#02152c]/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
       style={{ boxShadow: '0 20px 40px -15px rgba(0, 200, 83, 0.2)' }}
     >
       {/* Header */}

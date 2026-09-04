@@ -727,7 +727,8 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
                     onClick={() => {
                       if (setActiveTab) {
                         setActiveTab('Counseling');
-                        window.location.hash = '#guidance';
+                        window.history.pushState(null, '', '/guidance');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
                       } else {
                         alert("Redirecting to Counseling Page...");
                       }

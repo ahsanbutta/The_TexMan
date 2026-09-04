@@ -586,7 +586,14 @@ export default function Counseling() {
 
           <div className="text-center mt-12">
             <button
-              onClick={() => { window.location.hash = '#team'; }}
+              onClick={() => {
+                window.history.pushState(null, '', '/mission');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+                setTimeout(() => {
+                  const el = document.getElementById('our-team');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
               className="px-6 py-3 border border-brandGreen text-brandGreen hover:bg-brandGreen hover:text-white rounded-xl font-bold transition-colors cursor-pointer text-xs uppercase tracking-wider"
             >
               View All Mentors →
@@ -735,7 +742,12 @@ export default function Counseling() {
 
             <div className="z-10 w-full sm:w-auto shrink-0">
               <a
-                href="#communities"
+                href="/communities"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.pushState(null, '', '/communities');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
                 className="w-full sm:w-auto flex items-center justify-center px-6 py-3.5 bg-brandGreen hover:bg-brandGreen-dark text-white rounded-xl font-bold transition-all duration-200 text-xs shadow-lg shadow-emerald-500/20"
               >
                 Join Community →

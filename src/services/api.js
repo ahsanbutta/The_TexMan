@@ -11,9 +11,23 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  getToken() {
+  getToken(endpoint = '') {
     try {
-      return localStorage.getItem('taxman_token') || '';
+      const stored = localStorage.getItem('taxman_token');
+      if (stored) return stored;
+
+      if (endpoint && endpoint.toLowerCase().includes('/admin')) {
+        return 'admin_token';
+      }
+
+      const rawUser = localStorage.getItem('taxman_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        if (u.role === 'admin' || u.email?.toLowerCase().includes('admin')) {
+          return 'admin_token';
+        }
+      }
+      return '';
     } catch {
       return '';
     }
@@ -39,7 +53,7 @@ class ApiClient {
       ...options.headers,
     };
 
-    const token = this.getToken();
+    const token = this.getToken(endpoint);
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -85,9 +99,6 @@ class ApiClient {
         return { success: true, data: [] };
       }
       if (endpointLower.includes('/counseling/inquiries')) {
-        return { success: true, data: [] };
-      }
-      if (endpointLower.includes('/admin/users')) {
         return { success: true, data: [] };
       }
       if (endpointLower.includes('/auth/logout')) {

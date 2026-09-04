@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Home from './pages/ios/Home/Home';
 import FloatingSocials from './components/FloatingSocials';
-import { getCurrentSession, onAuthChange } from './services/authService';
+import { getCurrentSession, getInitialSessionSync, onAuthChange } from './services/authService';
 import { CheckCircle, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [sessionLoading, setSessionLoading] = useState(true);
+  const [session, setSession] = useState(() => getInitialSessionSync());
+  const [sessionLoading, setSessionLoading] = useState(() => !getInitialSessionSync());
 
   // Direct DOM refs for ultra high performance cursor tracker without React re-render churn
   const dotRef = useRef(null);
@@ -177,7 +177,7 @@ export default function App() {
       />
       
       {/* Global Toast Notifications Overlay */}
-      <div className="fixed top-6 right-6 z-[9999] flex flex-col space-y-3 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] flex flex-col space-y-3 pointer-events-none max-w-[calc(100vw-2rem)] sm:max-w-sm w-full">
         {toasts.map(toast => {
           let borderClass = 'border-brandGreen/30 shadow-[0_0_15px_rgba(0,200,83,0.12)] text-emerald-400';
           let icon = <CheckCircle className="w-5 h-5 text-brandGreen flex-shrink-0" />;

@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getDashboardStats,
   getAllUsers,
+  createAdminUser,
   updateUserRole,
   deleteUser,
   getReports,
@@ -16,7 +17,10 @@ router.use(authorizeRoles('admin'));
 
 router.get('/dashboard', getDashboardStats);
 router.get('/users', getAllUsers);
+router.post('/users', createAdminUser);
 router.put('/users/:id/role', updateUserRole);
+router.put('/users/:id', updateUserRole);
+router.patch('/users/:id/status', updateUserRole);
 router.delete('/users/:id', deleteUser);
 router.get('/reports', getReports);
 router.put('/reports/:id', resolveReport);

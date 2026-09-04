@@ -15,6 +15,7 @@ import adminRoutes from './admin.routes.js';
 import searchRoutes from './search.routes.js';
 import uploadRoutes from './upload.routes.js';
 import healthRoutes from './health.routes.js';
+import blogRoutes from './blog.routes.js';
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.use('/auth', authRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/resources', resourceRoutes);
 router.use('/announcements', announcementRoutes);
+router.use('/blogs', blogRoutes);
 router.use('/counseling', counselingRoutes);
 router.use('/mentors', mentorRoutes);
 router.use('/ai', aiRoutes);

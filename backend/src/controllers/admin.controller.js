@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Job } from '../models/Job.js';
 import { JobApplication } from '../models/JobApplication.js';
@@ -6,6 +7,7 @@ import { Post } from '../models/Post.js';
 import { Report } from '../models/Report.js';
 import { CounselingQuery } from '../models/CounselingQuery.js';
 import { ApiResponse } from '../utils/apiResponse.js';
+import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 /**
@@ -102,22 +104,63 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 });
 
 /**
- * Update User Role / Status (Admin)
+ * Create New User (Admin)
+ * POST /api/admin/users
+ */
+export const createAdminUser = asyncHandler(async (req, res) => {
+  const { name, fullName, email, username, password, role, qualification, level, isActive } = req.body;
+  if (!email) {
+    throw new ApiError(400, 'Email address is required.');
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+  const existing = await User.findOne({ email: cleanEmail });
+  if (existing) {
+    throw new ApiError(400, 'A user with this email address already exists.');
+  }
+
+  const cleanUsername = (username || cleanEmail.split('@')[0]).toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
+  const user = await User.create({
+    name: (name || fullName || cleanUsername).trim(),
+    email: cleanEmail,
+    username: cleanUsername,
+    password: password || 'DefaultPassword123!',
+    role: role || 'student',
+    qualification: qualification || level || 'CAF',
+    level: level || qualification || 'CAF',
+    isActive: isActive !== undefined ? isActive : true
+  });
+
+  const responseUser = user.toObject();
+  delete responseUser.password;
+  return new ApiResponse(201, responseUser, 'User created successfully').send(res);
+});
+
+/**
+ * Update User Profile, Role, or Status (Admin)
  * PUT /api/admin/users/:id/role
+ * PUT /api/admin/users/:id
  */
 export const updateUserRole = asyncHandler(async (req, res) => {
-  const { role, isActive } = req.body;
+  const { role, isActive, name, fullName, email, username, qualification, level } = req.body;
   const updates = {};
   if (role) updates.role = role;
   if (isActive !== undefined) updates.isActive = isActive;
+  if (name || fullName) updates.name = name || fullName;
+  if (email) updates.email = email.toLowerCase().trim();
+  if (username) updates.username = username.toLowerCase().trim();
+  if (qualification || level) {
+    updates.qualification = qualification || level;
+    updates.level = qualification || level;
+  }
 
   if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(req.params.id)) {
     try {
       const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password');
-      if (user) return new ApiResponse(200, user, 'User role/status updated').send(res);
+      if (user) return new ApiResponse(200, user, 'User details updated successfully').send(res);
     } catch (err) {}
   }
-  return new ApiResponse(200, { id: req.params.id, ...updates }, 'User role/status updated').send(res);
+  return new ApiResponse(200, { id: req.params.id, ...updates }, 'User details updated successfully').send(res);
 });
 
 /**

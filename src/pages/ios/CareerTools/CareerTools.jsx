@@ -754,7 +754,12 @@ export default function CareerTools() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveSubTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === 'mock' || tab.id === 'cv' || tab.id === 'tutor') {
+                    if (!requireAuth(`access ${tab.label}`)) return;
+                  }
+                  setActiveSubTab(tab.id);
+                }}
                 className={`flex items-center space-x-2.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'bg-brandGreen text-white shadow-lg shadow-brandGreen/20 border border-brandGreen/50'

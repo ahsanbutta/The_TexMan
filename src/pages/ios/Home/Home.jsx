@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Briefcase,
   Users,
@@ -25,10 +26,15 @@ import {
   Sparkles,
   Zap,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  User,
+  LayoutDashboard,
+  LogOut
 } from 'lucide-react';
 import { AnimatedCounter, AnimatedSection, AnimatedCard, PageTransition, AntigravityCanvas } from '../../../components/motion/MotionSystem';
 import mentorImage from '../../../assets/mentor_portrait.png';
+import logoImg from '../../../assets/logo.png';
+import tmBadge from '../../../assets/tm_badge.png';
 import Jobs from '../Jobs/Jobs';
 import Counseling from '../career_support/career_support';
 import Community from '../Community/Community';
@@ -42,6 +48,7 @@ import UserDashboard from '../UserDashboard/UserDashboard';
 import Events from '../Events/Events';
 import Podcasts from '../Podcasts/Podcasts';
 import CareerTools from '../CareerTools/CareerTools';
+import Blog from '../Blog/Blog';
 import NotificationPanel from '../../../components/NotificationPanel';
 import {
   getNotifications,
@@ -49,27 +56,144 @@ import {
   markAllNotificationsAsRead,
   deleteNotification
 } from '../../../services/notificationService';
-import { getProfiles, logoutUser, registerUser, loginUser, requireAuth } from '../../../services/authService';
+import { getProfiles, logoutUser, registerUser, loginUser, requireAuth, getInitialSessionSync } from '../../../services/authService';
 import { INITIAL_JOBS } from '../../../data/jobsData';
+const parseRouteToTabState = () => {
+  if (typeof window === 'undefined') {
+    return { tab: 'Home', resourcesCategory: 'All', loginStartFlipped: false, scrollTarget: null };
+  }
+  const pathname = (window.location.pathname || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+  const hash = (window.location.hash || '').replace(/^#+/, '').toLowerCase();
+  const route = pathname || hash || '';
+  let tab = 'Home';
+  let resourcesCategory = 'All';
+  let loginStartFlipped = false;
+  let scrollTarget = null;
+
+  if (route === 'jobs') {
+    tab = 'Jobs';
+  } else if (route === 'inductions') {
+    tab = 'Inductions';
+  } else if (route === 'overseas') {
+    tab = 'Overseas';
+  } else if (route === 'guidance' || route === 'counseling' || route === 'careersupport') {
+    tab = 'Counseling';
+  } else if (route === 'careertools' || route === 'career-tools' || route === 'tools') {
+    tab = 'Career Tools';
+  } else if (route === 'communities' || route === 'community') {
+    tab = 'Community';
+  } else if (route === 'podcasts' || route === 'videos' || route === 'sessions') {
+    tab = 'Podcasts';
+  } else if (route === 'mission' || route === 'our-mission') {
+    tab = 'Our Mission';
+  } else if (route === 'vision' || route === 'our-vision') {
+    tab = 'Our Mission';
+    scrollTarget = 'our-vision';
+  } else if (route === 'admin') {
+    tab = 'AdminDashboard';
+  } else if (route === 'dashboard' || route === 'user-dashboard') {
+    tab = 'UserDashboard';
+  } else if (route.startsWith('resources')) {
+    tab = 'Resources';
+    const subCat = route.split('-')[1];
+    if (subCat === 'prc') resourcesCategory = 'PRC';
+    else if (subCat === 'caf') resourcesCategory = 'CAF';
+    else if (subCat === 'induction' || subCat === 'training') resourcesCategory = 'Training/Induction';
+    else if (subCat === 'cfap') resourcesCategory = 'CFAP & SCS (Finals)';
+    else if (subCat === 'qualified') resourcesCategory = 'CA Qualified';
+    else if (subCat === 'acca') resourcesCategory = 'ACCA';
+    else resourcesCategory = 'All';
+  } else if (route === 'contact') {
+    tab = 'Contact Us';
+  } else if (route === 'announcements') {
+    tab = 'Announcements';
+  } else if (route === 'events') {
+    tab = 'Events';
+  } else if (route === 'blog' || route === 'blogs' || route === 'articles' || route.startsWith('blog/')) {
+    tab = 'Blog';
+  } else if (route === 'team' || route === 'our-team') {
+    tab = 'Our Mission';
+    scrollTarget = 'our-team';
+  } else if (route === 'login') {
+    tab = 'Login';
+    loginStartFlipped = false;
+  } else if (route === 'signup' || route === 'register') {
+    tab = 'Login';
+    loginStartFlipped = true;
+  } else {
+    tab = 'Home';
+    if (route && route !== 'home') {
+      scrollTarget = route;
+    }
+  }
+
+  return { tab, resourcesCategory, loginStartFlipped, scrollTarget };
+};
+
+const TAB_TO_PATH = {
+  'Home': '/',
+  'Jobs': '/jobs',
+  'Inductions': '/inductions',
+  'Overseas': '/overseas',
+  'Counseling': '/guidance',
+  'Career Support': '/guidance',
+  'Career Tools': '/careertools',
+  'CareerTools': '/careertools',
+  'Community': '/communities',
+  'Podcasts': '/podcasts',
+  'Our Mission': '/mission',
+  'Resources': '/resources',
+  'Contact Us': '/contact',
+  'Announcements': '/announcements',
+  'Events': '/events',
+  'Blog': '/blog',
+  'Login': '/login',
+  'AdminDashboard': '/admin',
+  'UserDashboard': '/dashboard'
+};
+
+const updateAppUrl = (path, replace = false) => {
+  if (typeof window === 'undefined') return;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (window.location.pathname !== cleanPath || window.location.hash) {
+    if (replace || window.location.hash) {
+      window.history.replaceState(null, '', cleanPath);
+    } else {
+      window.history.pushState(null, '', cleanPath);
+    }
+  }
+};
 
 export default function Home({ session, sessionLoading }) {
+  const initialNav = parseRouteToTabState();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('Home');
-  const [resourcesCategory, setResourcesCategory] = useState('All');
+  const [activeTab, setActiveTab] = useState(initialNav.tab);
+  const [resourcesCategory, setResourcesCategory] = useState(initialNav.resourcesCategory);
   const [announcementSubscribed, setAnnouncementSubscribed] = useState(false);
   const [emailInput, setEmailInput] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loginStartFlipped, setLoginStartFlipped] = useState(false);
-  const [username, setUsername] = useState('');
-  const [avatarLetter, setAvatarLetter] = useState('U');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [authLoading, setAuthLoading] = useState(true);
+
+  const initialSync = session || getInitialSessionSync();
+  const initialUser = initialSync?.user;
+  const initialIsAdmin = Boolean(
+    initialUser?.role === 'admin' ||
+    initialUser?.role === 'team_head' ||
+    initialUser?.email?.toLowerCase().includes('admin')
+  );
+  const initialUsername = initialUser?.full_name || initialUser?.username || initialUser?.name || initialUser?.email?.split('@')[0] || '';
+
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(initialUser));
+  const [loginStartFlipped, setLoginStartFlipped] = useState(initialNav.loginStartFlipped);
+  const [username, setUsername] = useState(initialUsername);
+  const [avatarLetter, setAvatarLetter] = useState(() => (initialUsername ? initialUsername.charAt(0).toUpperCase() : 'U'));
+  const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
+  const [avatarUrl, setAvatarUrl] = useState(() => initialUser?.avatar_url || initialUser?.profileImage || '');
+  const [authLoading, setAuthLoading] = useState(() => !initialSync);
   const [savedJobs, setSavedJobs] = useState([1, 3, 5]);
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [userDashboardTab, setUserDashboardTab] = useState('Overview');
   const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   useEffect(() => {
     getNotifications().then(setNotifications).catch(() => { });
@@ -91,6 +215,61 @@ export default function Home({ session, sessionLoading }) {
   };
 
   const unreadNotifCount = notifications.filter(n => !n.read).length;
+
+  // Lock body scroll and listen for Escape key when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setMobileMenuOpen(false);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [mobileMenuOpen]);
+
+  // Automatically sync clean HTML5 URL with active tab (removes '#' hash completely)
+  useEffect(() => {
+    let cleanPath = TAB_TO_PATH[activeTab] || '/';
+    if (activeTab === 'Resources' && resourcesCategory && resourcesCategory !== 'All') {
+      const catSlug = resourcesCategory.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      cleanPath = `/resources-${catSlug}`;
+    }
+    updateAppUrl(cleanPath);
+  }, [activeTab, resourcesCategory]);
+
+  // Support browser Back/Forward navigation with clean URLs
+  useEffect(() => {
+    const handlePopState = () => {
+      const nav = parseRouteToTabState();
+      setActiveTab(nav.tab);
+      setResourcesCategory(nav.resourcesCategory);
+      setLoginStartFlipped(nav.loginStartFlipped);
+      if (nav.scrollTarget) {
+        setTimeout(() => {
+          const el = document.getElementById(nav.scrollTarget);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    if (initialNav.scrollTarget) {
+      setTimeout(() => {
+        const el = document.getElementById(initialNav.scrollTarget);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+    }
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -164,101 +343,32 @@ export default function Home({ session, sessionLoading }) {
 
   const handleViewJobDetails = (id) => {
     setActiveTab('Inductions');
-    window.history.pushState(null, '', '#inductions');
+    updateAppUrl('/inductions');
     setSelectedJobIdForModal(id);
   };
 
   const handleJoinCommunity = (id) => {
     setActiveTab('Community');
-    window.history.pushState(null, '', '#communities');
+    updateAppUrl('/communities');
     setSelectedCommunityIdForModal(id);
   };
 
   const handleViewAnnouncement = (id) => {
     setActiveTab('Announcements');
-    window.history.pushState(null, '', '#announcements');
+    updateAppUrl('/announcements');
     setSelectedAnnouncementIdForModal(id);
   };
 
+  // Synchronize active tab with sessionStorage so it is remembered seamlessly on refresh
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#jobs') {
-        setActiveTab('Jobs');
-      } else if (hash === '#inductions') {
-        setActiveTab('Inductions');
-      } else if (hash === '#overseas') {
-        setActiveTab('Overseas');
-      } else if (hash === '#guidance') {
-        setActiveTab('Counseling');
-      } else if (hash === '#careertools' || hash === '#career-tools' || hash === '#tools') {
-        setActiveTab('Career Tools');
-      } else if (hash === '#communities') {
-        setActiveTab('Community');
-      } else if (hash === '#podcasts' || hash === '#videos' || hash === '#sessions') {
-        setActiveTab('Podcasts');
-      } else if (hash === '#mission') {
-        setActiveTab('Our Mission');
-      } else if (hash === '#admin') {
-        setActiveTab('AdminDashboard');
-      } else if (hash === '#dashboard' || hash === '#user-dashboard') {
-        setActiveTab('UserDashboard');
-      } else if (hash === '#vision') {
-        setActiveTab('Our Mission');
-        setTimeout(() => {
-          const element = document.getElementById('our-vision');
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 150);
-      } else if (hash.startsWith('#resources')) {
-        setActiveTab('Resources');
-        const subCat = hash.split('-')[1];
-        if (subCat === 'prc') setResourcesCategory('PRC');
-        else if (subCat === 'caf') setResourcesCategory('CAF');
-        else if (subCat === 'induction') setResourcesCategory('Training/Induction');
-        else if (subCat === 'cfap') setResourcesCategory('CFAP & SCS (Finals)');
-        else if (subCat === 'qualified') setResourcesCategory('CA Qualified');
-        else if (subCat === 'acca') setResourcesCategory('ACCA');
-        else setResourcesCategory('All');
-      } else if (hash === '#contact') {
-        setActiveTab('Contact Us');
-      } else if (hash === '#announcements') {
-        setActiveTab('Announcements');
-      } else if (hash === '#events') {
-        setActiveTab('Events');
-      } else if (hash === '#team') {
-        setActiveTab('Our Mission');
-        setTimeout(() => {
-          const element = document.getElementById('our-team');
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 150);
-      } else if (hash === '#login') {
-        setActiveTab('Login');
-        setLoginStartFlipped(false);
-      } else if (hash === '#signup' || hash === '#register') {
-        setActiveTab('Login');
-        setLoginStartFlipped(true);
-      } else if (hash === '#' || hash === '') {
-        setActiveTab('Home');
-      } else {
-        setActiveTab('Home');
-        // Wait for page render, then smooth scroll to the target section
-        setTimeout(() => {
-          const element = document.getElementById(hash.substring(1));
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 150);
+    try {
+      if (activeTab) {
+        sessionStorage.setItem('thetaxman_active_tab', activeTab);
       }
-    };
-
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+    } catch {
+      // ignore
+    }
+  }, [activeTab]);
 
   // Sync profile state when session updates
   useEffect(() => {
@@ -274,12 +384,12 @@ export default function Home({ session, sessionLoading }) {
     if (activeTab === 'AdminDashboard') {
       if (!isLoggedIn) {
         setActiveTab('Login');
-        window.history.pushState(null, '', '#login');
+        updateAppUrl('/login');
       }
     } else if (activeTab === 'UserDashboard') {
       if (!isLoggedIn) {
         setActiveTab('Login');
-        window.history.pushState(null, '', '#login');
+        updateAppUrl('/login');
       }
     }
   }, [activeTab, isLoggedIn, sessionLoading, authLoading]);
@@ -470,27 +580,39 @@ export default function Home({ session, sessionLoading }) {
     }
   };
   return (
-    <div className="min-h-screen bg-bgLight text-textColor flex flex-col selection:bg-brandGreen selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-bgLight text-textColor flex flex-col selection:bg-brandGreen selection:text-white">
 
       {/* 1. Navbar */}
       {activeTab !== 'Login' && activeTab !== 'Register' && activeTab !== 'AdminDashboard' && activeTab !== 'UserDashboard' && (
-        <nav className="bg-navy/95 backdrop-blur-md sticky top-0 z-50 border-b border-white/10">
+        <nav className="bg-navy/95 backdrop-blur-md sticky top-0 z-50 border-b border-white/10 w-full max-w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-20">
+            <div className="flex items-center justify-between h-16 sm:h-20">
               {/* Logo */}
               <div
                 onClick={() => {
                   setActiveTab('Home');
-                  window.location.hash = '';
                 }}
-                className="flex-shrink-0 flex items-center space-x-2.5 cursor-pointer group"
+                className="flex-shrink-0 flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group select-none py-1"
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brandGreen to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:rotate-6 transition-transform duration-300">
-                  <span className="text-white font-extrabold text-xl tracking-tighter">TM</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-white font-extrabold text-base xl:text-lg leading-tight tracking-wide whitespace-nowrap group-hover:text-brandGreen transition-colors">The TaxMan's Capital</span>
-                  <span className="text-brandGreen text-[10px] uppercase tracking-widest font-bold hidden sm:block lg:hidden xl:block">Guidance. Opportunities. Success.</span>
+                {/* TM Emblem: Transparent, Pure White 'T' & Vivid Green 'M' */}
+                <img
+                  src={logoImg}
+                  alt="The TaxMan's Capital Logo"
+                  className="h-9 sm:h-12 w-auto object-contain shrink-0 group-hover:scale-105 transition-transform duration-300 drop-shadow-[0_2px_12px_rgba(0,230,118,0.3)] translate-y-1 sm:translate-y-1.5"
+                />
+
+                {/* Brand Typography (The TaxMan's / — CAPITAL —) */}
+                <div className="flex flex-col min-w-0 justify-center">
+                  <span className="text-white font-black text-base sm:text-lg xl:text-xl leading-none tracking-tight whitespace-nowrap group-hover:text-white/95 transition-colors font-['Outfit',sans-serif]">
+                    The TaxMan's
+                  </span>
+                  <div className="flex items-center space-x-1.5 sm:space-x-2 mt-1 sm:mt-1.5">
+                    <span className="h-[1.5px] w-3.5 sm:w-5 bg-gradient-to-r from-transparent to-[#00E676]/80"></span>
+                    <span className="text-[#00E676] font-bold text-[10px] sm:text-xs tracking-[0.26em] sm:tracking-[0.3em] uppercase leading-none font-['Outfit',sans-serif] drop-shadow-[0_0_8px_rgba(0,230,118,0.4)]">
+                      Capital
+                    </span>
+                    <span className="h-[1.5px] w-3.5 sm:w-5 bg-gradient-to-l from-transparent to-[#00E676]/80"></span>
+                  </div>
                 </div>
               </div>
 
@@ -498,11 +620,10 @@ export default function Home({ session, sessionLoading }) {
               <div className="hidden lg:flex items-center space-x-1 xl:space-x-4 h-full">
                 {/* Home */}
                 <a
-                  href="#"
+                  href="/"
                   onClick={(e) => {
                     e.preventDefault();
                     setActiveTab('Home');
-                    window.location.hash = '';
                   }}
                   className={`px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold tracking-wide whitespace-nowrap transition-all duration-300 relative flex items-center h-full ${activeTab === 'Home'
                     ? 'text-brandGreen'
@@ -529,11 +650,10 @@ export default function Home({ session, sessionLoading }) {
                   {/* Dropdown Menu */}
                   <div className="absolute top-[80%] left-0 w-52 bg-navy border border-white/10 rounded-xl shadow-2xl py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:top-[90%] transition-all duration-300 backdrop-blur-xl bg-opacity-95">
                     <a
-                      href="#inductions"
+                      href="/inductions"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Inductions');
-                        window.location.hash = '#inductions';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Inductions' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -541,11 +661,10 @@ export default function Home({ session, sessionLoading }) {
                       CA/ACCA Inductions
                     </a>
                     <a
-                      href="#jobs"
+                      href="/jobs"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Jobs');
-                        window.location.hash = '#jobs';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Jobs' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -553,11 +672,10 @@ export default function Home({ session, sessionLoading }) {
                       Pakistan Jobs
                     </a>
                     <a
-                      href="#overseas"
+                      href="/overseas"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Overseas');
-                        window.location.hash = '#overseas';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Overseas' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -565,11 +683,10 @@ export default function Home({ session, sessionLoading }) {
                       Overseas Jobs
                     </a>
                     <a
-                      href="#guidance"
+                      href="/guidance"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Counseling');
-                        window.location.hash = '#guidance';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Counseling' || activeTab === 'Career Support' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -577,11 +694,10 @@ export default function Home({ session, sessionLoading }) {
                       Career Support
                     </a>
                     <a
-                      href="#careertools"
+                      href="/careertools"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Career Tools');
-                        window.location.hash = '#careertools';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Career Tools' || activeTab === 'CareerTools' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -605,12 +721,11 @@ export default function Home({ session, sessionLoading }) {
                   {/* Dropdown Menu */}
                   <div className="absolute top-[80%] left-0 w-56 bg-navy border border-white/10 rounded-xl shadow-2xl py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:top-[90%] transition-all duration-300 backdrop-blur-xl bg-opacity-95">
                     <a
-                      href="#resources"
+                      href="/resources"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('All');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'All' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -618,12 +733,11 @@ export default function Home({ session, sessionLoading }) {
                       All Resources
                     </a>
                     <a
-                      href="#resources-prc"
+                      href="/resources-prc"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('PRC');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources-prc';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'PRC' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -631,12 +745,11 @@ export default function Home({ session, sessionLoading }) {
                       PRC (Entry Level)
                     </a>
                     <a
-                      href="#resources-caf"
+                      href="/resources-caf"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('CAF');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources-caf';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'CAF' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -644,12 +757,11 @@ export default function Home({ session, sessionLoading }) {
                       CAF (Intermediate)
                     </a>
                     <a
-                      href="#resources-induction"
+                      href="/resources-induction"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('Training/Induction');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources-induction';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'Training/Induction' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -657,12 +769,11 @@ export default function Home({ session, sessionLoading }) {
                       Training / Induction
                     </a>
                     <a
-                      href="#resources-cfap"
+                      href="/resources-cfap"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('CFAP & SCS (Finals)');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources-cfap';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'CFAP & SCS (Finals)' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -670,12 +781,11 @@ export default function Home({ session, sessionLoading }) {
                       CFAP & SCS (Finals)
                     </a>
                     <a
-                      href="#resources-qualified"
+                      href="/resources-qualified"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('CA Qualified');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources-qualified';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'CA Qualified' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -683,12 +793,11 @@ export default function Home({ session, sessionLoading }) {
                       CA Qualified
                     </a>
                     <a
-                      href="#resources-acca"
+                      href="/resources-acca"
                       onClick={(e) => {
                         e.preventDefault();
                         setResourcesCategory('ACCA');
                         setActiveTab('Resources');
-                        window.location.hash = '#resources-acca';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Resources' && resourcesCategory === 'ACCA' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -701,7 +810,7 @@ export default function Home({ session, sessionLoading }) {
                 {/* Community Dropdown */}
                 <div className="relative group flex items-center h-full">
                   <button
-                    className={`px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold tracking-wide whitespace-nowrap transition-all duration-300 flex items-center space-x-1.5 cursor-pointer ${activeTab === 'Community' || activeTab === 'Announcements'
+                    className={`px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold tracking-wide whitespace-nowrap transition-all duration-300 flex items-center space-x-1.5 cursor-pointer ${activeTab === 'Community' || activeTab === 'Announcements' || activeTab === 'Events' || activeTab === 'Podcasts'
                       ? 'text-brandGreen'
                       : 'text-gray-300 hover:text-white'
                       }`}
@@ -712,11 +821,10 @@ export default function Home({ session, sessionLoading }) {
                   {/* Dropdown Menu */}
                   <div className="absolute top-[80%] left-0 w-52 bg-navy border border-white/10 rounded-xl shadow-2xl py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:top-[90%] transition-all duration-300 backdrop-blur-xl bg-opacity-95">
                     <a
-                      href="#communities"
+                      href="/communities"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Community');
-                        window.location.hash = '#communities';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Community' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -724,11 +832,10 @@ export default function Home({ session, sessionLoading }) {
                       Communities
                     </a>
                     <a
-                      href="#announcements"
+                      href="/announcements"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Announcements');
-                        window.location.hash = '#announcements';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Announcements' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -736,11 +843,10 @@ export default function Home({ session, sessionLoading }) {
                       Announcements
                     </a>
                     <a
-                      href="#events"
+                      href="/events"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Events');
-                        window.location.hash = '#events';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Events' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -748,16 +854,16 @@ export default function Home({ session, sessionLoading }) {
                       Events
                     </a>
                     <a
-                      href="#podcasts"
+                      href="/podcasts"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Podcasts');
-                        window.location.hash = '#podcasts';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Podcasts' ? 'text-brandGreen bg-white/5' : 'text-gray-300'}`}
                     >
                       Videos & Podcasts
                     </a>
+
                   </div>
                 </div>
 
@@ -775,35 +881,38 @@ export default function Home({ session, sessionLoading }) {
                   {/* Dropdown Menu */}
                   <div className="absolute top-[80%] left-0 w-52 bg-navy border border-white/10 rounded-xl shadow-2xl py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:top-[90%] transition-all duration-300 backdrop-blur-xl bg-opacity-95">
                     <a
-                      href="#mission"
+                      href="/mission"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Our Mission');
-                        window.location.hash = '#mission';
+                        updateAppUrl('/mission');
                       }}
-                      className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Our Mission' && window.location.hash !== '#vision' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
+                      className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Our Mission' && window.location.pathname !== '/vision' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
                     >
                       Our Mission
                     </a>
                     <a
-                      href="#vision"
+                      href="/vision"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Our Mission');
-                        window.location.hash = '#vision';
+                        updateAppUrl('/vision');
+                        setTimeout(() => {
+                          const el = document.getElementById('our-vision');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
                       }}
-                      className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Our Mission' && window.location.hash === '#vision' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
+                      className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Our Mission' && window.location.pathname === '/vision' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
                     >
                       Our Vision
                     </a>
                     <a
-                      href="#contact"
+                      href="/contact"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Contact Us');
-                        window.location.hash = '#contact';
                       }}
                       className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Contact Us' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
                         }`}
@@ -812,6 +921,23 @@ export default function Home({ session, sessionLoading }) {
                     </a>
                   </div>
                 </div>
+
+                {/* Blog – top-level link (next to About) */}
+                <a
+                  href="/blog"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setActiveTab('Blog');
+                    updateAppUrl('/blog');
+                  }}
+                  className={`px-3 py-2 rounded-lg text-xs xl:text-sm font-semibold tracking-wide whitespace-nowrap transition-all duration-300 cursor-pointer ${
+                    activeTab === 'Blog'
+                      ? 'text-brandGreen'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Blog
+                </a>
               </div>
 
               {/* Desktop Auth Actions & Icons */}
@@ -832,29 +958,91 @@ export default function Home({ session, sessionLoading }) {
                       )}
                     </button>
 
-                    <button
-                      onClick={() => {
-                        if (isAdmin) {
-                          setActiveTab('AdminDashboard');
-                          window.location.hash = '#admin';
-                        } else {
-                          setUserDashboardTab('Overview');
-                          setActiveTab('UserDashboard');
-                          window.location.hash = '#dashboard';
-                        }
-                      }}
-                      className="px-4 py-1.5 bg-brandGreen hover:bg-brandGreen-dark text-white text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                    >
-                      {isAdmin ? 'Admin Dashboard' : 'My Dashboard'}
-                    </button>
+                    {/* User Avatar Dropdown (Hover & Click Supported) */}
+                    <div className="relative group flex items-center h-full py-2">
+                      <button
+                        onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                        className="p-0.5 rounded-full hover:bg-white/10 transition-all focus:outline-none cursor-pointer"
+                        aria-label="User Account Menu"
+                      >
+                        <div className="w-8.5 h-8.5 rounded-full bg-[#0A2540] text-white font-black flex items-center justify-center text-xs shadow-md overflow-hidden border border-white/20 group-hover:border-brandGreen transition-colors">
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            avatarLetter
+                          )}
+                        </div>
+                      </button>
 
-                    {/* Styled Avatar Section */}
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-black flex items-center justify-center text-sm shadow-md cursor-default overflow-hidden border-2 border-white/10">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        avatarLetter
-                      )}
+                      {/* Dropdown Menu Card (Hover & Click Supported) */}
+                      <div
+                        className={`absolute top-[85%] right-0 w-60 bg-[#031835]/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl py-2 z-50 transition-all duration-200 text-xs overflow-hidden ${
+                          userDropdownOpen
+                            ? 'opacity-100 visible top-[95%]'
+                            : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:top-[95%]'
+                        }`}
+                      >
+                        {/* Profile Header */}
+                        <div className="px-4 py-3 border-b border-white/10 flex items-center space-x-3 bg-white/[0.02]">
+                          <div className="w-10 h-10 rounded-full bg-[#0A2540] text-white font-black flex items-center justify-center text-sm overflow-hidden border border-white/20 shrink-0">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              avatarLetter
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-white text-xs font-bold truncate">
+                              {username || 'Student'}
+                            </span>
+                            <span className="text-[10px] text-brandGreen font-semibold uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-brandGreen animate-pulse" />
+                              {isAdmin ? 'Administrator' : 'Student Trainee'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Menu Options: Only Dashboard & Sign Out */}
+                        <div className="py-1.5 space-y-0.5">
+                          {/* 1. Dashboard */}
+                          <button
+                            onClick={() => {
+                              setUserDropdownOpen(false);
+                              if (isAdmin) {
+                                setActiveTab('AdminDashboard');
+                              } else {
+                                setUserDashboardTab('Overview');
+                                setActiveTab('UserDashboard');
+                              }
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-semibold text-gray-200 hover:text-white hover:bg-white/5 flex items-center space-x-3 transition-colors cursor-pointer group/item"
+                          >
+                            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover/item:bg-emerald-500/20 transition-colors">
+                              <LayoutDashboard className="w-4 h-4" />
+                            </div>
+                            <span className="flex-1 font-bold">My Dashboard</span>
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover/item:text-gray-300" />
+                          </button>
+
+                          <div className="border-t border-white/10 my-1" />
+
+                          {/* 2. Sign Out */}
+                          <button
+                            onClick={async () => {
+                              setUserDropdownOpen(false);
+                              await logoutUser();
+                              setIsLoggedIn(false);
+                              setActiveTab('Home');
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center space-x-3 transition-colors cursor-pointer group/item"
+                          >
+                            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 group-hover/item:bg-rose-500/20 transition-colors">
+                              <LogOut className="w-4 h-4" />
+                            </div>
+                            <span className="font-bold">Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -863,7 +1051,6 @@ export default function Home({ session, sessionLoading }) {
                       onClick={() => {
                         setLoginStartFlipped(false);
                         setActiveTab('Login');
-                        window.location.hash = '#login';
                       }}
                       className="px-4 py-1.5 border border-white/20 hover:border-brandGreen/40 rounded-lg text-xs xl:text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-300 whitespace-nowrap cursor-pointer"
                     >
@@ -900,35 +1087,29 @@ export default function Home({ session, sessionLoading }) {
               {/* Mobile Auth Actions & Menu Trigger */}
               <div className="lg:hidden flex items-center space-x-2 sm:space-x-3 relative">
                 {isLoggedIn ? (
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => {
-                        if (isAdmin) {
-                          setActiveTab('AdminDashboard');
-                          window.location.hash = '#admin';
-                        } else {
-                          setUserDashboardTab('Overview');
-                          setActiveTab('UserDashboard');
-                          window.location.hash = '#dashboard';
-                        }
-                      }}
-                      className="px-2.5 py-1.5 bg-brandGreen hover:bg-brandGreen-dark text-white text-[11px] font-bold rounded-lg transition-colors shadow-sm whitespace-nowrap cursor-pointer"
-                    >
-                      {isAdmin ? 'Admin' : 'Dashboard'}
-                    </button>
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-bold flex items-center justify-center text-xs overflow-hidden border border-white/20">
-                      {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : avatarLetter}
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => {
+                      if (isAdmin) {
+                        setActiveTab('AdminDashboard');
+                      } else {
+                        setUserDashboardTab('Overview');
+                        setActiveTab('UserDashboard');
+                      }
+                    }}
+                    className="w-8 h-8 rounded-full bg-[#0A2540] text-white font-bold flex items-center justify-center text-xs overflow-hidden border border-white/20 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
+                    title={isAdmin ? 'Admin Dashboard' : 'User Dashboard'}
+                    aria-label="User profile and dashboard"
+                  >
+                    {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : avatarLetter}
+                  </button>
                 ) : (
                   <div className="flex items-center space-x-1.5 sm:space-x-2">
                     <button
                       onClick={() => {
                         setLoginStartFlipped(false);
                         setActiveTab('Login');
-                        window.location.hash = '#login';
                       }}
-                      className="px-2.5 py-1 border border-white/25 hover:border-brandGreen text-white text-xs font-semibold rounded-lg hover:bg-white/10 transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-2.5 py-1 border border-white/25 hover:border-brandGreen text-white text-[11px] sm:text-xs font-semibold rounded-lg hover:bg-white/10 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       Login
                     </button>
@@ -938,26 +1119,28 @@ export default function Home({ session, sessionLoading }) {
                         setActiveTab('Login');
                         window.history.pushState(null, '', '#signup');
                       }}
-                      className="px-2.5 py-1 bg-brandGreen hover:bg-brandGreen-dark text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer whitespace-nowrap"
+                      className="hidden sm:inline-flex px-2.5 py-1 bg-brandGreen hover:bg-brandGreen-dark text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer whitespace-nowrap"
                     >
                       Sign Up
                     </button>
                   </div>
                 )}
 
-                <button
-                  data-notification-trigger
-                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                  className="relative p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer"
-                  title="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadNotifCount > 0 && (
-                    <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-brandGreen text-white text-[8px] font-bold rounded-full border border-navy flex items-center justify-center animate-pulse">
-                      {unreadNotifCount}
-                    </span>
-                  )}
-                </button>
+                {isLoggedIn && (
+                  <button
+                    data-notification-trigger
+                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                    className="relative p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                    title="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadNotifCount > 0 && (
+                      <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-brandGreen text-white text-[8px] font-bold rounded-full border border-navy flex items-center justify-center animate-pulse">
+                        {unreadNotifCount}
+                      </span>
+                    )}
+                  </button>
+                )}
 
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -968,32 +1151,82 @@ export default function Home({ session, sessionLoading }) {
                 </button>
 
                 {/* Mobile Notification Panel */}
-                <NotificationPanel
-                  isOpen={isNotificationOpen}
-                  onClose={() => setIsNotificationOpen(false)}
-                  notifications={notifications}
-                  onMarkAsRead={handleMarkNotifRead}
-                  onMarkAllAsRead={handleMarkAllNotifsRead}
-                  onDelete={handleDeleteNotif}
-                  onNavigateTab={(tab) => {
-                    setActiveTab(tab);
-                    setIsNotificationOpen(false);
-                  }}
-                />
+                {isLoggedIn && (
+                  <NotificationPanel
+                    isOpen={isNotificationOpen}
+                    onClose={() => setIsNotificationOpen(false)}
+                    notifications={notifications}
+                    onMarkAsRead={handleMarkNotifRead}
+                    onMarkAllAsRead={handleMarkAllNotifsRead}
+                    onDelete={handleDeleteNotif}
+                    onNavigateTab={(tab) => {
+                      setActiveTab(tab);
+                      setIsNotificationOpen(false);
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
 
-          {/* Mobile Navigation Menu */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden bg-navy-dark border-b border-white/10 py-4 px-5 space-y-4 animate-fadeIn max-h-[85vh] overflow-y-auto">
+          {/* Mobile Right-Side Slide-Out Drawer Portal */}
+          {typeof document !== 'undefined' && createPortal(
+            <div className="lg:hidden">
+              {/* Mobile Backdrop Overlay */}
+              <div
+                className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-[99990] transition-opacity duration-300 ${
+                  mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+                aria-hidden="true"
+              />
+
+              {/* Mobile Right-Side Slide-Out Drawer */}
+              <div
+                className={`fixed top-0 right-0 h-full w-[88vw] max-w-sm bg-[#04162e] border-l border-white/10 z-[99995] flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+                  mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}
+              >
+                {/* Drawer Top Header with Logo and Close 'X' Button */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#021B3A] shrink-0">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={logoImg}
+                  alt="The TaxMan's Capital Logo"
+                  className="h-8 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,230,118,0.3)]"
+                />
+                <div className="flex flex-col justify-center">
+                  <span className="text-white font-black text-sm leading-none tracking-tight font-['Outfit',sans-serif]">
+                    The TaxMan's
+                  </span>
+                  <div className="flex items-center space-x-1.5 mt-1">
+                    <span className="h-[1px] w-3 bg-[#00E676]/60"></span>
+                    <span className="text-[#00E676] font-bold text-[9px] tracking-[0.22em] uppercase leading-none font-['Outfit',sans-serif]">
+                      Capital
+                    </span>
+                    <span className="h-[1px] w-3 bg-[#00E676]/60"></span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-xl text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 active:scale-95 transition-all focus:outline-none cursor-pointer"
+                aria-label="Close navigation menu"
+              >
+                <X className="w-6 h-6 text-brandGreen" />
+              </button>
+            </div>
+
+            {/* Scrollable Drawer Content */}
+            <div className="flex-1 overflow-y-auto py-5 px-5 space-y-4">
 
               {/* Prominent Top Auth Section in Mobile Menu */}
               <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
                 {isLoggedIn ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-400 text-white font-black flex items-center justify-center text-sm shadow-md overflow-hidden">
+                      <div className="w-9 h-9 rounded-full bg-[#0A2540] text-white font-black flex items-center justify-center text-sm shadow-md overflow-hidden border border-white/20">
                         {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : avatarLetter}
                       </div>
                       <div className="flex flex-col text-left">
@@ -1007,11 +1240,9 @@ export default function Home({ session, sessionLoading }) {
                           setMobileMenuOpen(false);
                           if (isAdmin) {
                             setActiveTab('AdminDashboard');
-                            window.location.hash = '#admin';
                           } else {
                             setUserDashboardTab('Overview');
                             setActiveTab('UserDashboard');
-                            window.location.hash = '#dashboard';
                           }
                         }}
                         className="px-3 py-1.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
@@ -1043,7 +1274,6 @@ export default function Home({ session, sessionLoading }) {
                           setMobileMenuOpen(false);
                           setLoginStartFlipped(false);
                           setActiveTab('Login');
-                          window.location.hash = '#login';
                         }}
                         className="py-2.5 px-3 border border-white/20 hover:border-brandGreen rounded-xl text-xs font-bold text-white text-center hover:bg-white/5 transition-colors cursor-pointer"
                       >
@@ -1067,12 +1297,11 @@ export default function Home({ session, sessionLoading }) {
 
               {/* Home Link */}
               <a
-                href="#"
+                href="/"
                 onClick={(e) => {
                   e.preventDefault();
                   setActiveTab('Home');
                   setMobileMenuOpen(false);
-                  window.location.hash = '';
                 }}
                 className={`block py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${activeTab === 'Home'
                   ? 'text-brandGreen bg-brandGreen/10 border-l-4 border-brandGreen shadow-[0_2px_8px_rgba(0,200,83,0.1)]'
@@ -1087,12 +1316,11 @@ export default function Home({ session, sessionLoading }) {
                 <span className="block px-4 text-xs font-bold uppercase tracking-wider text-brandGreen/60">Career</span>
                 <div className="pl-3 space-y-1">
                   <a
-                    href="#inductions"
+                    href="/inductions"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Inductions');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#inductions';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Inductions' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1100,12 +1328,11 @@ export default function Home({ session, sessionLoading }) {
                     • Inductions
                   </a>
                   <a
-                    href="#jobs"
+                    href="/jobs"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Jobs');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#jobs';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Jobs' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1113,12 +1340,11 @@ export default function Home({ session, sessionLoading }) {
                     • Pakistan Jobs
                   </a>
                   <a
-                    href="#overseas"
+                    href="/overseas"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Overseas');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#overseas';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Overseas' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1126,12 +1352,11 @@ export default function Home({ session, sessionLoading }) {
                     • Overseas Jobs
                   </a>
                   <a
-                    href="#guidance"
+                    href="/guidance"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Counseling');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#guidance';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Counseling' || activeTab === 'Career Support' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1139,12 +1364,11 @@ export default function Home({ session, sessionLoading }) {
                     • Career Support
                   </a>
                   <a
-                    href="#careertools"
+                    href="/careertools"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Career Tools');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#careertools';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Career Tools' || activeTab === 'CareerTools' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1159,13 +1383,12 @@ export default function Home({ session, sessionLoading }) {
                 <span className="block px-4 text-xs font-bold uppercase tracking-wider text-brandGreen/60">Resources</span>
                 <div className="pl-3 space-y-1">
                   <a
-                    href="#resources"
+                    href="/resources"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('All');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'All' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1173,13 +1396,12 @@ export default function Home({ session, sessionLoading }) {
                     • All Resources
                   </a>
                   <a
-                    href="#resources-prc"
+                    href="/resources-prc"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('PRC');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources-prc';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'PRC' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1187,13 +1409,12 @@ export default function Home({ session, sessionLoading }) {
                     • PRC (Entry Level)
                   </a>
                   <a
-                    href="#resources-caf"
+                    href="/resources-caf"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('CAF');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources-caf';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'CAF' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1201,13 +1422,12 @@ export default function Home({ session, sessionLoading }) {
                     • CAF (Intermediate)
                   </a>
                   <a
-                    href="#resources-induction"
+                    href="/resources-induction"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('Training/Induction');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources-induction';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'Training/Induction' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1215,13 +1435,12 @@ export default function Home({ session, sessionLoading }) {
                     • Training & Induction
                   </a>
                   <a
-                    href="#resources-cfap"
+                    href="/resources-cfap"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('CFAP & SCS (Finals)');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources-cfap';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'CFAP & SCS (Finals)' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1229,13 +1448,12 @@ export default function Home({ session, sessionLoading }) {
                     • CFAP & SCS (Finals)
                   </a>
                   <a
-                    href="#resources-qualified"
+                    href="/resources-qualified"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('CA Qualified');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources-qualified';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'CA Qualified' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1243,13 +1461,12 @@ export default function Home({ session, sessionLoading }) {
                     • CA Qualified
                   </a>
                   <a
-                    href="#resources-acca"
+                    href="/resources-acca"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Resources');
                       setResourcesCategory('ACCA');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#resources-acca';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Resources' && resourcesCategory === 'ACCA' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1264,12 +1481,11 @@ export default function Home({ session, sessionLoading }) {
                 <span className="block px-4 text-xs font-bold uppercase tracking-wider text-brandGreen/60">Community</span>
                 <div className="pl-3 space-y-1">
                   <a
-                    href="#communities"
+                    href="/communities"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Community');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#communities';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Community' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1277,12 +1493,11 @@ export default function Home({ session, sessionLoading }) {
                     • Communities
                   </a>
                   <a
-                    href="#announcements"
+                    href="/announcements"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Announcements');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#announcements';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Announcements' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1290,12 +1505,11 @@ export default function Home({ session, sessionLoading }) {
                     • Announcements
                   </a>
                   <a
-                    href="#events"
+                    href="/events"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Events');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#events';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Events' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1303,16 +1517,35 @@ export default function Home({ session, sessionLoading }) {
                     • Events
                   </a>
                   <a
-                    href="#podcasts"
+                    href="/podcasts"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Podcasts');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#podcasts';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Podcasts' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'}`}
                   >
                     • Videos & Podcasts
+                  </a>
+
+                </div>
+              </div>
+
+              {/* Blog Section */}
+              <div className="space-y-1">
+                <span className="block px-4 text-xs font-bold uppercase tracking-wider text-brandGreen/60">Blog</span>
+                <div className="pl-3 space-y-1">
+                  <a
+                    href="/blog"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveTab('Blog');
+                      updateAppUrl('/blog');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Blog' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'}`}
+                  >
+                    • Blog & Articles
                   </a>
                 </div>
               </div>
@@ -1322,39 +1555,42 @@ export default function Home({ session, sessionLoading }) {
                 <span className="block px-4 text-xs font-bold uppercase tracking-wider text-brandGreen/60">About</span>
                 <div className="pl-3 space-y-1">
                   <a
-                    href="#mission"
+                    href="/mission"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Our Mission');
+                      updateAppUrl('/mission');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#mission';
                     }}
-                    className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Our Mission' && window.location.hash !== '#vision' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
+                    className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Our Mission' && window.location.pathname !== '/vision' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
                   >
                     • Our Mission
                   </a>
                   <a
-                    href="#vision"
+                    href="/vision"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Our Mission');
+                      updateAppUrl('/vision');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#vision';
+                      setTimeout(() => {
+                        const el = document.getElementById('our-vision');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
                     }}
-                    className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Our Mission' && window.location.hash === '#vision' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
+                    className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Our Mission' && window.location.pathname === '/vision' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
                   >
                     • Our Vision
                   </a>
 
                   <a
-                    href="#contact"
+                    href="/contact"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Contact Us');
                       setMobileMenuOpen(false);
-                      window.location.hash = '#contact';
                     }}
                     className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Contact Us' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
                       }`}
@@ -1365,7 +1601,10 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
             </div>
-          )}
+          </div>
+        </div>,
+        document.body
+      )}
         </nav>
       )}
 
@@ -1388,6 +1627,8 @@ export default function Home({ session, sessionLoading }) {
           <Resources selectedCategory={resourcesCategory} setSelectedCategory={setResourcesCategory} setActiveTab={setActiveTab} />
         ) : activeTab === 'Contact Us' ? (
           <Contact />
+        ) : activeTab === 'Blog' ? (
+          <Blog onNavigateTab={(tab) => { setActiveTab(tab); updateAppUrl(TAB_TO_PATH[tab] || '/'); }} />
         ) : activeTab === 'Announcements' ? (
           <Announcements initialAnnouncementId={selectedAnnouncementIdForModal} onClearInitialAnnouncement={() => setSelectedAnnouncementIdForModal(null)} />
         ) : activeTab === 'Events' ? (
@@ -1399,29 +1640,33 @@ export default function Home({ session, sessionLoading }) {
             startFlipped={loginStartFlipped}
             onLoginSuccess={() => {
               setActiveTab('Home');
-              window.history.pushState(null, '', '#');
+              updateAppUrl('/');
             }}
             onBack={() => {
               setActiveTab('Home');
-              window.history.pushState(null, '', '#');
+              updateAppUrl('/');
             }}
             onSignUpRedirect={() => {
-              window.history.pushState(null, '', '#signup');
+              updateAppUrl('/signup');
               setLoginStartFlipped(true);
             }}
             onLoginRedirect={() => {
-              window.history.pushState(null, '', '#login');
+              updateAppUrl('/login');
               setLoginStartFlipped(false);
             }}
           />
         ) : activeTab === 'AdminDashboard' ? (
-          isAdmin ? (
+          (sessionLoading || authLoading) ? (
+            <div className="min-h-screen bg-[#07090E] flex flex-col items-center justify-center space-y-3">
+              <div className="w-8 h-8 border-2 border-brandGreen border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-xs font-semibold text-gray-400">Verifying administrator access...</p>
+            </div>
+          ) : isAdmin ? (
             <AdminDashboard
               onLogout={async () => {
                 await logoutUser();
                 setIsLoggedIn(false);
                 setActiveTab('Home');
-                window.location.hash = '';
               }}
               currentAdminName={username || 'Ahmad Raza'}
               session={session}
@@ -1430,6 +1675,13 @@ export default function Home({ session, sessionLoading }) {
                   setUsername(newProfile.full_name);
                   setAvatarLetter(newProfile.full_name.charAt(0).toUpperCase());
                 }
+                if (newProfile.avatar_url || newProfile.profileImage) {
+                  setAvatarUrl(newProfile.avatar_url || newProfile.profileImage);
+                }
+              }}
+              onNavigateHome={() => {
+                setActiveTab('Home');
+                updateAppUrl('/');
               }}
             />
           ) : (
@@ -1448,7 +1700,6 @@ export default function Home({ session, sessionLoading }) {
                   <button
                     onClick={() => {
                       setActiveTab('Login');
-                      window.location.hash = '#login';
                     }}
                     className="w-full py-3 px-4 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs sm:text-sm rounded-2xl transition-all shadow-lg shadow-brandGreen/20 flex items-center justify-center space-x-2 cursor-pointer"
                   >
@@ -1457,7 +1708,6 @@ export default function Home({ session, sessionLoading }) {
                   <button
                     onClick={() => {
                       setActiveTab('UserDashboard');
-                      window.location.hash = '#dashboard';
                     }}
                     className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-bold text-xs sm:text-sm rounded-2xl transition-all cursor-pointer"
                   >
@@ -1475,11 +1725,9 @@ export default function Home({ session, sessionLoading }) {
               await logoutUser();
               setIsLoggedIn(false);
               setActiveTab('Home');
-              window.location.hash = '';
             }}
             onGoHome={() => {
               setActiveTab('Home');
-              window.location.hash = '';
             }}
             savedJobs={savedJobs}
             onRemoveSavedJob={(id) => handleToggleSaveJob(id)}
@@ -1500,11 +1748,11 @@ export default function Home({ session, sessionLoading }) {
               {/* Ambient Background Glow Orbs */}
               <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-brandGreen/8 rounded-full blur-[130px] pointer-events-none" />
 
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full max-w-full">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-6 lg:gap-10 items-center">
 
                   {/* Hero Left Content */}
-                  <div className="lg:col-span-7 flex flex-col space-y-5 order-2 lg:order-1 text-left">
+                  <div className="order-2 md:order-1 md:col-span-7 lg:col-span-7 flex flex-col space-y-4 sm:space-y-5 text-left">
                     {/* Live Status Pill */}
                     <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/5 border border-brandGreen/30 backdrop-blur-md w-fit shadow-sm">
                       <span className="w-2 h-2 rounded-full bg-brandGreen animate-pulse" />
@@ -1513,40 +1761,39 @@ export default function Home({ session, sessionLoading }) {
                       </span>
                     </div>
 
-                    <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.18] font-['Outfit',sans-serif]">
-                      Helping CA & ACCA <br />
-                      Students Build <br />
+                    <h1 className="text-2xl sm:text-3xl md:text-3xl lg:text-[42px] font-extrabold tracking-tight leading-[1.18] font-['Outfit',sans-serif]">
+                      Helping CA & ACCA <br className="hidden sm:inline" />
+                      Students Build <br className="hidden sm:inline" />
                       <span className="text-transparent bg-clip-text bg-gradient-to-r from-brandGreen via-emerald-400 to-teal-300">
                         Successful Careers
                       </span>
                     </h1>
 
-                    <p className="text-sm sm:text-base text-gray-300 max-w-xl font-normal leading-relaxed">
+                    <p className="text-xs sm:text-sm md:text-sm lg:text-base text-gray-300 max-w-xl font-normal leading-relaxed">
                       Discover verified Big 4 inductions, corporate finance roles, real-time AI interview simulations, 47 ATS resume templates, and 25+ moderated student communities.
                     </p>
 
                     {/* CTAs */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2.5 sm:space-y-0 sm:space-x-3.5 pt-1">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2.5 sm:space-y-0 sm:space-x-3 pt-1 w-full sm:w-auto">
                       <a
-                        href="#jobs"
+                        href="/jobs"
                         onClick={(e) => {
                           e.preventDefault();
                           setActiveTab('Jobs');
-                          window.location.hash = '#jobs';
                         }}
-                        className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-brandGreen to-emerald-500 hover:from-brandGreen-dark hover:to-emerald-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-200 shadow-md shadow-brandGreen/20 hover:scale-[1.02] active:scale-95 group cursor-pointer"
+                        className="flex items-center justify-center px-5 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-brandGreen to-emerald-500 hover:from-brandGreen-dark hover:to-emerald-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-200 shadow-md shadow-brandGreen/20 hover:scale-[1.02] active:scale-95 group cursor-pointer"
                       >
                         <Briefcase className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                         <span>Explore Opportunities</span>
                       </a>
                       <a
-                        href="#careertools"
+                        href="/careertools"
                         onClick={(e) => {
                           e.preventDefault();
+                          if (!requireAuth('access CV Studio & AI Mock Interviews')) return;
                           setActiveTab('Career Tools');
-                          window.location.hash = '#careertools';
                         }}
-                        className="flex items-center justify-center px-5 py-3 border border-white/20 hover:border-brandGreen/40 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs sm:text-sm rounded-xl transition-all duration-200 backdrop-blur-md cursor-pointer group"
+                        className="flex items-center justify-center px-4.5 py-2.5 sm:px-5 sm:py-3 border border-white/20 hover:border-brandGreen/40 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs sm:text-sm rounded-xl transition-all duration-200 backdrop-blur-md cursor-pointer group"
                       >
                         <Sparkles className="w-4 h-4 mr-2 text-brandGreen group-hover:rotate-12 transition-transform" />
                         <span>CV Studio & AI Mock</span>
@@ -1554,47 +1801,47 @@ export default function Home({ session, sessionLoading }) {
                     </div>
 
                     {/* Stacked Avatars and Guided Students Count */}
-                    <div className="flex items-center space-x-3.5 pt-2 border-t border-white/10">
-                      <div className="flex -space-x-2 overflow-hidden">
+                    <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-white/10">
+                      <div className="flex -space-x-2 overflow-hidden flex-shrink-0">
                         <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-amber-400 to-orange-500 text-[10px] font-bold text-white shadow-sm">AS</div>
                         <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-blue-500 to-indigo-600 text-[10px] font-bold text-white shadow-sm">KB</div>
                         <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-emerald-400 to-teal-500 text-[10px] font-bold text-white shadow-md">ZA</div>
                         <div className="inline-flex items-center justify-center h-8 w-8 rounded-full border-2 border-navy bg-gradient-to-tr from-pink-500 to-rose-600 text-[10px] font-bold text-white shadow-sm">MN</div>
                       </div>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         <span className="text-xs sm:text-sm font-semibold text-gray-200">
                           <AnimatedCounter target={10000} suffix="+" className="text-brandGreen text-sm sm:text-base font-extrabold mr-1" />
                           CA & ACCA Trainees Mentored
                         </span>
                         <div className="flex items-center space-x-1.5 text-[10px] sm:text-[11px] text-gray-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-brandGreen" />
-                          <span>Across PwC, EY, KPMG, BDO, Deloitte & MNCs</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-brandGreen flex-shrink-0" />
+                          <span className="truncate">Across PwC, EY, KPMG, BDO, Deloitte & MNCs</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Hero Right Graphic Card (Saboor Ahmad Profile) */}
-                  <div className="lg:col-span-5 flex flex-col items-center justify-center relative mt-4 lg:mt-0 order-1 lg:order-2">
+                  <div className="order-1 md:order-2 md:col-span-5 lg:col-span-5 flex flex-col items-center justify-center relative mb-6 md:mb-0 w-full max-w-full">
 
                     {/* Floating Tech Pill: Top Right */}
-                    <div className="absolute -top-2 right-2 sm:right-6 z-30 hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-black/60 backdrop-blur-xl border border-brandGreen/30 rounded-xl shadow-lg animate-float-subtle">
+                    <div className="absolute -top-3 right-0 sm:right-2 md:-right-2 lg:right-4 z-30 hidden sm:flex items-center space-x-1.5 md:space-x-2 px-2.5 py-1 md:px-3 md:py-1.5 bg-black/70 backdrop-blur-xl border border-brandGreen/40 rounded-xl shadow-lg animate-float-subtle">
                       <Sparkles className="w-3.5 h-3.5 text-brandGreen" />
                       <div className="text-left leading-tight">
                         <span className="text-[9px] text-gray-400 block font-semibold">AI Interview Studio</span>
-                        <span className="text-[11px] font-bold text-emerald-300">Live Voice & Video</span>
+                        <span className="text-[10px] md:text-[11px] font-bold text-emerald-300">Live Voice & Video</span>
                       </div>
                     </div>
 
                     {/* Profile Graphic Wrapper */}
-                    <div className="relative w-60 h-60 sm:w-68 sm:h-68 lg:w-76 lg:h-76 flex items-center justify-center">
+                    <div className="relative w-44 h-44 sm:w-52 sm:h-52 md:w-52 md:h-52 lg:w-72 lg:h-72 flex items-center justify-center max-w-full">
                       {/* Rotating outer dashed border */}
                       <div className="absolute inset-0 rounded-full border-3 border-dashed border-brandGreen/40 flex items-center justify-center p-2.5 animate-[spin_60s_linear_infinite] pointer-events-none">
                         <div className="w-full h-full rounded-full border-2 border-brandGreen bg-navy-dark overflow-hidden pointer-events-auto"></div>
                       </div>
 
                       {/* Portrait Image container over the border */}
-                      <div className="relative w-52 h-52 sm:w-60 sm:h-60 lg:w-68 lg:h-68 rounded-full overflow-hidden border-3 border-brandGreen shadow-xl flex items-center justify-center bg-navy-dark hover:scale-105 transition-transform duration-300">
+                      <div className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-44 md:h-44 lg:w-64 lg:h-64 rounded-full overflow-hidden border-3 border-brandGreen shadow-xl flex items-center justify-center bg-navy-dark hover:scale-105 transition-transform duration-300">
                         <img
                           src={mentorImage}
                           alt="Saboor Ahmad - Mentor Profile"
@@ -1604,17 +1851,17 @@ export default function Home({ session, sessionLoading }) {
                     </div>
 
                     {/* Mentor Quote Card */}
-                    <div className="relative mt-4 w-full max-w-sm mx-auto glass-panel text-white p-3.5 sm:p-4 rounded-2xl shadow-xl border border-white/10 hover:border-brandGreen/40 transition-colors duration-300 text-left">
+                    <div className="relative mt-3 md:mt-3 lg:mt-4 w-full max-w-sm md:max-w-[300px] lg:max-w-sm mx-auto glass-panel text-white p-3 sm:p-3.5 md:p-3 lg:p-4 rounded-2xl shadow-xl border border-white/10 hover:border-brandGreen/40 transition-colors duration-300 text-left">
                       <div className="flex items-start space-x-2.5">
                         <div className="p-1.5 bg-brandGreen/10 rounded-lg flex-shrink-0">
                           <MessageSquare className="w-4 h-4 text-brandGreen" />
                         </div>
                         <div className="flex flex-col space-y-1">
-                          <p className="text-[11px] sm:text-xs italic text-gray-300 leading-relaxed">
+                          <p className="text-[11px] sm:text-xs md:text-[11px] lg:text-xs italic text-gray-300 leading-relaxed">
                             "My mission is to guide CA/ACCA students, help them build their careers and connect them with the right opportunities."
                           </p>
                           <div className="border-t border-white/10 pt-1.5 flex flex-col">
-                            <span className="text-2xl font-signature text-brandGreen tracking-wide select-none leading-none pt-0.5">Saboor Ahmad</span>
+                            <span className="text-xl md:text-xl lg:text-2xl font-signature text-brandGreen tracking-wide select-none leading-none pt-0.5">Saboor Ahmad</span>
                             <span className="text-[9px] text-gray-400 mt-0.5 font-semibold">CA & ACCA | Career Counselor & Mentor</span>
                           </div>
                         </div>
@@ -1627,47 +1874,47 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 3. Floating Stats Bar Section */}
-            <section className="relative -mt-10 sm:-mt-12 z-20 px-4 sm:px-6 lg:px-8">
+            <section className="relative -mt-8 sm:-mt-12 z-20 px-4 sm:px-6 lg:px-8 w-full max-w-full">
               <div className="max-w-7xl mx-auto">
-                <div className="bg-[#021B3A] rounded-3xl shadow-2xl border border-white/10 p-6 sm:p-8 backdrop-blur-xl">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-white/10 text-left">
-                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6 first:pl-0">
-                      <div className="p-4 rounded-2xl bg-emerald-500/15 border border-brandGreen/30 flex-shrink-0 text-brandGreen">
-                        <Users className="w-6 h-6" />
+                <div className="bg-[#021B3A] rounded-3xl shadow-2xl border border-white/10 p-5 sm:p-8 backdrop-blur-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-left">
+                    <div className="flex items-center space-x-3 sm:space-x-4 p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] sm:bg-transparent border border-white/5 sm:border-0">
+                      <div className="p-3 sm:p-4 rounded-2xl bg-emerald-500/15 border border-brandGreen/30 flex-shrink-0 text-brandGreen">
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <div className="flex flex-col">
-                        <AnimatedCounter target={15000} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
-                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">Students Guided</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6">
-                      <div className="p-4 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex-shrink-0 text-blue-400">
-                        <Briefcase className="w-6 h-6" />
-                      </div>
-                      <div className="flex flex-col">
-                        <AnimatedCounter target={8500} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
-                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">Opportunities Shared</span>
+                      <div className="flex flex-col min-w-0">
+                        <AnimatedCounter target={15000} suffix="+" className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium truncate">Students Guided</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6">
-                      <div className="p-4 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex-shrink-0 text-purple-400">
-                        <MessageSquare className="w-6 h-6" />
+                    <div className="flex items-center space-x-3 sm:space-x-4 p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] sm:bg-transparent border border-white/5 sm:border-0">
+                      <div className="p-3 sm:p-4 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex-shrink-0 text-blue-400">
+                        <Briefcase className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <div className="flex flex-col">
-                        <AnimatedCounter target={25} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
-                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">WhatsApp Communities</span>
+                      <div className="flex flex-col min-w-0">
+                        <AnimatedCounter target={8500} suffix="+" className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium truncate">Opportunities Shared</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-4 py-3 md:py-0 md:px-6">
-                      <div className="p-4 rounded-2xl bg-emerald-500/15 border border-brandGreen/30 flex-shrink-0 text-emerald-400">
-                        <Globe className="w-6 h-6" />
+                    <div className="flex items-center space-x-3 sm:space-x-4 p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] sm:bg-transparent border border-white/5 sm:border-0">
+                      <div className="p-3 sm:p-4 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex-shrink-0 text-purple-400">
+                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <div className="flex flex-col">
-                        <AnimatedCounter target={100} suffix="+" className="text-2xl sm:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
-                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">Top Firms Connected</span>
+                      <div className="flex flex-col min-w-0">
+                        <AnimatedCounter target={25} suffix="+" className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium truncate">WhatsApp Communities</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 sm:space-x-4 p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] sm:bg-transparent border border-white/5 sm:border-0">
+                      <div className="p-3 sm:p-4 rounded-2xl bg-emerald-500/15 border border-brandGreen/30 flex-shrink-0 text-emerald-400">
+                        <Globe className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <AnimatedCounter target={100} suffix="+" className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-['Outfit',sans-serif] leading-none" />
+                        <span className="text-xs sm:text-sm text-gray-400 mt-1 font-medium truncate">Top Firms Connected</span>
                       </div>
                     </div>
                   </div>
@@ -1676,23 +1923,22 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 4. Latest Induction Updates Section */}
-            <section id="jobs" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll">
-              <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-                <div className="flex flex-col space-y-3">
+            <section id="jobs" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll w-full max-w-full">
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-12">
+                <div className="flex flex-col space-y-2 sm:space-y-3">
                   <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase">Opportunities</span>
-                  <h2 className="text-3xl font-extrabold text-navy tracking-tight relative pb-3">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight relative pb-3">
                     LATEST INDUCTION UPDATES
                     <span className="absolute bottom-0 left-0 w-16 h-1 bg-brandGreen rounded-full" />
                   </h2>
                 </div>
                 <a
-                  href="#jobs"
+                  href="/jobs"
                   onClick={(e) => {
                     e.preventDefault();
                     setActiveTab('Jobs');
-                    window.location.hash = '#jobs';
                   }}
-                  className="group flex items-center text-sm font-bold text-navy hover:text-brandGreen transition-colors mt-4 md:mt-0"
+                  className="group flex items-center text-xs sm:text-sm font-bold text-navy hover:text-brandGreen transition-colors mt-4 md:mt-0"
                 >
                   View All Jobs
                   <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
@@ -1700,7 +1946,7 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
               {/* 5-Card Responsive Job Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 sm:gap-6">
                 {jobCards.map((job, idx) => (
                   <div
                     key={idx}
@@ -1749,7 +1995,7 @@ export default function Home({ session, sessionLoading }) {
                       </div>
                       <button
                         onClick={() => handleViewJobDetails(job.id)}
-                        className="w-full py-2 bg-navy hover:bg-brandGreen text-white font-medium rounded-lg text-xs transition-colors duration-200 focus:outline-none"
+                        className="w-full py-2 bg-navy hover:bg-brandGreen text-white font-medium rounded-lg text-xs transition-colors duration-200 focus:outline-none cursor-pointer"
                       >
                         View Details
                       </button>
@@ -1760,38 +2006,38 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 5. Free Guidance Section */}
-            <section id="guidance" className="py-20 bg-gray-50 border-y border-gray-100 reveal-on-scroll">
+            <section id="guidance" className="py-16 sm:py-20 bg-gray-50 border-y border-gray-100 reveal-on-scroll w-full max-w-full">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <div className="text-center max-w-2xl mx-auto mb-16 flex flex-col items-center">
+                <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 flex flex-col items-center">
                   <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">Mentor-Led Support</span>
-                  <h2 className="text-3xl sm:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
                     FREE CAREER GUIDANCE
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
                   </h2>
-                  <p className="text-gray-500 mt-4 text-sm sm:text-base">
+                  <p className="text-gray-500 mt-4 text-xs sm:text-sm sm:text-base">
                     Get direct resources and professional feedback curated by industry leaders to kickstart your corporate journey.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
                   {guidanceItems.map((item, idx) => (
                     <div
                       key={idx}
-                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between premium-card-hover"
+                      className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between premium-card-hover"
                     >
                       <div>
-                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr ${item.color} flex items-center justify-center mb-6 shadow-sm`}>
+                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr ${item.color} flex items-center justify-center mb-5 sm:mb-6 shadow-sm`}>
                           {item.icon}
                         </div>
-                        <h3 className="text-lg font-bold text-navy mb-3">{item.title}</h3>
+                        <h3 className="text-base sm:text-lg font-bold text-navy mb-2 sm:mb-3">{item.title}</h3>
                         <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">{item.desc}</p>
                       </div>
 
                       <div className="mt-6 pt-4 border-t border-gray-50">
                         <button
                           onClick={() => setActiveTab('Career Support')}
-                          className="flex items-center text-xs font-bold text-brandGreen hover:text-brandGreen-dark transition-colors group"
+                          className="flex items-center text-xs font-bold text-brandGreen hover:text-brandGreen-dark transition-colors group cursor-pointer"
                         >
                           Learn More
                           <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
@@ -1805,33 +2051,33 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 6. Why Choose Us Section */}
-            <section id="why-us" className="py-24 bg-navy text-white relative reveal-on-scroll">
+            <section id="why-us" className="py-16 sm:py-24 bg-navy text-white relative reveal-on-scroll w-full max-w-full">
               {/* Subtle grid pattern mask in CSS */}
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,200,83,0.05),transparent)] pointer-events-none"></div>
 
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-                <div className="text-center max-w-2xl mx-auto mb-20 flex flex-col items-center">
+                <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-20 flex flex-col items-center">
                   <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">Our Value</span>
-                  <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight pb-3 relative text-white">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight pb-3 relative text-white">
                     WHY CHOOSE US?
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
                   </h2>
-                  <p className="text-gray-400 mt-4 text-sm sm:text-base">
+                  <p className="text-gray-400 mt-4 text-xs sm:text-sm sm:text-base">
                     Providing end-to-end guidance to bridge the gap between hard work and top-tier placements.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 sm:gap-6">
                   {whyChooseUs.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex flex-col items-center text-center p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-brandGreen/45 hover:bg-white/10 transition-all duration-300"
+                      className="flex flex-col items-center text-center p-5 sm:p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-brandGreen/45 hover:bg-white/10 transition-all duration-300"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-brandGreen/10 border border-brandGreen/30 flex items-center justify-center mb-6">
+                      <div className="w-12 h-12 rounded-xl bg-brandGreen/10 border border-brandGreen/30 flex items-center justify-center mb-5 sm:mb-6">
                         {item.icon}
                       </div>
-                      <h3 className="text-base font-bold mb-3 tracking-wide text-white">{item.title}</h3>
+                      <h3 className="text-sm sm:text-base font-bold mb-2 sm:mb-3 tracking-wide text-white">{item.title}</h3>
                       <p className="text-xs text-gray-400 leading-relaxed font-normal">{item.desc}</p>
                     </div>
                   ))}
@@ -1841,20 +2087,20 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* Videos, Sessions & Podcasts Section */}
-            <section id="podcasts-section" className="py-24 bg-white border-b border-gray-100 reveal-on-scroll">
+            <section id="podcasts-section" className="py-16 sm:py-24 bg-white border-b border-gray-100 reveal-on-scroll w-full max-w-full">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center max-w-2xl mx-auto mb-16 flex flex-col items-center">
+                <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 flex flex-col items-center">
                   <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">Media & Mentorship</span>
-                  <h2 className="text-3xl sm:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
                     VIDEOS, SESSIONS & PODCASTS
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
                   </h2>
-                  <p className="text-gray-500 mt-4 text-sm sm:text-base">
+                  <p className="text-gray-500 mt-4 text-xs sm:text-sm sm:text-base">
                     Watch our exclusive mentorship sessions, partner interview preparation guidelines, and career podcasts.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                   {[
                     {
                       id: 'ep-1',
@@ -1905,8 +2151,8 @@ export default function Home({ session, sessionLoading }) {
                         >
                           <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent z-10 pointer-events-none"></div>
                           <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,rgba(0,200,83,0.3),transparent)] group-hover/thumb:scale-110 transition-transform duration-500 pointer-events-none"></div>
-                          <div className="z-20 w-14 h-14 rounded-full bg-brandGreen/90 group-hover/thumb:bg-brandGreen text-white flex items-center justify-center shadow-lg transform group-hover/thumb:scale-110 transition-all duration-300">
-                            <svg className="w-6 h-6 fill-current ml-1" viewBox="0 0 24 24">
+                          <div className="z-20 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-brandGreen/90 group-hover/thumb:bg-brandGreen text-white flex items-center justify-center shadow-lg transform group-hover/thumb:scale-110 transition-all duration-300">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-1" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z" />
                             </svg>
                           </div>
@@ -1916,7 +2162,7 @@ export default function Home({ session, sessionLoading }) {
                         </a>
 
                         {/* Body */}
-                        <div className="p-6">
+                        <div className="p-5 sm:p-6">
                           <span className="text-brandGreen text-[10px] font-extrabold uppercase tracking-widest">
                             {video.tag}
                           </span>
@@ -1924,7 +2170,7 @@ export default function Home({ session, sessionLoading }) {
                             href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-lg font-extrabold text-navy mt-2 leading-snug hover:text-brandGreen transition-colors block"
+                            className="text-base sm:text-lg font-extrabold text-navy mt-2 leading-snug hover:text-brandGreen transition-colors block"
                           >
                             {video.title}
                           </a>
@@ -1935,9 +2181,9 @@ export default function Home({ session, sessionLoading }) {
                       </div>
 
                       {/* Footer */}
-                      <div className="px-6 pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between">
+                      <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className={`w-8 h-8 rounded-full ${video.authorBg} text-white font-bold flex items-center justify-center text-xs shadow-sm`}>
+                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${video.authorBg} text-white font-bold flex items-center justify-center text-xs shadow-sm`}>
                             {video.authorInitials}
                           </div>
                           <span className="text-[11px] font-semibold text-gray-600">{video.author}</span>
@@ -1946,10 +2192,10 @@ export default function Home({ session, sessionLoading }) {
                           href={`https://www.youtube.com/watch?v=${video.youtubeId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3.5 py-1.5 bg-navy hover:bg-brandGreen text-white rounded-lg text-xs font-bold transition-all duration-300 flex items-center space-x-1"
+                          className="px-3 py-1.5 bg-navy hover:bg-brandGreen text-white rounded-lg text-xs font-bold transition-all duration-300 flex items-center space-x-1"
                         >
                           <span>Watch Now</span>
-                          <svg className="w-3.5 h-3.5 fill-current ml-0.5" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 fill-current ml-0.5" viewBox="0 0 24 24">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                           </svg>
                         </a>
@@ -1961,14 +2207,14 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 7. Communities & Resources Sections */}
-            <section className="py-24 bg-bgLight reveal-on-scroll">
+            <section className="py-16 sm:py-24 bg-bgLight reveal-on-scroll w-full max-w-full">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
 
                   {/* Communities Column */}
                   <div id="communities" className="lg:col-span-6 flex flex-col justify-between">
                     <div>
-                      <div className="flex flex-col space-y-2 mb-8">
+                      <div className="flex flex-col space-y-2 mb-6 sm:mb-8">
                         <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase">WhatsApp Channels</span>
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight relative pb-3">
                           STUDENT COMMUNITIES
@@ -1983,7 +2229,7 @@ export default function Home({ session, sessionLoading }) {
                         {communities.map((comm, idx) => (
                           <div
                             key={idx}
-                            className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm premium-card-hover"
+                            className="bg-white rounded-xl p-4 sm:p-5 border border-gray-100 shadow-sm premium-card-hover"
                           >
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="font-bold text-gray-800 text-sm sm:text-base">{comm.name}</h3>
@@ -2006,9 +2252,9 @@ export default function Home({ session, sessionLoading }) {
                   </div>
 
                   {/* Resources Column */}
-                  <div id="resources" className="lg:col-span-6 flex flex-col justify-between mt-12 lg:mt-0">
+                  <div id="resources" className="lg:col-span-6 flex flex-col justify-between mt-8 lg:mt-0">
                     <div>
-                      <div className="flex flex-col space-y-2 mb-8">
+                      <div className="flex flex-col space-y-2 mb-6 sm:mb-8">
                         <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase">Preparation Material</span>
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight relative pb-3">
                           POPULAR RESOURCES
@@ -2019,18 +2265,18 @@ export default function Home({ session, sessionLoading }) {
                         </p>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-3.5 sm:space-y-4">
                         {resources.map((res, idx) => (
                           <div
                             key={idx}
-                            className="bg-white rounded-xl p-4 border border-gray-100 flex items-center justify-between shadow-sm premium-card-hover"
+                            className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm premium-card-hover"
                           >
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                               <div className="w-10 h-10 rounded-lg bg-emerald-500/5 flex items-center justify-center flex-shrink-0">
                                 {res.icon}
                               </div>
-                              <div className="flex flex-col">
-                                <span className="font-bold text-navy text-sm sm:text-base">{res.title}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-navy text-sm sm:text-base truncate">{res.title}</span>
                                 <span className="text-xs text-gray-400 font-medium">{res.type} • {res.size}</span>
                               </div>
                             </div>
@@ -2039,7 +2285,7 @@ export default function Home({ session, sessionLoading }) {
                                 if (!requireAuth('download study resources')) return;
                                 alert(`Downloading ${res.title}... File is being prepared.`);
                               }}
-                              className="px-4 py-2 bg-gray-50 hover:bg-brandGreen hover:text-white border border-gray-200 hover:border-brandGreen rounded-lg text-xs font-semibold text-navy transition-all duration-200 cursor-pointer"
+                              className="w-full sm:w-auto px-4 py-2 bg-gray-50 hover:bg-brandGreen hover:text-white border border-gray-200 hover:border-brandGreen rounded-lg text-xs font-semibold text-navy transition-all duration-200 cursor-pointer text-center"
                             >
                               Download
                             </button>
@@ -2052,7 +2298,6 @@ export default function Home({ session, sessionLoading }) {
                           onClick={(e) => {
                             e.preventDefault();
                             setActiveTab('Resources');
-                            window.location.hash = '#resources';
                           }}
                           className="w-full flex items-center justify-center py-3.5 bg-navy hover:bg-brandGreen text-white font-bold rounded-xl text-xs transition-colors duration-200 shadow-md cursor-pointer"
                         >
@@ -2068,13 +2313,13 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 8. Announcements Preview Section */}
-            <section id="announcements" className="py-24 bg-gray-50 border-t border-gray-100 reveal-on-scroll">
+            <section id="announcements" className="w-full max-w-full py-16 sm:py-24 bg-gray-50 border-t border-gray-100 reveal-on-scroll">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-                  <div className="flex flex-col space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-12">
+                  <div className="flex flex-col space-y-2 sm:space-y-3">
                     <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase">Updates & Events</span>
-                    <h2 className="text-3xl font-extrabold text-navy tracking-tight relative pb-3">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight relative pb-3">
                       LATEST ANNOUNCEMENTS
                       <span className="absolute bottom-0 left-0 w-16 h-1 bg-brandGreen rounded-full" />
                     </h2>
@@ -2083,20 +2328,19 @@ export default function Home({ session, sessionLoading }) {
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab('Announcements');
-                      window.location.hash = '#announcements';
                     }}
-                    className="flex items-center text-sm font-bold text-navy hover:text-brandGreen transition-colors mt-4 md:mt-0 cursor-pointer"
+                    className="flex items-center text-sm font-bold text-navy hover:text-brandGreen transition-colors mt-4 sm:mt-0 cursor-pointer self-start sm:self-auto"
                   >
                     All Announcements
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                   {announcements.map((item, idx) => (
                     <div
                       key={idx}
-                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden premium-card-hover"
+                      className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden premium-card-hover"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-4">
@@ -2134,46 +2378,46 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 9. Success Stories Section */}
-            <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll">
+            <section className="w-full max-w-full py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll">
 
-              <div className="text-center max-w-2xl mx-auto mb-16 flex flex-col items-center">
+              <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 flex flex-col items-center">
                 <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">Testimonials</span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
                   SUCCESS STORIES
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
                 </h2>
-                <p className="text-gray-500 mt-4 text-sm sm:text-base">
+                <p className="text-gray-500 mt-4 text-xs sm:text-sm md:text-base">
                   Read stories of how CA and ACCA students secured articleships and careers through our guidance resources.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {successStories.map((story, idx) => (
                   <div
                     key={idx}
-                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative premium-card-hover"
+                    className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative premium-card-hover"
                   >
                     {/* Green quote icon absolute at top right */}
-                    <div className="absolute top-6 right-6 text-brandGreen/25">
-                      <svg className="w-10 h-10 fill-current" viewBox="0 0 24 24">
+                    <div className="absolute top-5 right-5 sm:top-6 sm:right-6 text-brandGreen/25">
+                      <svg className="w-8 h-8 sm:w-10 sm:h-10 fill-current" viewBox="0 0 24 24">
                         <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                       </svg>
                     </div>
 
                     <div>
-                      <p className="text-sm text-gray-600 italic leading-relaxed pt-2">
+                      <p className="text-xs sm:text-sm text-gray-600 italic leading-relaxed pt-2">
                         "{story.quote}"
                       </p>
                     </div>
 
-                    <div className="mt-8 pt-4 border-t border-gray-100 flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-600 text-white font-bold flex items-center justify-center flex-shrink-0 shadow-md">
+                    <div className="mt-6 sm:mt-8 pt-4 border-t border-gray-100 flex items-center space-x-3 sm:space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-600 text-white font-bold flex items-center justify-center flex-shrink-0 shadow-md text-xs sm:text-sm">
                         {story.avatar}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-navy text-sm leading-none">{story.name}</span>
-                        <span className="text-xs text-brandGreen font-medium mt-1">{story.role}</span>
-                        <span className="text-[10px] text-gray-400 mt-0.5">Placed at {story.placedAt}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-navy text-xs sm:text-sm leading-none truncate">{story.name}</span>
+                        <span className="text-[11px] sm:text-xs text-brandGreen font-medium mt-1 truncate">{story.role}</span>
+                        <span className="text-[10px] text-gray-400 mt-0.5 truncate">Placed at {story.placedAt}</span>
                       </div>
                     </div>
                   </div>
@@ -2181,7 +2425,7 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
               {/* Carousel Dots */}
-              <div className="flex items-center justify-center space-x-2 mt-10">
+              <div className="flex items-center justify-center space-x-2 mt-8 sm:mt-10">
                 <span className="w-6 h-2 rounded-full bg-brandGreen"></span>
                 <span className="w-2 h-2 rounded-full bg-gray-300"></span>
                 <span className="w-2 h-2 rounded-full bg-gray-300"></span>
@@ -2189,37 +2433,37 @@ export default function Home({ session, sessionLoading }) {
             </section>
 
             {/* 10. WhatsApp CTA Section */}
-            <section className="px-4 sm:px-6 lg:px-8 pb-16 reveal-on-scroll">
+            <section className="w-full max-w-full px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 reveal-on-scroll">
               <div className="max-w-7xl mx-auto">
-                <div className="bg-gradient-to-r from-emerald-600 to-green-500 rounded-3xl p-8 sm:p-12 shadow-xl shadow-emerald-500/10 text-white flex flex-col lg:flex-row items-center justify-between relative overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-600 to-green-500 rounded-2xl sm:rounded-3xl p-6 sm:p-10 lg:p-12 shadow-xl shadow-emerald-500/10 text-white flex flex-col lg:flex-row items-center justify-between relative overflow-hidden">
                   {/* Visual background ripple rings */}
                   <div className="absolute -left-16 -bottom-16 w-64 h-64 rounded-full bg-white/5 border-4 border-white/5 pointer-events-none" />
                   <div className="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-white/5 border border-white/5 pointer-events-none" />
 
-                  <div className="flex flex-col lg:flex-row items-center space-y-6 lg:space-y-0 lg:space-x-8 text-center lg:text-left z-10">
-                    <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 animate-pulse border border-white/10">
-                      <svg className="w-12 h-12 fill-current text-white" viewBox="0 0 24 24">
+                  <div className="flex flex-col lg:flex-row items-center space-y-4 sm:space-y-6 lg:space-y-0 lg:space-x-8 text-center lg:text-left z-10">
+                    <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/10">
+                      <svg className="w-8 h-8 sm:w-12 sm:h-12 fill-current text-white" viewBox="0 0 24 24">
                         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.004c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                       </svg>
                     </div>
-                    <div className="flex flex-col space-y-2">
-                      <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Join Our Free CA Student Community</h3>
-                      <p className="text-xs sm:text-sm text-white/80 max-w-xl font-medium leading-relaxed">
+                    <div className="flex flex-col space-y-1.5 sm:space-y-2">
+                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">Join Our Free CA Student Community</h3>
+                      <p className="text-xs sm:text-sm text-white/90 max-w-xl font-medium leading-relaxed">
                         Stay updated with latest Jobs, Inductions & Announcements. Join the active discussion room with over 10,000+ peers.
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-8 lg:mt-0 z-10 w-full sm:w-auto">
+                  <div className="mt-6 lg:mt-0 z-10 w-full lg:w-auto">
                     <button
                       onClick={() => {
+                        if (!requireAuth('join our student communities')) return;
                         setActiveTab('Community');
-                        window.location.hash = '#communities';
                       }}
-                      className="w-full sm:w-auto flex items-center justify-center px-8 py-4 bg-white hover:bg-gray-50 text-emerald-600 font-bold rounded-xl shadow-lg transition-all duration-200 group"
+                      className="w-full sm:w-auto flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 bg-white hover:bg-gray-50 text-emerald-600 font-bold rounded-xl shadow-lg transition-all duration-200 group text-sm sm:text-base mx-auto lg:mx-0"
                     >
                       Join Now
-                      <ArrowRight className="w-5 h-5 ml-2 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 text-emerald-600 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -2231,19 +2475,29 @@ export default function Home({ session, sessionLoading }) {
 
       {/* 11. Footer */}
       {activeTab !== 'Login' && activeTab !== 'Register' && activeTab !== 'AdminDashboard' && activeTab !== 'UserDashboard' && (
-        <footer className="bg-navy-dark text-white pt-10 sm:pt-12 pb-6 mt-auto border-t border-white/5">
+        <footer className="w-full max-w-full bg-navy-dark text-white pt-10 sm:pt-12 pb-6 mt-auto border-t border-white/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10 pb-8 border-b border-white/5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-8 lg:gap-10 pb-8 border-b border-white/5">
 
               {/* Column 1: Brand & Logo */}
-              <div className="md:col-span-4 flex flex-col space-y-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-brandGreen to-emerald-400 flex items-center justify-center">
-                    <span className="text-white font-extrabold text-lg tracking-tighter">TM</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-base leading-tight">The TaxMan's Capital</span>
-                    <span className="text-brandGreen text-[9px] uppercase tracking-widest font-semibold">Guidance. Opportunities. Success.</span>
+              <div className="sm:col-span-2 md:col-span-6 lg:col-span-4 flex flex-col space-y-4">
+                <div className="flex items-center space-x-2.5 sm:space-x-3 select-none">
+                  <img
+                    src={logoImg}
+                    alt="The TaxMan's Capital Logo"
+                    className="h-10 w-auto object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(0,230,118,0.25)] translate-y-1"
+                  />
+                  <div className="flex flex-col min-w-0 justify-center">
+                    <span className="text-white font-black text-base leading-none tracking-tight font-['Outfit',sans-serif]">
+                      The TaxMan's
+                    </span>
+                    <div className="flex items-center space-x-1.5 mt-1">
+                      <span className="h-[1px] w-3.5 bg-gradient-to-r from-transparent to-[#00E676]/80"></span>
+                      <span className="text-[#00E676] font-bold text-[10px] tracking-[0.26em] uppercase leading-none font-['Outfit',sans-serif]">
+                        Capital
+                      </span>
+                      <span className="h-[1px] w-3.5 bg-gradient-to-l from-transparent to-[#00E676]/80"></span>
+                    </div>
                   </div>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-400 font-normal leading-relaxed max-w-sm">
@@ -2278,16 +2532,15 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
               {/* Column 2: Quick Links */}
-              <div className="md:col-span-2 flex flex-col space-y-4">
+              <div className="sm:col-span-1 md:col-span-3 lg:col-span-2 flex flex-col space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-brandGreen">Quick Links</h3>
                 <ul className="space-y-2 text-xs sm:text-sm text-gray-400">
                   <li>
                     <a
-                      href="#inductions"
+                      href="/inductions"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Inductions');
-                        window.location.hash = '#inductions';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2296,11 +2549,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#jobs"
+                      href="/jobs"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Jobs');
-                        window.location.hash = '#jobs';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2309,11 +2561,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#overseas"
+                      href="/overseas"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Overseas');
-                        window.location.hash = '#overseas';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2322,11 +2573,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#guidance"
+                      href="/guidance"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Counseling');
-                        window.location.hash = '#guidance';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2335,11 +2585,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#careertools"
+                      href="/careertools"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Career Tools');
-                        window.location.hash = '#careertools';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2348,11 +2597,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#communities"
+                      href="/communities"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Community');
-                        window.location.hash = '#communities';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2361,11 +2609,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#mission"
+                      href="/mission"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Our Mission');
-                        window.location.hash = '#mission';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2374,11 +2621,10 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#contact"
+                      href="/contact"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Contact Us');
-                        window.location.hash = '#contact';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2389,17 +2635,16 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
               {/* Column 3: Resources */}
-              <div className="md:col-span-2 flex flex-col space-y-4">
+              <div className="sm:col-span-1 md:col-span-3 lg:col-span-2 flex flex-col space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-brandGreen">Popular Resources</h3>
                 <ul className="space-y-2 text-xs sm:text-sm text-gray-400">
                   <li>
                     <a
-                      href="#resources-induction"
+                      href="/resources-induction"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Resources');
                         setResourcesCategory('Training/Induction');
-                        window.location.hash = '#resources-induction';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2408,12 +2653,11 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#resources-induction"
+                      href="/resources-induction"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Resources');
                         setResourcesCategory('Training/Induction');
-                        window.location.hash = '#resources-induction';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2422,12 +2666,11 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#resources-induction"
+                      href="/resources-induction"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Resources');
                         setResourcesCategory('Training/Induction');
-                        window.location.hash = '#resources-induction';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2436,12 +2679,11 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#resources-caf"
+                      href="/resources-caf"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Resources');
                         setResourcesCategory('CAF');
-                        window.location.hash = '#resources-caf';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2450,12 +2692,11 @@ export default function Home({ session, sessionLoading }) {
                   </li>
                   <li>
                     <a
-                      href="#resources-acca"
+                      href="/resources-acca"
                       onClick={(e) => {
                         e.preventDefault();
                         setActiveTab('Resources');
                         setResourcesCategory('ACCA');
-                        window.location.hash = '#resources-acca';
                       }}
                       className="hover:text-white transition-colors"
                     >
@@ -2466,11 +2707,10 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
               {/* Column 4: Contact Us */}
-              <div className="md:col-span-2 flex flex-col space-y-4">
+              <div className="sm:col-span-1 md:col-span-3 lg:col-span-2 flex flex-col space-y-4">
                 <h3
                   onClick={() => {
                     setActiveTab('Contact Us');
-                    window.location.hash = '#contact';
                   }}
                   className="text-sm font-bold uppercase tracking-wider text-brandGreen cursor-pointer hover:text-brandGreen/80 transition-colors"
                 >
@@ -2493,7 +2733,7 @@ export default function Home({ session, sessionLoading }) {
               </div>
 
               {/* Column 5: Newsletter */}
-              <div className="md:col-span-2 flex flex-col space-y-4">
+              <div className="sm:col-span-1 md:col-span-3 lg:col-span-2 flex flex-col space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-brandGreen">Newsletter</h3>
                 <p className="text-xs text-gray-400 leading-relaxed font-normal">
                   Subscribe to get the latest updates on jobs and inductions.
@@ -2525,14 +2765,14 @@ export default function Home({ session, sessionLoading }) {
             </div>
 
             {/* Bottom Footer Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between pt-5 sm:pt-6 text-xs text-gray-500">
-              <p className="mb-4 sm:mb-0">
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-5 sm:pt-6 text-xs text-gray-500 text-center sm:text-left gap-3 sm:gap-0">
+              <p>
                 &copy; {new Date().getFullYear()} The TaxMan's Capital. All Rights Reserved.
               </p>
               <div className="flex space-x-6">
-                <a href="#privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+                <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
                 <span>|</span>
-                <a href="#terms" className="hover:text-white transition-colors">Terms & Conditions</a>
+                <a href="/terms" className="hover:text-white transition-colors">Terms & Conditions</a>
               </div>
             </div>
           </div>
@@ -2541,13 +2781,13 @@ export default function Home({ session, sessionLoading }) {
 
       {/* Premium Floating "Complete Profile" Banner */}
       {showProfilePrompt && isLoggedIn && !isAdmin && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-sm bg-navy text-white rounded-3xl p-5 shadow-2xl border border-white/10 animate-slideUp font-sans">
-          <div className="flex items-start space-x-4">
-            <div className="w-10 h-10 rounded-xl bg-brandGreen/25 flex items-center justify-center text-brandGreen shrink-0 mt-0.5 animate-pulse">
-              <Sparkles className="w-5 h-5" />
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm bg-navy text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl border border-white/10 animate-slideUp font-sans">
+          <div className="flex items-start space-x-3 sm:space-x-4">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brandGreen/25 flex items-center justify-center text-brandGreen shrink-0 mt-0.5 animate-pulse">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div className="flex-grow space-y-1 text-left">
-              <h4 className="font-extrabold text-sm text-white tracking-tight">Complete Your Profile!</h4>
+            <div className="flex-grow space-y-1 text-left min-w-0">
+              <h4 className="font-extrabold text-xs sm:text-sm text-white tracking-tight">Complete Your Profile!</h4>
               <p className="text-[11px] text-gray-300 font-semibold leading-relaxed">
                 Add a profile photo and select your educational stage to unlock custom placement recommendations.
               </p>
@@ -2557,7 +2797,6 @@ export default function Home({ session, sessionLoading }) {
                     setShowProfilePrompt(false);
                     setUserDashboardTab('Settings');
                     setActiveTab('UserDashboard');
-                    window.location.hash = '#dashboard';
                   }}
                   className="px-4 py-2 bg-brandGreen hover:bg-brandGreen-dark text-white font-extrabold text-[10px] uppercase rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
