@@ -22,7 +22,8 @@ import {
   ChevronDown,
   Globe,
   Send,
-  Bot
+  Bot,
+  ArrowRight
 } from 'lucide-react';
 import { updateProfile } from '../../../services/authService';
 import { submitContactForm, getMyCounselingQueries } from '../../../services/submissionService';

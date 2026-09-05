@@ -142,7 +142,7 @@ export const createAdminUser = asyncHandler(async (req, res) => {
  * PUT /api/admin/users/:id
  */
 export const updateUserRole = asyncHandler(async (req, res) => {
-  const { role, isActive, name, fullName, email, username, qualification, level } = req.body;
+  const { role, isActive, name, fullName, email, username, qualification, level, profileImage, avatar_url } = req.body;
   const updates = {};
   if (role) updates.role = role;
   if (isActive !== undefined) updates.isActive = isActive;
@@ -152,6 +152,9 @@ export const updateUserRole = asyncHandler(async (req, res) => {
   if (qualification || level) {
     updates.qualification = qualification || level;
     updates.level = qualification || level;
+  }
+  if (profileImage !== undefined || avatar_url !== undefined) {
+    updates.profileImage = profileImage || avatar_url || '';
   }
 
   if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(req.params.id)) {

@@ -172,6 +172,7 @@ export const registerUser = async (email, password, username, full_name, qualifi
         full_name: profile.name || profile.fullName,
         username: profile.username,
         email: profile.email,
+        avatar_url: profile.avatar_url || profile.profileImage || '',
         role: profile.role,
         level: profile.level,
         created_at: profile.createdAt || profile.created_at
@@ -349,6 +350,43 @@ export const updateProfile = async (profileUpdates) => {
 
       localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
       localStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+
+      // Sync into admin_table_profiles and taxman_registered_users
+      try {
+        const userEmail = mergedUser.email?.toLowerCase();
+        const adminProfiles = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+        if (Array.isArray(adminProfiles) && userEmail) {
+          const updatedAdmin = adminProfiles.map(p =>
+            (p.email?.toLowerCase() === userEmail || p.id === mergedUser.id || p.id === mergedUser._id)
+              ? {
+                  ...p,
+                  full_name: mergedUser.name || mergedUser.fullName || p.full_name,
+                  avatar_url: mergedUser.avatar_url || mergedUser.profileImage || p.avatar_url,
+                  username: mergedUser.username || p.username
+                }
+              : p
+          );
+          localStorage.setItem('admin_table_profiles', JSON.stringify(updatedAdmin));
+        }
+
+        const regUsers = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+        if (Array.isArray(regUsers) && userEmail) {
+          const updatedReg = regUsers.map(u =>
+            (u.email?.toLowerCase() === userEmail || u.id === mergedUser.id || u.id === mergedUser._id)
+              ? {
+                  ...u,
+                  name: mergedUser.name || mergedUser.fullName || u.name,
+                  full_name: mergedUser.name || mergedUser.fullName || u.full_name,
+                  avatar_url: mergedUser.avatar_url || mergedUser.profileImage || u.avatar_url,
+                  profileImage: mergedUser.avatar_url || mergedUser.profileImage || u.profileImage,
+                  username: mergedUser.username || u.username
+                }
+              : u
+          );
+          localStorage.setItem('taxman_registered_users', JSON.stringify(updatedReg));
+        }
+      } catch {}
+
       notifyListeners(updatedSession);
     }
 
@@ -382,6 +420,43 @@ export const updateProfile = async (profileUpdates) => {
 
       localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
       localStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+
+      // Sync into admin_table_profiles and taxman_registered_users
+      try {
+        const userEmail = mergedUser.email?.toLowerCase();
+        const adminProfiles = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
+        if (Array.isArray(adminProfiles) && userEmail) {
+          const updatedAdmin = adminProfiles.map(p =>
+            (p.email?.toLowerCase() === userEmail || p.id === mergedUser.id || p.id === mergedUser._id)
+              ? {
+                  ...p,
+                  full_name: mergedUser.name || mergedUser.fullName || p.full_name,
+                  avatar_url: mergedUser.avatar_url || mergedUser.profileImage || p.avatar_url,
+                  username: mergedUser.username || p.username
+                }
+              : p
+          );
+          localStorage.setItem('admin_table_profiles', JSON.stringify(updatedAdmin));
+        }
+
+        const regUsers = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+        if (Array.isArray(regUsers) && userEmail) {
+          const updatedReg = regUsers.map(u =>
+            (u.email?.toLowerCase() === userEmail || u.id === mergedUser.id || u.id === mergedUser._id)
+              ? {
+                  ...u,
+                  name: mergedUser.name || mergedUser.fullName || u.name,
+                  full_name: mergedUser.name || mergedUser.fullName || u.full_name,
+                  avatar_url: mergedUser.avatar_url || mergedUser.profileImage || u.avatar_url,
+                  profileImage: mergedUser.avatar_url || mergedUser.profileImage || u.profileImage,
+                  username: mergedUser.username || u.username
+                }
+              : u
+          );
+          localStorage.setItem('taxman_registered_users', JSON.stringify(updatedReg));
+        }
+      } catch {}
+
       notifyListeners(updatedSession);
       return mergedUser;
     }

@@ -160,10 +160,37 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
     full_name: '',
     username: '',
     email: '',
+    avatar_url: '',
     role: 'student',
     level: 'CAF',
     isActive: true
   });
+
+  const resolveUserAvatar = (user) => {
+    if (!user) return '';
+    if (user.avatar_url) return user.avatar_url;
+    if (user.profileImage) return user.profileImage;
+    if (user.avatar) return user.avatar;
+    if (user.picture) return user.picture;
+    try {
+      if (user.email) {
+        const emailLower = user.email.toLowerCase();
+        if (session?.user?.email?.toLowerCase() === emailLower && (session.user.avatar_url || session.user.profileImage)) {
+          return session.user.avatar_url || session.user.profileImage;
+        }
+        const regUsers = JSON.parse(localStorage.getItem('taxman_registered_users') || '[]');
+        const matchedReg = regUsers.find(r => r.email?.toLowerCase() === emailLower);
+        if (matchedReg?.avatar_url || matchedReg?.profileImage) {
+          return matchedReg.avatar_url || matchedReg.profileImage;
+        }
+        const localUser = JSON.parse(localStorage.getItem('taxman_user') || '{}');
+        if (localUser.email?.toLowerCase() === emailLower && (localUser.avatar_url || localUser.profileImage)) {
+          return localUser.avatar_url || localUser.profileImage;
+        }
+      }
+    } catch {}
+    return '';
+  };
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [addUserForm, setAddUserForm] = useState({
@@ -528,6 +555,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           full_name: u.name || u.fullName || u.full_name,
           username: u.username || u.email?.split('@')[0],
           email: u.email,
+          avatar_url: u.avatar_url || u.profileImage || u.avatar || u.picture || resolveUserAvatar(u) || '',
           role: u.role || 'student',
           level: u.level || u.qualification || 'CAF',
           isActive: u.isActive !== false,
@@ -540,6 +568,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             full_name: activeAdminName,
             username: activeAdminEmail.split('@')[0],
             email: activeAdminEmail,
+            avatar_url: session?.user?.avatar_url || session?.user?.profileImage || adminProfile?.avatar_url || '',
             role: activeAdminRole,
             level: 'Qualified',
             isActive: true,
@@ -552,12 +581,17 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       } else {
         const local = loadLocalStorageTable('profiles', mockProfiles);
         let resolved = (local && local.length > 1) ? local : mockProfiles;
+        resolved = resolved.map(p => ({
+          ...p,
+          avatar_url: p.avatar_url || p.profileImage || resolveUserAvatar(p) || ''
+        }));
         if (activeAdminEmail && !resolved.some(u => u.email?.toLowerCase() === activeAdminEmail.toLowerCase())) {
           resolved = [{
             id: session?.user?.id || 'admin_head',
             full_name: activeAdminName,
             username: activeAdminEmail.split('@')[0],
             email: activeAdminEmail,
+            avatar_url: session?.user?.avatar_url || session?.user?.profileImage || adminProfile?.avatar_url || '',
             role: activeAdminRole,
             level: 'Qualified',
             isActive: true,
@@ -760,6 +794,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       full_name: user.full_name || user.name || '',
       username: user.username || '',
       email: user.email || '',
+      avatar_url: resolveUserAvatar(user) || '',
       role: user.role || 'student',
       level: user.level || user.qualification || 'CAF',
       isActive: user.isActive !== false
@@ -780,7 +815,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
         role: userEditForm.role,
         level: userEditForm.level,
         qualification: userEditForm.level,
-        isActive: userEditForm.isActive
+        isActive: userEditForm.isActive,
+        avatar_url: userEditForm.avatar_url,
+        profileImage: userEditForm.avatar_url
       });
 
       setProfiles(prev => {
@@ -789,7 +826,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           ...userEditForm,
           full_name: userEditForm.full_name,
           level: userEditForm.level,
-          isActive: userEditForm.isActive
+          isActive: userEditForm.isActive,
+          avatar_url: userEditForm.avatar_url,
+          profileImage: userEditForm.avatar_url
         } : p);
         saveLocalStorageTable('profiles', updated);
         return updated;
@@ -1252,7 +1291,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
   const notificationsList = getNotificationsList();
 
   return (
-    <div className="flex bg-[#F8F9FB] h-screen overflow-hidden text-gray-800 font-sans relative w-full">
+    <div className="flex bg-[#F8F9FB] h-screen overflow-hidden text-gray-800 font-sans relative w-full" data-admin-dashboard="true">
 
       {/* 1. LEFT SIDEBAR (Dark - Desktop) */}
       <aside className={`w-72 bg-[#090C11] text-white flex flex-col h-screen fixed lg:static left-0 top-0 z-40 flex-shrink-0 transition-transform duration-300 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -1534,7 +1573,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
         </header>
 
         {/* 3. DYNAMIC CONTENT AREA */}
-        <div className="p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto space-y-8">
+        <div className="p-3.5 sm:p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto space-y-6 sm:space-y-8 pb-20">
 
           {loading && (
             <div className="flex items-center justify-center py-10">
@@ -1547,7 +1586,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             <div className="space-y-8 animate-fadeIn">
 
               {/* Hero Header Dashboard Banner */}
-              <div className="relative overflow-hidden bg-gradient-to-r from-navy via-[#052347] to-[#011126] text-white rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="relative overflow-hidden bg-gradient-to-r from-navy via-[#052347] to-[#011126] text-white rounded-3xl p-4 sm:p-6 md:p-8 border border-white/10 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-brandGreen/10 to-transparent pointer-events-none rounded-r-3xl" />
                 <div className="space-y-2 relative z-10">
                   <div className="flex items-center space-x-2">
@@ -1603,7 +1642,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                   <span className="w-2 h-2 rounded-full bg-brandGreen" />
                   <span>Quick Administrative Actions</span>
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
                   {[
                     { label: 'Post Pakistan Job', onClick: () => { setSelectedJob(null); setJobForm({ company: '', title: '', location: '', level: '', job_type: 'Full-time', deadline: '', description: '', requirements: '', is_overseas: false }); setIsJobModalOpen(true); }, color: 'bg-brandGreen/5 hover:bg-brandGreen text-brandGreen hover:text-white border border-brandGreen/10', desc: 'Create full/part-time local vacancies' },
                     { label: 'Post Trainee Induction', onClick: () => { setSelectedJob(null); setJobForm({ company: '', title: 'Audit Associate (Trainee)', location: 'Lahore', level: 'CA CAF Qualified', job_type: 'Articleship', deadline: '', description: '', requirements: '', is_overseas: false }); setIsJobModalOpen(true); }, color: 'bg-emerald-500/5 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/10', desc: 'Add new CA/ACCA articleships' },
@@ -1959,9 +1998,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           )}          {/* VIEW: PAKISTAN JOBS */}
           {activeSubTab === 'Pakistan Jobs' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Pakistan Jobs</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Pakistan Jobs</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Publish and update domestic professional job opportunities.</p>
                 </div>
                 <button
@@ -1970,7 +2009,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     setJobForm({ company: '', title: '', location: '', level: '', job_type: 'Full-time', deadline: '', description: '', requirements: '', is_overseas: false });
                     setIsJobModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Post Pakistan Job</span>
@@ -2092,7 +2131,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                   {job.job_type}
                                 </span>
                                 <span className="text-[11px] font-bold text-red-500 flex items-center">
-                                  <Clock className="w-3.5 h-3.5 mr-1" /> {job.deadline}
+                                  <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" /> {job.deadline ? (job.deadline.includes('T') ? job.deadline.split('T')[0] : job.deadline) : 'N/A'}
                                 </span>
                               </div>
                               <h3 className="text-base font-black text-[#090C11] mt-3 leading-tight">{job.title}</h3>
@@ -2161,9 +2200,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: INDUCTIONS */}
           {activeSubTab === 'Inductions' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Trainee Inductions</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Trainee Inductions</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Publish Trainee / Articleship positions for CA & ACCA students.</p>
                 </div>
                 <button
@@ -2172,7 +2211,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     setJobForm({ company: '', title: 'Audit Associate (Trainee)', location: 'Lahore', level: 'CA CAF Qualified', job_type: 'Articleship', deadline: '', description: '', requirements: '', is_overseas: false });
                     setIsJobModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Post Trainee Induction</span>
@@ -2294,7 +2333,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                   Induction
                                 </span>
                                 <span className="text-[11px] font-bold text-red-500 flex items-center">
-                                  <Clock className="w-3.5 h-3.5 mr-1" /> {job.deadline}
+                                  <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" /> {job.deadline ? (job.deadline.includes('T') ? job.deadline.split('T')[0] : job.deadline) : 'N/A'}
                                 </span>
                               </div>
                               <h3 className="text-base font-black text-[#090C11] mt-3 leading-tight">{job.title}</h3>
@@ -2363,9 +2402,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: OVERSEAS JOBS */}
           {activeSubTab === 'Overseas Jobs' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Overseas Placements</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Overseas Placements</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Publish job vacancies located outside Pakistan (e.g. Middle East, UK).</p>
                 </div>
                 <button
@@ -2374,7 +2413,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     setJobForm({ company: '', title: '', location: 'Riyadh, Saudi Arabia', level: 'ACCA Member', job_type: 'Full-time', deadline: '', description: '', requirements: '', is_overseas: true });
                     setIsJobModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Post Overseas Placement</span>
@@ -2496,7 +2535,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                   Overseas Placements
                                 </span>
                                 <span className="text-[11px] font-bold text-red-500 flex items-center">
-                                  <Clock className="w-3.5 h-3.5 mr-1" /> {job.deadline}
+                                  <Clock className="w-3.5 h-3.5 mr-1 flex-shrink-0" /> {job.deadline ? (job.deadline.includes('T') ? job.deadline.split('T')[0] : job.deadline) : 'N/A'}
                                 </span>
                               </div>
                               <h3 className="text-base font-black text-[#090C11] mt-3 leading-tight">{job.title}</h3>
@@ -2565,10 +2604,10 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: VIDEOS & PODCASTS */}
           {activeSubTab === 'Videos & Podcasts' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11] flex items-center space-x-2">
-                    <Tv className="w-6 h-6 text-brandGreen" />
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11] flex items-center space-x-2">
+                    <Tv className="w-5 h-5 sm:w-6 sm:h-6 text-brandGreen flex-shrink-0" />
                     <span>Manage Videos & Podcasts</span>
                   </h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">
@@ -2595,7 +2634,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     });
                     setIsVideoModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Upload Video / Podcast</span>
@@ -2967,7 +3006,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                             <p className="text-xs text-gray-600 leading-relaxed italic bg-gray-50 p-3 rounded-lg border border-gray-50 font-normal">
                               " {msg.message} "
                             </p>
-                            <div className="flex justify-end pt-1 space-x-2">
+                            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                               <button
                                 onClick={() => {
                                   setSelectedMessageForReply(msg);
@@ -3011,12 +3050,12 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: COMMUNITY ROOMS */}
           {activeSubTab === 'Community' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Community Rooms</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Community Rooms</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Configure WhatsApp study groups and discord links for students.</p>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2.5 sm:space-x-3 w-full sm:w-auto justify-between sm:justify-end">
                   {renderViewToggle(communityViewMode, setCommunityViewMode)}
                   <button
                     onClick={() => {
@@ -3024,7 +3063,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                       setCommunityForm({ title: '', category_key: 'caf', badge: 'CAF Group', description: '', members_count_text: '1,000+ Members', whatsapp_link: '', discord_link: '' });
                       setIsCommunityModalOpen(true);
                     }}
-                    className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Room</span>
@@ -3212,9 +3251,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: RESOURCES / MANAGING RESOURCES */}
           {activeSubTab === 'Resources' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Study Materials</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Study Materials</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Upload PDF, ZIP study resource links for students.</p>
                 </div>
                 <button
@@ -3223,7 +3262,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     setResourceForm({ title: '', description: '', category: 'CAF', type: 'PDF', downloads: 0, tag: '', tag_color: 'bg-blue-500/10 text-blue-600', btn_color: 'bg-blue-600 hover:bg-blue-700', download_url: '', is_featured: false });
                     setIsResourceModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Resource</span>
@@ -3422,9 +3461,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: ANNOUNCEMENTS */}
           {activeSubTab === 'Announcements' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Announcements</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Announcements</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Publish events and alert notices on the dashboard feed.</p>
                 </div>
                 <button
@@ -3433,7 +3472,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     setAnnouncementForm({ title: '', summary: '', content: '', category: 'General', event_date: '' });
                     setIsAnnouncementModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Event</span>
@@ -3599,9 +3638,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           {/* VIEW: BLOG POSTS CRUD */}
           {activeSubTab === 'Blog Posts' && !loading && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h1 className="text-2xl font-black text-[#090C11]">Manage Blog Articles</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-[#090C11]">Manage Blog Articles</h1>
                   <p className="text-xs text-gray-400 mt-1 font-semibold">Publish career guides, Big 4 tips, and student masterclasses.</p>
                 </div>
                 <button
@@ -3622,7 +3661,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     });
                     setIsBlogModalOpen(true);
                   }}
-                  className="px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer w-fit"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Blog Article</span>
@@ -3975,7 +4014,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
               </div>
 
               {/* Search & Filters */}
-              <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 items-center">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
                 <div className="relative flex-1 w-full">
                   <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -3987,29 +4026,31 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                   />
                 </div>
 
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
-                  <Filter className="w-4 h-4 text-gray-400" />
-                  <select
-                    value={userRoleFilter}
-                    onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="px-3 py-2.5 border border-gray-100 bg-[#F8F9FB] rounded-xl text-xs focus:outline-none focus:border-brandGreen text-gray-500 font-bold cursor-pointer"
-                  >
-                    <option value="All">All Roles</option>
-                    <option value="student">Student / User</option>
-                    <option value="mentor">Mentor</option>
-                    <option value="admin">Administrator</option>
-                    <option value="team_head">Team Head</option>
-                  </select>
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between sm:justify-start">
+                  <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                    <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <select
+                      value={userRoleFilter}
+                      onChange={(e) => setUserRoleFilter(e.target.value)}
+                      className="flex-1 sm:flex-initial px-3 py-2.5 border border-gray-100 bg-[#F8F9FB] rounded-xl text-xs focus:outline-none focus:border-brandGreen text-gray-500 font-bold cursor-pointer"
+                    >
+                      <option value="All">All Roles</option>
+                      <option value="student">Student / User</option>
+                      <option value="mentor">Mentor</option>
+                      <option value="admin">Administrator</option>
+                      <option value="team_head">Team Head</option>
+                    </select>
 
-                  <select
-                    value={userStatusFilter}
-                    onChange={(e) => setUserStatusFilter(e.target.value)}
-                    className="px-3 py-2.5 border border-gray-100 bg-[#F8F9FB] rounded-xl text-xs focus:outline-none focus:border-brandGreen text-gray-500 font-bold cursor-pointer"
-                  >
-                    <option value="All">All Status</option>
-                    <option value="active">Active Only</option>
-                    <option value="blocked">Blocked Only</option>
-                  </select>
+                    <select
+                      value={userStatusFilter}
+                      onChange={(e) => setUserStatusFilter(e.target.value)}
+                      className="flex-1 sm:flex-initial px-3 py-2.5 border border-gray-100 bg-[#F8F9FB] rounded-xl text-xs focus:outline-none focus:border-brandGreen text-gray-500 font-bold cursor-pointer"
+                    >
+                      <option value="All">All Status</option>
+                      <option value="active">Active Only</option>
+                      <option value="blocked">Blocked Only</option>
+                    </select>
+                  </div>
 
                   {renderViewToggle(userViewMode, setUserViewMode)}
                 </div>
@@ -4061,15 +4102,33 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                 return (
                                   <tr key={p.id} className={`hover:bg-[#F8F9FB]/50 transition-colors ${isBlocked ? 'bg-red-50/20' : ''}`}>
                                     <td className="p-4 pl-6 flex items-center space-x-3">
-                                      <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center overflow-hidden flex-shrink-0 ${
-                                        isBlocked ? 'bg-red-500/10 text-red-600' : 'bg-brandGreen/10 text-brandGreen-dark'
-                                      }`}>
-                                        {p.avatar_url ? (
-                                          <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                          p.full_name?.charAt(0).toUpperCase()
-                                        )}
-                                      </div>
+                                      {(() => {
+                                        const avatarSrc = resolveUserAvatar(p);
+                                        return (
+                                          <div className={`w-9 h-9 rounded-full font-bold flex items-center justify-center overflow-hidden flex-shrink-0 relative border border-gray-100 shadow-2xs ${
+                                            isBlocked ? 'bg-red-500/10 text-red-600' : 'bg-brandGreen/10 text-brandGreen-dark'
+                                          }`}>
+                                            {avatarSrc ? (
+                                              <img
+                                                src={avatarSrc}
+                                                alt={p.full_name || 'Avatar'}
+                                                className="w-full h-full object-cover rounded-full"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none';
+                                                  const fb = e.currentTarget.nextElementSibling;
+                                                  if (fb) fb.style.display = 'flex';
+                                                }}
+                                              />
+                                            ) : null}
+                                            <span
+                                              className="items-center justify-center text-xs font-black"
+                                              style={{ display: avatarSrc ? 'none' : 'flex' }}
+                                            >
+                                              {p.full_name?.charAt(0).toUpperCase() || 'U'}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()}
                                       <div className="flex flex-col truncate">
                                         <span className="text-[#090C11] font-black truncate">{p.full_name}</span>
                                         <span className="text-[10px] text-gray-400">@{p.username}</span>
@@ -4181,17 +4240,35 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center space-x-3 min-w-0">
-                                  <div
-                                    className={`w-11 h-11 rounded-2xl font-bold flex items-center justify-center overflow-hidden flex-shrink-0 text-base ${
-                                      isBlocked ? 'bg-red-500/10 text-red-600' : 'bg-brandGreen/10 text-brandGreen-dark'
-                                    }`}
-                                  >
-                                    {p.avatar_url ? (
-                                      <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                      p.full_name?.charAt(0).toUpperCase()
-                                    )}
-                                  </div>
+                                  {(() => {
+                                    const avatarSrc = resolveUserAvatar(p);
+                                    return (
+                                      <div
+                                        className={`w-11 h-11 rounded-2xl font-bold flex items-center justify-center overflow-hidden flex-shrink-0 text-base relative border border-gray-100 shadow-2xs ${
+                                          isBlocked ? 'bg-red-500/10 text-red-600' : 'bg-brandGreen/10 text-brandGreen-dark'
+                                        }`}
+                                      >
+                                        {avatarSrc ? (
+                                          <img
+                                            src={avatarSrc}
+                                            alt={p.full_name || 'Avatar'}
+                                            className="w-full h-full object-cover rounded-2xl"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                              const fb = e.currentTarget.nextElementSibling;
+                                              if (fb) fb.style.display = 'flex';
+                                            }}
+                                          />
+                                        ) : null}
+                                        <span
+                                          className="items-center justify-center text-sm font-black"
+                                          style={{ display: avatarSrc ? 'none' : 'flex' }}
+                                        >
+                                          {p.full_name?.charAt(0).toUpperCase() || 'U'}
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
                                   <div className="min-w-0">
                                     <h3 className="text-sm font-black text-[#090C11] truncate">{p.full_name}</h3>
                                     <p className="text-[11px] text-gray-400 font-semibold truncate">@{p.username}</p>
@@ -4311,7 +4388,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
               </div>
 
               {/* Search & View Toggle */}
-              <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-3 items-center">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                 <div className="relative flex-1 w-full">
                   <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -4436,7 +4513,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                               </div>
                             )}
 
-                            <div className="flex justify-end pt-2 space-x-2">
+                            <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
                               <button
                                 onClick={() => {
                                   setSelectedMessageForReply(msg);
@@ -4542,7 +4619,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col space-y-1">
                       <label className="font-bold text-gray-400">Email Address (Read-only)</label>
                       <input
@@ -4593,18 +4670,18 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       {/* ========================================== */}
 
       {/* MODAL: JOBS CRUD */}
-      <PortalModal isOpen={isJobModalOpen} onClose={() => setIsJobModalOpen(false)} maxWidth="max-w-lg" className="p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+      <PortalModal isOpen={isJobModalOpen} onClose={() => setIsJobModalOpen(false)} maxWidth="max-w-lg" className="p-4 sm:p-6 space-y-4 max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
           <h3 className="text-base font-black text-[#090C11]">
             {selectedJob ? 'Edit Placement Details' : 'Publish Placement Opportunity'}
           </h3>
-          <button onClick={() => setIsJobModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setIsJobModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleJobSubmit} className="space-y-3.5 text-xs">
-          <div className="grid grid-cols-2 gap-3.5">
+        <form onSubmit={handleJobSubmit} className="space-y-3.5 text-xs overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Company Name</label>
               <input
@@ -4627,7 +4704,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Location</label>
               <input
@@ -4652,7 +4729,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Placement Type</label>
               <select
@@ -4748,17 +4825,17 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       </PortalModal>
 
       {/* MODAL: RESOURCES CRUD */}
-      <PortalModal isOpen={isResourceModalOpen} onClose={() => setIsResourceModalOpen(false)} maxWidth="max-w-lg" className="p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+      <PortalModal isOpen={isResourceModalOpen} onClose={() => setIsResourceModalOpen(false)} maxWidth="max-w-lg" className="p-4 sm:p-6 space-y-4 max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
           <h3 className="text-base font-black text-[#090C11]">
             {selectedResource ? 'Edit Resource' : 'Add New Study Resource'}
           </h3>
-          <button onClick={() => setIsResourceModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setIsResourceModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleResourceSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleResourceSubmit} className="space-y-3.5 text-xs overflow-y-auto pr-1">
           <div className="flex flex-col space-y-1">
             <label className="font-bold text-gray-500">Resource Title</label>
             <input
@@ -4770,7 +4847,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Category</label>
               <select
@@ -4799,7 +4876,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Tag Label</label>
               <input
@@ -4853,17 +4930,17 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       </PortalModal>
 
       {/* MODAL: ANNOUNCEMENTS CRUD */}
-      <PortalModal isOpen={isAnnouncementModalOpen} onClose={() => setIsAnnouncementModalOpen(false)} maxWidth="max-w-lg" className="p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+      <PortalModal isOpen={isAnnouncementModalOpen} onClose={() => setIsAnnouncementModalOpen(false)} maxWidth="max-w-lg" className="p-4 sm:p-6 space-y-4 max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
           <h3 className="text-base font-black text-[#090C11]">
             {selectedAnnouncement ? 'Edit Announcement/Event' : 'Publish Announcement/Event'}
           </h3>
-          <button onClick={() => setIsAnnouncementModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setIsAnnouncementModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleAnnouncementSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleAnnouncementSubmit} className="space-y-3.5 text-xs overflow-y-auto pr-1">
           <div className="flex flex-col space-y-1">
             <label className="font-bold text-gray-500">Title</label>
             <input
@@ -4875,7 +4952,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Category</label>
               <select
@@ -5019,7 +5096,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       </PortalModal>
 
       {/* MODAL: BLOG POST CRUD */}
-      <PortalModal isOpen={isBlogModalOpen} onClose={() => setIsBlogModalOpen(false)} maxWidth="max-w-5xl" className="p-6 space-y-4">
+      <PortalModal isOpen={isBlogModalOpen} onClose={() => setIsBlogModalOpen(false)} maxWidth="max-w-5xl" className="p-4 sm:p-6 space-y-4 max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between border-b border-gray-100 pb-3">
           <h3 className="text-base font-black text-[#090C11] flex items-center space-x-2">
             <BookOpen className="w-5 h-5 text-brandGreen" />
@@ -5166,17 +5243,17 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       </PortalModal>
 
       {/* MODAL: COMMUNITY CRUD */}
-      <PortalModal isOpen={isCommunityModalOpen} onClose={() => setIsCommunityModalOpen(false)} maxWidth="max-w-lg" className="p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+      <PortalModal isOpen={isCommunityModalOpen} onClose={() => setIsCommunityModalOpen(false)} maxWidth="max-w-lg" className="p-4 sm:p-6 space-y-4 max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
           <h3 className="text-base font-black text-[#090C11]">
             {selectedCommunity ? 'Edit Study Group' : 'Add Study Group Room'}
           </h3>
-          <button onClick={() => setIsCommunityModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setIsCommunityModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleCommunitySubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleCommunitySubmit} className="space-y-3.5 text-xs overflow-y-auto pr-1">
           <div className="flex flex-col space-y-1">
             <label className="font-bold text-gray-500">Study Group Title</label>
             <input
@@ -5189,7 +5266,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">Category Key</label>
               <select
@@ -5216,7 +5293,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
               <label className="font-bold text-gray-500">WhatsApp Link URL</label>
               <input
@@ -5261,14 +5338,14 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
 
       {/* MODAL: VIDEO & PODCAST CRUD */}
       {isVideoModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <h3 className="text-base font-black text-[#090C11] flex items-center space-x-2">
                 <Tv className="w-5 h-5 text-brandGreen" />
                 <span>{selectedVideo ? 'Edit Video / Podcast' : 'Upload New Video / Podcast'}</span>
               </h3>
-              <button onClick={() => setIsVideoModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setIsVideoModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -5299,7 +5376,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 <span className="text-[10px] text-gray-400">Pastes full YouTube link or 11-char ID.</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                 <div className="flex flex-col space-y-1">
                   <label className="font-bold text-gray-500">Category</label>
                   <select
@@ -5329,7 +5406,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                 <div className="flex flex-col space-y-1">
                   <label className="font-bold text-gray-500">Speaker / Guest</label>
                   <input
@@ -5446,7 +5523,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           setReplyModalOpen(false);
         }}
         maxWidth="max-w-lg"
-        className="p-6 space-y-4 text-left"
+        className="p-4 sm:p-6 space-y-4 text-left max-h-[88vh] flex flex-col"
       >
         {selectedMessageForReply && (
           <>
@@ -5460,7 +5537,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
               <X className="w-5 h-5" />
             </button>
 
-            <div>
+            <div className="flex-shrink-0">
               <span className="px-2 py-0.5 bg-brandGreen/10 text-brandGreen-dark text-[9px] font-black uppercase rounded">
                 {selectedMessageForReply.category}
               </span>
@@ -5473,13 +5550,13 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             </div>
 
             {/* Student's Question */}
-            <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-xs font-semibold text-gray-500 leading-relaxed max-h-40 overflow-y-auto">
+            <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-xs font-semibold text-gray-500 leading-relaxed max-h-40 overflow-y-auto flex-shrink-0">
               <strong>Question details:</strong>
               <p className="mt-1 font-normal whitespace-pre-wrap">{selectedMessageForReply.message}</p>
             </div>
 
             {/* Draft Reply Form */}
-            <form onSubmit={handleSubmitReply} className="space-y-4">
+            <form onSubmit={handleSubmitReply} className="space-y-4 overflow-y-auto pr-1">
               <div className="flex flex-col space-y-1 text-xs">
                 <label className="font-extrabold text-navy uppercase tracking-wider">Your Counseling Advice:</label>
                 <textarea
@@ -5525,7 +5602,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           setIsEditUserModalOpen(false);
         }}
         maxWidth="max-w-lg"
-        className="p-6 space-y-4 text-left"
+        className="p-4 sm:p-6 space-y-4 text-left max-h-[88vh] flex flex-col"
       >
         {selectedUserForEdit && (
           <>
@@ -5539,7 +5616,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
               <X className="w-5 h-5" />
             </button>
 
-            <div>
+            <div className="flex-shrink-0">
               <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 text-[9px] font-black uppercase rounded">
                 Admin User Management
               </span>
@@ -5551,7 +5628,66 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
               </p>
             </div>
 
-            <form onSubmit={handleSaveUserEdit} className="space-y-4 pt-2">
+            <form onSubmit={handleSaveUserEdit} className="space-y-4 pt-2 overflow-y-auto pr-1">
+              {/* Profile Image Preview & Edit */}
+              <div className="flex items-center space-x-3.5 p-3 bg-[#F8F9FB] border border-gray-100 rounded-2xl">
+                <div className="w-13 h-13 rounded-2xl overflow-hidden bg-brandGreen/10 text-brandGreen-dark flex items-center justify-center font-black text-lg flex-shrink-0 relative border border-gray-200 shadow-2xs">
+                  {userEditForm.avatar_url ? (
+                    <img
+                      src={userEditForm.avatar_url}
+                      alt="Avatar Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : null}
+                  <span
+                    className="items-center justify-center"
+                    style={{ display: userEditForm.avatar_url ? 'none' : 'flex' }}
+                  >
+                    {userEditForm.full_name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div>
+                    <p className="text-xs font-bold text-[#090C11]">Profile Photo</p>
+                    <p className="text-[10px] text-gray-400 font-medium">User profile picture (PNG, JPG, WebP)</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <label className="px-2.5 py-1 bg-white border border-gray-200 hover:border-brandGreen hover:text-brandGreen text-gray-700 rounded-lg text-[10px] font-bold cursor-pointer transition-colors shadow-2xs">
+                      {userEditForm.avatar_url ? 'Change Photo' : 'Upload Photo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 1024 * 1024) {
+                              alert("File size exceeds 1MB limit.");
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setUserEditForm(prev => ({ ...prev, avatar_url: reader.result }));
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                    {userEditForm.avatar_url && (
+                      <button
+                        type="button"
+                        onClick={() => setUserEditForm(prev => ({ ...prev, avatar_url: '' }))}
+                        className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Full Name</label>
@@ -5682,7 +5818,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
         maxWidth="max-w-lg"
-        className="p-6 space-y-4 text-left"
+        className="p-4 sm:p-6 space-y-4 text-left max-h-[88vh] flex flex-col"
       >
         <button
           onClick={() => setIsAddUserModalOpen(false)}
@@ -5691,7 +5827,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           <X className="w-5 h-5" />
         </button>
 
-        <div>
+        <div className="flex-shrink-0">
           <span className="px-2 py-0.5 bg-brandGreen/10 text-brandGreen text-[9px] font-black uppercase rounded">
             Admin User Management
           </span>
@@ -5703,7 +5839,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
           </p>
         </div>
 
-        <form onSubmit={handleCreateNewUser} className="space-y-4 pt-2">
+        <form onSubmit={handleCreateNewUser} className="space-y-4 pt-2 overflow-y-auto pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Full Name *</label>

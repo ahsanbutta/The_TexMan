@@ -10,6 +10,24 @@ export default function FloatingSocials({
   instagramUrl = "https://www.instagram.com/saboornoor10",
   linkedinUrl = "https://www.linkedin.com/in/saboorahmad10",
 }) {
+  const [isAdminView, setIsAdminView] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkAdmin = () => {
+      const isDashboard = !!document.querySelector('[data-admin-dashboard="true"]') || window.location.pathname.includes('/admin');
+      setIsAdminView(isDashboard);
+    };
+    checkAdmin();
+    const observer = new MutationObserver(checkAdmin);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('popstate', checkAdmin);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('popstate', checkAdmin);
+    };
+  }, []);
+
+  if (isAdminView) return null;
   const socialItems = [
     {
       id: 'whatsapp',

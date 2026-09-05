@@ -117,23 +117,30 @@ export const getAllUsers = async () => {
   // Deduplicate and merge by email
   const userMap = new Map();
 
+  const getAvatar = (obj) => obj?.avatar_url || obj?.profileImage || obj?.avatar || obj?.picture || '';
+
   // 1. Seed fallback users
-  seedUsers.forEach(u => userMap.set(u.email.toLowerCase(), u));
+  seedUsers.forEach(u => userMap.set(u.email.toLowerCase(), {
+    ...u,
+    avatar_url: getAvatar(u)
+  }));
 
   // 2. Previously cached profiles
   if (Array.isArray(cachedProfiles)) {
     cachedProfiles.forEach(p => {
       if (p && p.email) {
+        const existing = userMap.get(p.email.toLowerCase());
         userMap.set(p.email.toLowerCase(), {
-          _id: p.id || p._id || 'usr_' + Date.now(),
-          name: p.full_name || p.name || p.fullName,
+          _id: p.id || p._id || existing?._id || 'usr_' + Date.now(),
+          name: p.full_name || p.name || p.fullName || existing?.name,
           username: p.username || p.email?.split('@')[0],
           email: p.email,
-          role: p.role || 'student',
-          qualification: p.level || p.qualification || 'CAF',
-          level: p.level || p.qualification || 'CAF',
+          avatar_url: getAvatar(p) || existing?.avatar_url || '',
+          role: p.role || existing?.role || 'student',
+          qualification: p.level || p.qualification || existing?.qualification || 'CAF',
+          level: p.level || p.qualification || existing?.level || 'CAF',
           isActive: p.isActive !== undefined ? p.isActive : (p.status !== 'blocked'),
-          createdAt: p.created_at || p.createdAt || new Date().toISOString()
+          createdAt: p.created_at || p.createdAt || existing?.createdAt || new Date().toISOString()
         });
       }
     });
@@ -143,16 +150,18 @@ export const getAllUsers = async () => {
   if (Array.isArray(localRegistered)) {
     localRegistered.forEach(u => {
       if (u && u.email) {
+        const existing = userMap.get(u.email.toLowerCase());
         userMap.set(u.email.toLowerCase(), {
-          _id: u._id || u.id || 'usr_' + Date.now(),
-          name: u.name || u.full_name || u.fullName,
+          _id: u._id || u.id || existing?._id || 'usr_' + Date.now(),
+          name: u.name || u.full_name || u.fullName || existing?.name,
           username: u.username || u.email?.split('@')[0],
           email: u.email,
-          role: u.role || 'student',
-          qualification: u.qualification || u.level || 'CAF',
-          level: u.level || u.qualification || 'CAF',
+          avatar_url: getAvatar(u) || existing?.avatar_url || '',
+          role: u.role || existing?.role || 'student',
+          qualification: u.qualification || u.level || existing?.qualification || 'CAF',
+          level: u.level || u.qualification || existing?.level || 'CAF',
           isActive: u.isActive !== undefined ? u.isActive : (u.status !== 'blocked'),
-          createdAt: u.createdAt || u.created_at || new Date().toISOString()
+          createdAt: u.createdAt || u.created_at || existing?.createdAt || new Date().toISOString()
         });
       }
     });
@@ -162,11 +171,13 @@ export const getAllUsers = async () => {
   if (Array.isArray(apiUsers)) {
     apiUsers.forEach(u => {
       if (u && u.email) {
+        const existing = userMap.get(u.email.toLowerCase());
         userMap.set(u.email.toLowerCase(), {
           _id: u._id || u.id,
-          name: u.name || u.fullName,
+          name: u.name || u.fullName || existing?.name,
           username: u.username || u.email?.split('@')[0],
           email: u.email,
+          avatar_url: getAvatar(u) || existing?.avatar_url || '',
           role: u.role || 'student',
           qualification: u.qualification || u.level || 'CAF',
           level: u.level || u.qualification || 'CAF',
@@ -190,6 +201,7 @@ export const getAllUsers = async () => {
         name: currentUser.name || currentUser.fullName || currentUser.user_metadata?.full_name || existingUser?.name || 'Administrator',
         username: currentUser.username || currentUser.email.split('@')[0],
         email: currentUser.email,
+        avatar_url: getAvatar(currentUser) || existingUser?.avatar_url || '',
         role: currentUser.role || (currentUser.email.toLowerCase().includes('admin') ? 'admin' : 'student'),
         qualification: currentUser.qualification || currentUser.level || existingUser?.qualification || 'Qualified',
         level: currentUser.level || currentUser.qualification || existingUser?.level || 'Qualified',
@@ -208,6 +220,7 @@ export const getAllUsers = async () => {
       full_name: u.name || u.fullName || u.full_name,
       username: u.username || u.email?.split('@')[0],
       email: u.email,
+      avatar_url: u.avatar_url || u.profileImage || '',
       role: u.role || 'student',
       level: u.level || u.qualification || 'CAF',
       isActive: u.isActive !== undefined ? u.isActive : true,
@@ -310,13 +323,19 @@ export const updateUserRole = async (userId, role) => {
 };
 
 export const updateAdminUser = async (userId, userData) => {
+  const payload = {
+    ...userData,
+    avatar_url: userData.avatar_url || userData.profileImage,
+    profileImage: userData.avatar_url || userData.profileImage
+  };
   try {
-    const res = await api.put(`/admin/users/${userId}`, userData);
+    const res = await api.put(`/admin/users/${userId}`, payload);
     try {
       const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
       const updated = cached.map(p => (p.id === userId || p._id === userId) ? {
         ...p,
-        ...userData,
+        ...payload,
+        avatar_url: payload.avatar_url || p.avatar_url,
         full_name: userData.full_name || userData.name || p.full_name,
         level: userData.level || userData.qualification || p.level
       } : p);
@@ -328,7 +347,8 @@ export const updateAdminUser = async (userId, userData) => {
       const cached = JSON.parse(localStorage.getItem('admin_table_profiles') || '[]');
       const updated = cached.map(p => (p.id === userId || p._id === userId) ? {
         ...p,
-        ...userData,
+        ...payload,
+        avatar_url: payload.avatar_url || p.avatar_url,
         full_name: userData.full_name || userData.name || p.full_name,
         level: userData.level || userData.qualification || p.level
       } : p);
