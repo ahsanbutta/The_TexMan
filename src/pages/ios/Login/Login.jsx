@@ -11,10 +11,13 @@ import {
   TrendingUp,
   Calendar,
   Users,
-  User
+  User,
+  Briefcase,
+  Globe,
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { loginUser, registerUser } from '../../../services/authService';
-import goldenDoorway from '../../../assets/golden_doorway.png';
 import logoImg from '../../../assets/logo.png';
 
 export default function Login({ onLoginSuccess, onBack, startFlipped = false, onSignUpRedirect, onLoginRedirect }) {
@@ -128,13 +131,13 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
 
 
   return (
-    <div className="min-h-screen bg-[#02152c] text-white flex flex-col lg:flex-row font-sans selection:bg-[#00C853] selection:text-white relative overflow-hidden">
+    <div data-auth-page="true" className="min-h-screen bg-[#02152c] text-white flex flex-col lg:flex-row font-sans selection:bg-[#00C853] selection:text-white relative overflow-hidden">
 
-      {/* ── LEFT SIDE COLUMN: WELCOME & FEATURE LIST (Hidden on Mobile) ── */}
-      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-b from-[#02152c] to-[#010e20] p-12 xl:p-16 flex-col justify-between relative overflow-hidden border-r border-white/5">
+      {/* ── LEFT SIDE COLUMN: WELCOME & FEATURE LIST (Hidden on Mobile, Zero Image Clutter) ── */}
+      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-b from-[#02152c] to-[#010e20] p-10 xl:p-14 flex-col justify-between relative overflow-y-auto border-r border-white/5 scrollbar-none">
 
         {/* Top Header Logo */}
-        <div className="flex items-center space-x-3.5 z-10 select-none">
+        <div className="flex items-center space-x-3.5 z-10 select-none flex-shrink-0">
           <img
             src={logoImg}
             alt="The TaxMan's Capital Logo"
@@ -154,70 +157,125 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
           </div>
         </div>
 
-        {/* Welcome Text Block */}
-        <div className="my-auto space-y-8 max-w-lg z-10">
-          <div className="space-y-4">
-            <h1 className="text-4xl xl:text-5xl font-black tracking-tight leading-tight">
-              Welcome Back!<br />
-              Let's Continue Your<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00C853] to-[#34d399]">Success Journey</span>
+        {/* Dynamic Welcome / Register Text Block */}
+        <div className="my-8 space-y-7 max-w-lg z-10">
+          <div className="space-y-3.5 transition-all duration-300">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#00E676] text-[11px] font-bold tracking-wider uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00E676] animate-pulse" />
+              <span>{isFlipped ? 'New Student Registration' : 'Candidate & Member Access'}</span>
+            </div>
+
+            <h1 className="text-3xl xl:text-4xl font-black tracking-tight leading-tight transition-all duration-300">
+              {isFlipped ? (
+                <>
+                  Start Your Journey<br />
+                  Join Pakistan's Premier<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00C853] to-[#34d399]">Finance Ecosystem</span>
+                </>
+              ) : (
+                <>
+                  Welcome Back!<br />
+                  Access Your Dedicated<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00C853] to-[#34d399]">Career Portal</span>
+                </>
+              )}
             </h1>
-            <p className="text-xs xl:text-sm text-gray-400 font-medium leading-relaxed">
-              Log in to your account and access exclusive resources, career guidance, events and opportunities designed for CA & ACCA students.
+
+            <p className="text-xs xl:text-sm text-gray-400 font-medium leading-relaxed transition-all duration-300">
+              {isFlipped
+                ? "Create your student account to unlock Big 4 trainee inductions, access verified CAF & CFAP study resources, and receive 1-on-1 mentorship from Saboor Ahmad CA."
+                : "Sign in to explore verified Big 4 trainee inductions, download exclusive study resources, and track your submitted counseling queries."}
             </p>
           </div>
 
-          {/* List of Features */}
-          <div className="space-y-5">
-            <div className="flex items-start space-x-3.5">
-              <div className="p-2 bg-white/5 rounded-xl border border-white/10 text-[#00C853]">
-                <BookOpen className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h4 className="text-xs xl:text-sm font-bold text-white">Expert Guidance</h4>
-                <p className="text-[11px] xl:text-xs text-gray-500 font-medium">Learn from industry professionals</p>
-              </div>
-            </div>
+          {/* Dynamic List of Features */}
+          <div className="space-y-4 transition-all duration-300">
+            {isFlipped ? (
+              <>
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <Briefcase className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">Big 4 & Firm Inductions</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Priority alerts for articleship and trainee positions across Pakistan and overseas</p>
+                  </div>
+                </div>
 
-            <div className="flex items-start space-x-3.5">
-              <div className="p-2 bg-white/5 rounded-xl border border-white/10 text-[#00C853]">
-                <Users className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h4 className="text-xs xl:text-sm font-bold text-white">Career Growth</h4>
-                <p className="text-[11px] xl:text-xs text-gray-500 font-medium">Discover opportunities that shape your future</p>
-              </div>
-            </div>
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <BookOpen className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">Curated CA & ACCA Study Hub</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Free access to past papers, suggested solutions, revision checklists & templates</p>
+                  </div>
+                </div>
 
-            <div className="flex items-start space-x-3.5">
-              <div className="p-2 bg-white/5 rounded-xl border border-white/10 text-[#00C853]">
-                <Calendar className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h4 className="text-xs xl:text-sm font-bold text-white">Events & Webinars</h4>
-                <p className="text-[11px] xl:text-xs text-gray-500 font-medium">Stay updated with latest sessions</p>
-              </div>
-            </div>
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <Users className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">1-on-1 Personalized Mentorship</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Direct counseling on exam strategy, firm selection, and corporate placements</p>
+                  </div>
+                </div>
 
-            <div className="flex items-start space-x-3.5">
-              <div className="p-2 bg-white/5 rounded-xl border border-white/10 text-[#00C853]">
-                <TrendingUp className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h4 className="text-xs xl:text-sm font-bold text-white">Practical Learning</h4>
-                <p className="text-[11px] xl:text-xs text-gray-500 font-medium">Access practical resources and tools</p>
-              </div>
-            </div>
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <Globe className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">Active Peer Study Rooms</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Instant connection to level-specific WhatsApp and Discord communities</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <Briefcase className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">Verified Career Placements</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Explore active corporate finance, audit, and tax vacancies</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <BookOpen className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">CAF & CFAP Resource Vault</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Download verified notes, mock tests & interview preparation guides</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <Mail className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">Counseling & Guidance Inbox</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Submit queries and receive official counselor guidance in your dashboard</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-[#00C853] shrink-0">
+                    <Award className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs xl:text-sm font-bold text-white">Masterclasses & Webinars</h4>
+                    <p className="text-[11px] xl:text-xs text-gray-400 font-medium">Watch exclusive firm reviews and ICAP exam strategy masterclasses</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-
-        {/* 3D Glowing Doorway Graphic */}
-        <div className="absolute -bottom-10 -right-24 w-[350px] h-[350px] opacity-85 pointer-events-none mix-blend-screen z-0">
-          <img
-            src={goldenDoorway}
-            alt="Glowing Portal illustration"
-            className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(0,200,83,0.3)] animate-pulse duration-[3000ms]"
-          />
         </div>
 
       </div>

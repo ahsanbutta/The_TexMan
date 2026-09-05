@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Home from './pages/ios/Home/Home';
 import FloatingSocials from './components/FloatingSocials';
 import { getCurrentSession, getInitialSessionSync, onAuthChange } from './services/authService';
@@ -8,12 +8,6 @@ export default function App() {
   const [session, setSession] = useState(() => getInitialSessionSync());
   const [sessionLoading, setSessionLoading] = useState(() => !getInitialSessionSync());
 
-  // Direct DOM refs for ultra high performance cursor tracker without React re-render churn
-  const dotRef = useRef(null);
-  const ringRef = useRef(null);
-  const mousePos = useRef({ x: -100, y: -100 });
-  const ringPos = useRef({ x: -100, y: -100 });
-  const isHidden = useRef(true);
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
@@ -69,112 +63,9 @@ export default function App() {
     };
   }, []);
 
-  // High performance RAF cursor physics without React state updates
-  useEffect(() => {
-    const onMouseMove = (e) => {
-      mousePos.current = { x: e.clientX, y: e.clientY };
-      if (isHidden.current) {
-        isHidden.current = false;
-        if (dotRef.current) dotRef.current.style.opacity = '1';
-        if (ringRef.current) ringRef.current.style.opacity = '1';
-      }
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
-      }
-    };
-
-    const onMouseEnter = () => {
-      isHidden.current = false;
-      if (dotRef.current) dotRef.current.style.opacity = '1';
-      if (ringRef.current) ringRef.current.style.opacity = '1';
-    };
-
-    const onMouseLeave = () => {
-      isHidden.current = true;
-      if (dotRef.current) dotRef.current.style.opacity = '0';
-      if (ringRef.current) ringRef.current.style.opacity = '0';
-    };
-
-    const onMouseDown = () => {
-      if (ringRef.current) {
-        ringRef.current.classList.add('scale-75', 'border-solid', 'border-brandGreen-dark', 'bg-brandGreen/10');
-      }
-    };
-
-    const onMouseUp = () => {
-      if (ringRef.current) {
-        ringRef.current.classList.remove('scale-75', 'border-solid', 'border-brandGreen-dark', 'bg-brandGreen/10');
-      }
-    };
-
-    const onMouseOver = (e) => {
-      const target = e.target;
-      if (!target) return;
-      const isInteractive = 
-        target.tagName === 'A' || 
-        target.tagName === 'BUTTON' || 
-        target.closest('a') || 
-        target.closest('button') ||
-        (target.classList && target.classList.contains('cursor-pointer'));
-
-      if (dotRef.current && ringRef.current) {
-        if (isInteractive) {
-          dotRef.current.classList.add('scale-150', 'bg-emerald-400');
-          ringRef.current.classList.add('scale-150', 'border-solid', 'border-emerald-400', 'bg-brandGreen/5');
-        } else {
-          dotRef.current.classList.remove('scale-150', 'bg-emerald-400');
-          ringRef.current.classList.remove('scale-150', 'border-solid', 'border-emerald-400', 'bg-brandGreen/5');
-        }
-      }
-    };
-
-    document.addEventListener("mousemove", onMouseMove, { passive: true });
-    document.addEventListener("mouseenter", onMouseEnter);
-    document.addEventListener("mouseleave", onMouseLeave);
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("mouseup", onMouseUp);
-    document.addEventListener("mouseover", onMouseOver, { passive: true });
-
-    let animationFrameId;
-    const updateTrail = () => {
-      if (!isHidden.current && ringRef.current) {
-        const dx = mousePos.current.x - ringPos.current.x;
-        const dy = mousePos.current.y - ringPos.current.y;
-        ringPos.current.x += dx * 0.18;
-        ringPos.current.y += dy * 0.18;
-        ringRef.current.style.transform = `translate3d(${ringPos.current.x}px, ${ringPos.current.y}px, 0) translate(-50%, -50%)`;
-      }
-      animationFrameId = requestAnimationFrame(updateTrail);
-    };
-
-    animationFrameId = requestAnimationFrame(updateTrail);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseenter", onMouseEnter);
-      document.removeEventListener("mouseleave", onMouseLeave);
-      document.removeEventListener("mousedown", onMouseDown);
-      document.removeEventListener("mouseup", onMouseUp);
-      document.removeEventListener("mouseover", onMouseOver);
-    };
-  }, []);
 
   return (
     <>
-      {/* Custom Cursor Dot */}
-      <div
-        ref={dotRef}
-        className="fixed pointer-events-none z-50 w-2 h-2 bg-brandGreen rounded-full shadow-[0_0_8px_rgba(0,200,83,0.8)] transition-transform duration-75 ease-out hidden md:block opacity-0 top-0 left-0"
-        style={{ willChange: 'transform' }}
-      />
-
-      {/* Custom Cursor Ring Glow Tracker */}
-      <div
-        ref={ringRef}
-        className="fixed pointer-events-none z-50 w-8 h-8 border border-dashed border-brandGreen/60 rounded-full hidden md:block transition-[transform,opacity,border-color,background-color] duration-150 ease-out opacity-0 top-0 left-0"
-        style={{ willChange: 'transform' }}
-      />
       
       {/* Global Toast Notifications Overlay */}
       <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] flex flex-col space-y-3 pointer-events-none max-w-[calc(100vw-2rem)] sm:max-w-sm w-full">
