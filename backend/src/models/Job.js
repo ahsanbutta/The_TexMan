@@ -160,3 +160,4 @@ jobSchema.index({
 });
 
 export const Job = mongoose.model('Job', jobSchema);
+export default Job;

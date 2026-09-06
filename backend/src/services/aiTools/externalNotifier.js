@@ -100,69 +100,96 @@ export async function sendWhatsAppAlert({
   interactiveButtons = null
 }) {
   try {
-    const cleanNumber = to.replace(/[^0-9+]/g, '');
+    let cleanNumber = to.replace(/[^0-9]/g, '');
+    if (cleanNumber.startsWith('03')) {
+      cleanNumber = '92' + cleanNumber.slice(1);
+    } else if (cleanNumber.startsWith('3') && cleanNumber.length === 10) {
+      cleanNumber = '92' + cleanNumber;
+    }
+
     const whatsappWebhookUrl = process.env.WHATSAPP_WEBHOOK_URL || process.env.N8N_WHATSAPP_WEBHOOK;
     const twilioSid = process.env.TWILIO_ACCOUNT_SID;
     const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
     const twilioPhone = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
-    const metaToken = process.env.META_WHATSAPP_TOKEN;
-    const metaPhoneId = process.env.META_PHONE_NUMBER_ID;
+    const metaToken = process.env.META_WHATSAPP_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
+    const metaPhoneId = process.env.META_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID || '1168307046374937';
 
-    // 1. Direct Webhook / n8n Dispatch with Interactive Buttons Payload
-    if (whatsappWebhookUrl) {
-      telemetryStats.whatsappConfigured = true;
-      const fetch = (await import('node-fetch')).default || globalThis.fetch;
-      const res = await fetch(whatsappWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: cleanNumber,
-          message,
-          interactiveButtons: interactiveButtons || [
-            { id: 'APPROVE', title: '✅ APPROVE' },
-            { id: 'REJECT', title: '❌ REJECT' },
-            { id: 'REVIEW', title: '🔍 REVIEW' }
-          ],
-          timestamp: new Date().toISOString()
-        })
-      });
+    const fetch = (await import('node-fetch')).default || globalThis.fetch;
 
-      telemetryStats.whatsappConnection = res.ok;
-      telemetryStats.whatsappMessageSentCount++;
-      telemetryStats.whatsappDeliveryConfirmedCount++;
-      telemetryStats.whatsappLastSentAt = new Date();
-      telemetryStats.whatsappLastError = null;
+    // 1. Primary Direct Meta Cloud API (24/7 Live Cloud Dispatch - No Local Laptop / ngrok needed)
+    if (metaToken && metaPhoneId) {
+      try {
+        telemetryStats.whatsappConfigured = true;
+        const res = await fetch(`https://graph.facebook.com/v23.0/${metaPhoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${metaToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: cleanNumber,
+            type: 'text',
+            text: {
+              preview_url: true,
+              body: message
+            }
+          })
+        });
 
-      console.log(`[ExternalNotifier] ✅ WhatsApp sent via Webhook to ${cleanNumber} (Status: ${res.status})`);
-      return { success: true, channel: 'WhatsApp', recipient: cleanNumber, deliveryConfirmed: true };
+        const json = await res.json();
+        if (res.ok) {
+          telemetryStats.whatsappConnection = true;
+          telemetryStats.whatsappMessageSentCount++;
+          telemetryStats.whatsappDeliveryConfirmedCount++;
+          telemetryStats.whatsappLastSentAt = new Date();
+          telemetryStats.whatsappLastError = null;
+
+          console.log(`[ExternalNotifier] ✅ WhatsApp sent via Direct 24/7 Meta Cloud API to ${cleanNumber}`);
+          return { success: true, channel: 'WhatsApp', recipient: cleanNumber, deliveryConfirmed: true, metaResponse: json };
+        } else {
+          console.warn(`[ExternalNotifier] ⚠️ Direct Meta API returned ${res.status}:`, json?.error?.message || json);
+        }
+      } catch (metaErr) {
+        console.warn(`[ExternalNotifier] ⚠️ Direct Meta API dispatch failed, trying webhook fallback:`, metaErr.message);
+      }
     }
 
-    // 2. Direct Meta Cloud API Dispatch
-    if (metaToken && metaPhoneId) {
-      telemetryStats.whatsappConfigured = true;
-      const fetch = (await import('node-fetch')).default || globalThis.fetch;
-      const res = await fetch(`https://graph.facebook.com/v19.0/${metaPhoneId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${metaToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: cleanNumber,
-          type: 'text',
-          text: { body: message }
-        })
-      });
+    // 2. Webhook / Hosted n8n Dispatch
+    if (whatsappWebhookUrl) {
+      try {
+        telemetryStats.whatsappConfigured = true;
+        const res = await fetch(whatsappWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: cleanNumber,
+            message,
+            interactiveButtons: interactiveButtons || [
+              { id: 'APPROVE', title: '✅ APPROVE' },
+              { id: 'REJECT', title: '❌ REJECT' },
+              { id: 'REVIEW', title: '🔍 REVIEW' }
+            ],
+            timestamp: new Date().toISOString()
+          })
+        });
 
-      const json = await res.json();
-      telemetryStats.whatsappConnection = res.ok;
-      telemetryStats.whatsappMessageSentCount++;
-      telemetryStats.whatsappDeliveryConfirmedCount++;
-      telemetryStats.whatsappLastSentAt = new Date();
+        if (res.ok) {
+          telemetryStats.whatsappConnection = true;
+          telemetryStats.whatsappMessageSentCount++;
+          telemetryStats.whatsappDeliveryConfirmedCount++;
+          telemetryStats.whatsappLastSentAt = new Date();
+          telemetryStats.whatsappLastError = null;
 
-      console.log(`[ExternalNotifier] ✅ WhatsApp sent via Meta Graph API to ${cleanNumber}`);
-      return { success: true, channel: 'WhatsApp', recipient: cleanNumber, deliveryConfirmed: true, metaResponse: json };
+          console.log(`[ExternalNotifier] ✅ WhatsApp sent via Webhook to ${cleanNumber} (Status: ${res.status})`);
+          return { success: true, channel: 'WhatsApp', recipient: cleanNumber, deliveryConfirmed: true };
+        } else {
+          console.warn(`[ExternalNotifier] ⚠️ Webhook returned status ${res.status}`);
+        }
+      } catch (webhookErr) {
+        console.warn(`[ExternalNotifier] ⚠️ Webhook dispatch failed (e.g. ngrok offline):`, webhookErr.message);
+      }
     }
 
     // 3. Twilio WhatsApp Dispatch

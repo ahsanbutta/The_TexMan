@@ -22,13 +22,13 @@ import { asyncHandler } from '../utils/asyncHandler.js';
  * POST /api/ai/orchestrator/command
  */
 export const executeOrchestratorCommand = asyncHandler(async (req, res) => {
-  const { commandText } = req.body;
-  if (!commandText || !commandText.trim()) {
+  const rawText = req.body.commandText || req.body.command || req.body.prompt || '';
+  if (!rawText || !rawText.trim()) {
     throw new ApiError(400, 'commandText is required for Orchestrator execution.');
   }
 
   const result = await orchestrator.executeCommand({
-    commandText: commandText.trim(),
+    commandText: rawText.trim(),
     triggeredBy: req.user ? 'admin' : 'system',
     triggeredByUser: req.user?._id || null
   });
