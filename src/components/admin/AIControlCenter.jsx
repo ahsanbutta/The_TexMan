@@ -311,9 +311,25 @@ export default function AIControlCenter({ session }) {
     if (e) e.preventDefault();
     try {
       setSavingSettings(true);
-      const updated = await updateAISettings(aiSettings);
-      setAiSettings(updated);
-      alert('AI Autonomy Settings & Schedule saved successfully!');
+      const res = await updateAISettings(aiSettings);
+      const updatedData = res?.data || res;
+      if (updatedData && typeof updatedData === 'object') {
+        setAiSettings(prev => ({
+          ...prev,
+          ...updatedData,
+          notificationChannels: {
+            ...prev.notificationChannels,
+            ...(updatedData.notificationChannels || {})
+          },
+          notificationRecipients: {
+            ...prev.notificationRecipients,
+            ...(updatedData.notificationRecipients || {})
+          }
+        }));
+      }
+      await loadStats();
+      await loadTelemetryData();
+      alert(`AI Autonomy Settings & Schedule saved successfully!\nNext execution scheduled for: ${updatedData?.nextRunAt ? new Date(updatedData.nextRunAt).toLocaleString() : (aiSettings.scheduledTime || '09:00')}`);
     } catch (err) {
       alert(`Error saving AI settings: ${err.message}`);
     } finally {

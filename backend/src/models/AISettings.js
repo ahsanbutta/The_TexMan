@@ -33,8 +33,7 @@ const aiSettingsSchema = new mongoose.Schema(
     },
     contentType: {
       type: String,
-      enum: ['All', 'Blog', 'Resource', 'Event', 'Announcement'],
-      default: 'All'
+      default: 'Blog Post'
     },
     targetTopic: {
       type: String,

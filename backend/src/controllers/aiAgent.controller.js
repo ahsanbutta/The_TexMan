@@ -887,10 +887,15 @@ export const updateAISettings = asyncHandler(async (req, res) => {
   if (updates.scheduledDays) settings.scheduledDays = updates.scheduledDays;
   if (updates.timezone) settings.timezone = updates.timezone;
 
+  if (updates.targetTopic !== undefined) settings.targetTopic = updates.targetTopic;
+  if (updates.contentType !== undefined) settings.contentType = updates.contentType;
+  if (updates.resourcesPerCycle !== undefined) settings.resourcesPerCycle = Number(updates.resourcesPerCycle) || 1;
+  if (updates.requiresApproval !== undefined) settings.requiresApproval = Boolean(updates.requiresApproval);
+
   if (updates.autonomyLevel) settings.autonomyLevel = parseInt(updates.autonomyLevel, 10);
-  if (updates.confidenceThresholdAuto) settings.confidenceThresholdAuto = parseFloat(updates.confidenceThresholdAuto);
-  if (updates.confidenceThresholdDraft) settings.confidenceThresholdDraft = parseFloat(updates.confidenceThresholdDraft);
-  if (updates.maxDailyActions) settings.maxDailyActions = parseInt(updates.maxDailyActions, 10);
+  if (updates.confidenceThresholdAuto !== undefined) settings.confidenceThresholdAuto = parseFloat(updates.confidenceThresholdAuto);
+  if (updates.confidenceThresholdDraft !== undefined) settings.confidenceThresholdDraft = parseFloat(updates.confidenceThresholdDraft);
+  if (updates.maxDailyActions !== undefined) settings.maxDailyActions = parseInt(updates.maxDailyActions, 10);
   if (updates.autoArchiveExpiredEvents !== undefined) settings.autoArchiveExpiredEvents = Boolean(updates.autoArchiveExpiredEvents);
 
   if (updates.notificationChannels) {
@@ -901,6 +906,7 @@ export const updateAISettings = asyncHandler(async (req, res) => {
     settings.notificationRecipients = { ...settings.notificationRecipients, ...updates.notificationRecipients };
   }
 
+  settings.nextRunAt = calculateNextRunTime(settings);
   await settings.save();
 
   // Reschedule background worker with new settings
