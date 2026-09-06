@@ -444,58 +444,117 @@ export async function executeApprovalDecision(approvalId, decision = 'Approved',
 
   if (decision === 'Approved') {
     if (approval.type === 'Blog') {
-      const cleanSlug = (approval.payload?.title || approval.title || 'article')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString(36);
+      if (approval.targetEntityId) {
+        publishedEntity = await Blog.findByIdAndUpdate(
+          approval.targetEntityId,
+          {
+            $set: {
+              status: 'published',
+              content: approval.payload?.content || approval.payload?.summary || approval.summary,
+              summary: approval.payload?.summary || approval.summary,
+              title: approval.payload?.title || approval.title
+            }
+          },
+          { new: true }
+        );
+      }
 
-      publishedEntity = await Blog.create({
-        title: approval.payload?.title || approval.title,
-        slug: approval.payload?.slug || cleanSlug,
-        category: approval.payload?.category || 'Big 4 & Inductions',
-        author: {
-          name: approval.payload?.authorName || 'Saboor Ahmad CA',
-          role: approval.payload?.authorRole || 'Founder & Lead Career Mentor',
-          avatar: ''
-        },
-        coverImage: approval.payload?.coverImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80',
-        summary: approval.payload?.summary || approval.summary || 'Educational article',
-        content: approval.payload?.content || approval.payload?.summary || approval.summary,
-        status: 'published'
-      });
+      if (!publishedEntity) {
+        const rawSlug = (approval.payload?.slug || approval.payload?.title || approval.title || 'article')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '')
+          .slice(0, 80);
+
+        let uniqueSlug = rawSlug;
+        const slugExists = await Blog.findOne({ slug: uniqueSlug });
+        if (slugExists) {
+          uniqueSlug = `${rawSlug}-${Date.now().toString(36)}`;
+        }
+
+        const validCategories = ['Big 4 & Inductions', 'CA Guidance', 'ACCA Careers', 'Tax & Audit', 'Study Tips', 'Industry Insights', 'Career & Leadership', 'AI & Accounting', 'Technology & AI', 'General'];
+        const matchedCategory = validCategories.find(c => c.toLowerCase() === (approval.payload?.category || '').toLowerCase()) || 'Big 4 & Inductions';
+
+        publishedEntity = await Blog.create({
+          title: approval.payload?.title || approval.title,
+          slug: uniqueSlug,
+          category: matchedCategory,
+          author: {
+            name: approval.payload?.authorName || 'Saboor Ahmad CA',
+            role: approval.payload?.authorRole || 'Founder & Lead Career Mentor',
+            avatar: ''
+          },
+          coverImage: approval.payload?.coverImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80',
+          summary: approval.payload?.summary || approval.summary || 'Educational article',
+          content: approval.payload?.content || approval.payload?.summary || approval.summary,
+          status: 'published'
+        });
+      }
       approval.targetEntityId = publishedEntity._id;
       approval.status = 'Published';
     } else if (approval.type === 'Resource' || !approval.type) {
-      publishedEntity = await Resource.create({
-        title: approval.payload?.title || approval.title,
-        description: approval.payload?.description || approval.summary || 'Study resource file',
-        category: approval.payload?.category || 'CAF',
-        subject: approval.payload?.subject || '',
-        qualification: approval.payload?.qualification || 'Both',
-        resourceType: approval.payload?.resourceType || 'PDF',
-        fileUrl: approval.payload?.fileUrl || approval.payload?.externalUrl || 'https://the-taxmans-capital.vercel.app',
-        externalUrl: approval.payload?.externalUrl || '',
-        author: approval.payload?.author || "The TaxMan's Capital Mentorship Team",
-        tags: Array.isArray(approval.payload?.tags) ? approval.payload.tags : [],
-        status: 'approved',
-        published: true,
-        approvedAt: new Date()
-      });
+      if (approval.targetEntityId) {
+        publishedEntity = await Resource.findByIdAndUpdate(
+          approval.targetEntityId,
+          {
+            $set: {
+              status: 'approved',
+              published: true,
+              approvedAt: new Date()
+            }
+          },
+          { new: true }
+        );
+      }
+
+      if (!publishedEntity) {
+        publishedEntity = await Resource.create({
+          title: approval.payload?.title || approval.title,
+          description: approval.payload?.description || approval.summary || 'Study resource file',
+          category: approval.payload?.category || 'CAF',
+          subject: approval.payload?.subject || '',
+          qualification: approval.payload?.qualification || 'Both',
+          resourceType: approval.payload?.resourceType || 'PDF',
+          fileUrl: approval.payload?.fileUrl || approval.payload?.externalUrl || 'https://the-taxmans-capital.vercel.app',
+          externalUrl: approval.payload?.externalUrl || '',
+          author: approval.payload?.author || "The TaxMan's Capital Mentorship Team",
+          tags: Array.isArray(approval.payload?.tags) ? approval.payload.tags : [],
+          status: 'approved',
+          published: true,
+          approvedAt: new Date()
+        });
+      }
       approval.targetEntityId = publishedEntity._id;
       approval.status = 'Published';
     } else if (approval.type === 'Event') {
-      publishedEntity = await Event.create({
-        title: approval.payload?.title || approval.title,
-        desc: approval.payload?.desc || approval.payload?.description || approval.summary || 'Educational Session',
-        date: approval.payload?.date || 'Upcoming Date TBA',
-        time: approval.payload?.time || '08:00 PM PST',
-        speakerName: approval.payload?.speakerName || 'Saboor Ahmad CA',
-        speakerTitle: approval.payload?.speakerTitle || 'Lead Career Mentor',
-        speakerOrg: approval.payload?.speakerOrg || "The TaxMan's Capital",
-        location: approval.payload?.location || 'Live Zoom Meeting',
-        meetingLink: approval.payload?.meetingLink || '',
-        status: 'Upcoming'
-      });
+      if (approval.targetEntityId) {
+        publishedEntity = await Event.findByIdAndUpdate(
+          approval.targetEntityId,
+          {
+            $set: {
+              status: 'Upcoming',
+              title: approval.payload?.title || approval.title,
+              desc: approval.payload?.desc || approval.payload?.description || approval.summary
+            }
+          },
+          { new: true }
+        );
+      }
+
+      if (!publishedEntity) {
+        publishedEntity = await Event.create({
+          title: approval.payload?.title || approval.title,
+          desc: approval.payload?.desc || approval.payload?.description || approval.summary || 'Educational Session',
+          date: approval.payload?.date || 'Upcoming Date TBA',
+          time: approval.payload?.time || '08:00 PM PST',
+          speakerName: approval.payload?.speakerName || 'Saboor Ahmad CA',
+          speakerTitle: approval.payload?.speakerTitle || 'Lead Career Mentor',
+          speakerOrg: approval.payload?.speakerOrg || "The TaxMan's Capital",
+          location: approval.payload?.location || 'Live Zoom Meeting',
+          meetingLink: approval.payload?.meetingLink || '',
+          status: 'Upcoming'
+        });
+      }
       approval.targetEntityId = publishedEntity._id;
       approval.status = 'Published';
     }
