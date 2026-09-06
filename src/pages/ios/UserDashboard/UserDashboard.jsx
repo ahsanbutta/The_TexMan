@@ -1064,7 +1064,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       <input
                         type="text"
                         required
-                        value={profile.full_name}
+                        value={profile.full_name || ''}
                         onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-semibold text-gray-700 text-sm"
                       />
@@ -1075,7 +1075,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       <input
                         type="text"
                         required
-                        value={profile.username}
+                        value={profile.username || ''}
                         onChange={(e) => setProfile({ ...profile, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-semibold text-gray-700 text-sm"
                       />
@@ -1086,7 +1086,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                     <div className="flex flex-col space-y-1">
                       <label className="font-bold text-gray-500">Education Stage / Level</label>
                       <select
-                        value={profile.level}
+                        value={profile.level || 'CAF'}
                         onChange={(e) => setProfile({ ...profile, level: e.target.value })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-bold text-gray-700 text-sm"
                       >
@@ -1113,7 +1113,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       <input
                         type="text"
                         placeholder="e.g. 03001234567"
-                        value={profile.phone}
+                        value={profile.phone || ''}
                         onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-semibold text-gray-700 text-sm"
                       />
@@ -1121,7 +1121,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                     <div className="flex flex-col space-y-1">
                       <label className="font-bold text-gray-500">City</label>
                       <select
-                        value={profile.city}
+                        value={profile.city || 'Lahore'}
                         onChange={(e) => setProfile({ ...profile, city: e.target.value })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-bold text-gray-700 text-sm"
                       >
@@ -1141,7 +1141,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                       <input
                         type="text"
                         placeholder="e.g. PAC, SKANS, TMUC"
-                        value={profile.institution}
+                        value={profile.institution || ''}
                         onChange={(e) => setProfile({ ...profile, institution: e.target.value })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-semibold text-gray-700 text-sm"
                       />
@@ -1152,7 +1152,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                         type="number"
                         min="0"
                         max="15"
-                        value={profile.papers_cleared}
+                        value={profile.papers_cleared ?? 0}
                         onChange={(e) => setProfile({ ...profile, papers_cleared: parseInt(e.target.value) || 0 })}
                         className="p-3 border border-gray-100 bg-[#F8F9FB] rounded-xl focus:outline-none focus:border-brandGreen focus:bg-white transition-all font-semibold text-gray-700 text-sm"
                       />
@@ -1162,7 +1162,7 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
                   <DualMediaUpload
                     type="file"
                     label="CV / Resume Document (Google Drive Link or Upload from Device)"
-                    value={profile.cv_url}
+                    value={profile.cv_url || ''}
                     onChange={(val) => setProfile({ ...profile, cv_url: val })}
                     accept=".pdf,.doc,.docx"
                     placeholder="https://drive.google.com/your-cv-link or direct PDF URL"

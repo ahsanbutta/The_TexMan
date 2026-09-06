@@ -184,7 +184,31 @@ export default function AIControlCenter({ session }) {
   const loadAISettingsData = async () => {
     try {
       const data = await getAISettings();
-      if (data) setAiSettings(data);
+      if (data) {
+        setAiSettings(prev => ({
+          ...prev,
+          ...data,
+          targetTopic: data.targetTopic ?? prev.targetTopic ?? '',
+          scheduledDate: data.scheduledDate ?? prev.scheduledDate ?? '',
+          scheduledTime: data.scheduledTime ?? prev.scheduledTime ?? '09:00',
+          timezone: data.timezone ?? prev.timezone ?? 'Asia/Karachi',
+          scheduleFrequency: data.scheduleFrequency ?? prev.scheduleFrequency ?? 'daily',
+          contentType: data.contentType ?? prev.contentType ?? 'Blog Post',
+          resourcesPerCycle: data.resourcesPerCycle ?? prev.resourcesPerCycle ?? 1,
+          confidenceThresholdAuto: data.confidenceThresholdAuto ?? prev.confidenceThresholdAuto ?? 0.95,
+          confidenceThresholdDraft: data.confidenceThresholdDraft ?? prev.confidenceThresholdDraft ?? 0.80,
+          autoArchiveExpiredEvents: data.autoArchiveExpiredEvents ?? prev.autoArchiveExpiredEvents ?? true,
+          requiresApproval: data.requiresApproval !== undefined ? data.requiresApproval : (prev.requiresApproval !== undefined ? prev.requiresApproval : true),
+          notificationChannels: {
+            ...prev.notificationChannels,
+            ...(data.notificationChannels || {})
+          },
+          notificationRecipients: {
+            ...prev.notificationRecipients,
+            ...(data.notificationRecipients || {})
+          }
+        }));
+      }
       if (data?.autonomyLevel) setAutonomyLevel(data.autonomyLevel);
     } catch (err) {
       console.warn('Error loading AI settings:', err);
@@ -2007,17 +2031,7 @@ export default function AIControlCenter({ session }) {
             </div>
 
             {/* Save Actions */}
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                onClick={handleTestNotification}
-                disabled={testingNotification}
-                className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-500/15 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/30 text-xs font-bold transition-all cursor-pointer"
-              >
-                <Send className="w-4 h-4" />
-                <span>{testingNotification ? 'Dispatching Test Alert...' : 'Send Test Alert to WhatsApp & Email'}</span>
-              </button>
-
+            <div className="flex items-center justify-end pt-2">
               <button
                 type="submit"
                 disabled={savingSettings}
