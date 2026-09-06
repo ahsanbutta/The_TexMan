@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { loginUser, registerUser } from '../../../services/authService';
 import logoImg from '../../../assets/logo.png';
+import TermsAndPrivacyModal from '../../../components/legal/TermsAndPrivacyModal';
 
 export default function Login({ onLoginSuccess, onBack, startFlipped = false, onSignUpRedirect, onLoginRedirect }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped);
@@ -35,6 +36,9 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
   const [signUpPassword, setSignUpPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  const [policyModalTab, setPolicyModalTab] = useState('terms');
 
   // Global Actions States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,6 +105,11 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
 
     if (signUpPassword.length < 6) {
       setErrorMsg('Password should be at least 6 characters.');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setErrorMsg('Please review and accept the Terms of Service & Privacy and Data Safeguard Policy.');
       return;
     }
 
@@ -525,6 +534,43 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
                   </div>
                 </div>
 
+                {/* Terms & Privacy Consent Checkbox */}
+                <div className="pt-2 text-[11px] text-gray-500 flex items-start space-x-2">
+                  <input
+                    type="checkbox"
+                    id="signup-terms"
+                    required
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#00C853] focus:ring-[#00C853] accent-[#00C853] cursor-pointer flex-shrink-0"
+                  />
+                  <label htmlFor="signup-terms" className="leading-tight cursor-pointer select-none">
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPolicyModalTab('terms');
+                        setPolicyModalOpen(true);
+                      }}
+                      className="text-[#00C853] font-bold hover:underline bg-transparent p-0 inline cursor-pointer"
+                    >
+                      Terms of Service
+                    </button>{' '}
+                    and{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPolicyModalTab('privacy');
+                        setPolicyModalOpen(true);
+                      }}
+                      className="text-[#00C853] font-bold hover:underline bg-transparent p-0 inline cursor-pointer"
+                    >
+                      Privacy & Sensitive Data Protection Policy
+                    </button>
+                    .
+                  </label>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -560,6 +606,12 @@ export default function Login({ onLoginSuccess, onBack, startFlipped = false, on
         </div>
 
       </div>
+
+      <TermsAndPrivacyModal
+        isOpen={policyModalOpen}
+        onClose={() => setPolicyModalOpen(false)}
+        initialTab={policyModalTab}
+      />
     </div>
   );
 }

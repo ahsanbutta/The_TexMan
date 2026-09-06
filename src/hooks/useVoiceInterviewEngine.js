@@ -26,7 +26,9 @@ const COMMON_FILLERS = [
  */
 export function useVoiceInterviewEngine({
   aiAudioEnabled = true,
-  onSpeechFinalized = () => {}
+  onSpeechFinalized = () => {},
+  onSilenceDetected = null,
+  silenceThresholdMs = 2600
 } = {}) {
   // Speech Recognition state
   const [recognitionState, setRecognitionState] = useState('IDLE'); // 'IDLE' | 'STARTING' | 'LISTENING' | 'RECOGNIZED' | 'PROCESSING' | 'NO_SPEECH' | 'ERROR' | 'STOPPED'
@@ -35,6 +37,7 @@ export function useVoiceInterviewEngine({
   const [statusMessage, setStatusMessage] = useState('');
   const [liveTranscript, setLiveTranscript] = useState('');
   const [interimText, setInterimText] = useState('');
+  const [silenceCountdown, setSilenceCountdown] = useState(null);
 
   // Speech Synthesis state
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -53,6 +56,9 @@ export function useVoiceInterviewEngine({
   const retryCountRef = useRef(0);
   const speakingStartTimeRef = useRef(null);
   const voicesRef = useRef([]);
+  const silenceTimerRef = useRef(null);
+  const silenceIntervalRef = useRef(null);
+  const latestTranscriptRef = useRef('');
 
   // Load available speech synthesis voices
   useEffect(() => {
@@ -97,9 +103,49 @@ export function useVoiceInterviewEngine({
     }
   }, []);
 
+  // Trigger silence watcher for auto-finalization when user stops speaking
+  const triggerSilenceWatcher = useCallback(() => {
+    if (!onSilenceDetected) return;
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (silenceIntervalRef.current) clearInterval(silenceIntervalRef.current);
+
+    let remaining = Math.round(silenceThresholdMs / 1000);
+    setSilenceCountdown(remaining);
+
+    silenceIntervalRef.current = setInterval(() => {
+      remaining -= 1;
+      if (remaining > 0) {
+        setSilenceCountdown(remaining);
+      } else {
+        clearInterval(silenceIntervalRef.current);
+      }
+    }, 1000);
+
+    silenceTimerRef.current = setTimeout(() => {
+      setSilenceCountdown(null);
+      if (silenceIntervalRef.current) clearInterval(silenceIntervalRef.current);
+      if (isIntentListeningRef.current && !isAiSpeaking) {
+        const text = latestTranscriptRef.current;
+        if (text && text.trim().split(/\s+/).length >= 2) {
+          onSilenceDetected(text.trim());
+        }
+      }
+    }, silenceThresholdMs);
+  }, [onSilenceDetected, silenceThresholdMs, isAiSpeaking]);
+
   // Stop Speech Recognition safely
   const stopListening = useCallback(() => {
     isIntentListeningRef.current = false;
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (silenceIntervalRef.current) {
+      clearInterval(silenceIntervalRef.current);
+      silenceIntervalRef.current = null;
+    }
+    setSilenceCountdown(null);
+
     if (restartCooldownTimerRef.current) {
       clearTimeout(restartCooldownTimerRef.current);
       restartCooldownTimerRef.current = null;
@@ -183,17 +229,29 @@ export function useVoiceInterviewEngine({
         }
 
         setInterimText(interim);
+        if (finalized || interim) {
+          retryCountRef.current = 0; // Reset silence/retry count whenever active speech is registered
+        }
+
         if (finalized) {
           setRecognitionState('RECOGNIZED');
           setStatusMessage('Speech detected');
           setLiveTranscript((prev) => {
             const updated = (prev + ' ' + finalized).trim();
+            latestTranscriptRef.current = updated;
             const elapsed = speakingStartTimeRef.current
               ? Math.round((Date.now() - speakingStartTimeRef.current) / 1000)
               : 1;
             analyzeSpeechText(updated, elapsed);
             return updated;
           });
+          triggerSilenceWatcher();
+        } else if (interim) {
+          // User is currently speaking an ongoing sentence
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+          if (silenceIntervalRef.current) clearInterval(silenceIntervalRef.current);
+          setSilenceCountdown(null);
+          setStatusMessage('Listening to your answer...');
         }
       };
 
@@ -230,23 +288,24 @@ export function useVoiceInterviewEngine({
       recognition.onend = () => {
         // Controlled, debounced restart if user intended to keep listening and AI is not speaking
         if (isIntentListeningRef.current && !isAiSpeaking) {
-          if (retryCountRef.current < 5) {
+          if (retryCountRef.current < 100) {
             retryCountRef.current++;
             restartCooldownTimerRef.current = setTimeout(() => {
               if (isIntentListeningRef.current && !isAiSpeaking) {
                 try {
                   recognition.start();
                 } catch (e) {
-                  // If recognition already running or state busy, gracefully reset state
+                  // If recognition already running or state busy, gracefully maintain state
                   setIsMicListening(false);
                 }
               }
-            }, 350);
+            }, 250);
           } else {
-            // Max retries reached, wait quietly in standby without crashing
+            // After 100 silent timeouts, quietly restart counter and keep active
+            retryCountRef.current = 0;
             setIsMicListening(false);
-            setRecognitionState('IDLE');
-            setStatusMessage('Microphone standby. Speak or click mic to resume.');
+            setRecognitionState('LISTENING');
+            setStatusMessage('Microphone active. Speak whenever you are ready.');
           }
         } else {
           setIsMicListening(false);
@@ -365,6 +424,16 @@ export function useVoiceInterviewEngine({
 
   // Reset Turn State for next question
   const resetTurnMetrics = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (silenceIntervalRef.current) {
+      clearInterval(silenceIntervalRef.current);
+      silenceIntervalRef.current = null;
+    }
+    setSilenceCountdown(null);
+    latestTranscriptRef.current = '';
     setLiveTranscript('');
     setInterimText('');
     setTurnSpeakingTime(0);
@@ -397,6 +466,7 @@ export function useVoiceInterviewEngine({
     liveTranscript,
     setLiveTranscript,
     interimText,
+    silenceCountdown,
     isAiSpeaking,
     turnSpeakingTime,
     wpm,

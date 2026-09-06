@@ -146,6 +146,7 @@ export default function AIInterviewStudio({
   isCameraActive = true,
   deviceError = null,
   voiceStatusMessage = '',
+  silenceCountdown = null,
   behavioralMetrics = {},
   onConfirmReady = () => {},
   onConfirmNotReady = () => {},
@@ -580,11 +581,18 @@ export default function AIInterviewStudio({
               <span className="font-bold text-gray-300 text-[11px]">
                 {isWaitingForReady ? 'Microphone Transcript / Confirmation:' : 'Your Response (Spoken / Typed):'}
               </span>
-              {isMicListening && (
-                <span className="text-[10px] text-emerald-400 font-bold animate-pulse">
-                  {voiceStatusMessage || 'Listening to your microphone...'}
-                </span>
-              )}
+              <div className="flex items-center space-x-2">
+                {silenceCountdown && (
+                  <span className="text-[10px] text-amber-300 bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold animate-pulse flex items-center space-x-1">
+                    <span>Silence detected: analyzing in {silenceCountdown}s...</span>
+                  </span>
+                )}
+                {isMicListening && !silenceCountdown && (
+                  <span className="text-[10px] text-emerald-400 font-bold animate-pulse">
+                    {voiceStatusMessage || 'Listening to your microphone...'}
+                  </span>
+                )}
+              </div>
             </div>
 
             <textarea

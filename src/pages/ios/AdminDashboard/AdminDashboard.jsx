@@ -38,7 +38,8 @@ import {
   LayoutList,
   LayoutGrid,
   Sparkles,
-  Brain
+  Brain,
+  CheckCheck
 } from 'lucide-react';
 import AIControlCenter from '../../../components/admin/AIControlCenter';
 import logoImg from '../../../assets/logo.png';
@@ -142,6 +143,14 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
   }, [session]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [notificationsDropdownOpen, setNotificationsDropdownOpen] = useState(false);
+  const [adminReadIds, setAdminReadIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem('thetaxman_admin_read_notifs');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [headerDropdownOpen, setHeaderDropdownOpen] = useState(false);
 
   // Database Data States
@@ -284,8 +293,8 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobForm, setJobForm] = useState({
-    company: '', title: '', location: '', level: '', job_type: 'Articleship',
-    deadline: '', description: '', requirements: '', is_overseas: false
+    company: '', title: '', location: '', country: 'Pakistan', level: '', job_type: 'Articleship',
+    workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: false
   });
 
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
@@ -917,7 +926,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       alert(selectedJob ? "Job opportunity updated in database!" : "Job opportunity posted successfully!");
       setIsJobModalOpen(false);
       setSelectedJob(null);
-      setJobForm({ company: '', title: '', location: '', level: '', job_type: 'Articleship', deadline: '', description: '', requirements: '', is_overseas: false });
+      setJobForm({ company: '', title: '', location: '', country: 'Pakistan', level: '', job_type: 'Articleship', workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: false });
       await loadData();
     } catch (err) {
       alert(`Error saving job: ${err.message}`);
@@ -1296,27 +1305,57 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
   // Get notifications count and list
   const getNotificationsList = () => {
     const list = [];
-    messages.slice(0, 3).forEach(m => {
+    messages.slice(0, 5).forEach(m => {
       list.push({
         id: `msg-${m.id}`,
         title: 'New Contact Inquiry',
-        description: `From ${m.name}: "${m.subject}"`,
-        time: 'Inquiry',
-        bg: 'bg-emerald-500/10 text-emerald-600'
+        description: `From ${m.name}: "${m.subject || m.message || 'New message'}"`,
+        time: m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Inquiry',
+        bg: 'bg-emerald-500/10 text-emerald-600',
+        type: 'message'
       });
     });
-    requests.slice(0, 3).forEach(r => {
+    requests.slice(0, 5).forEach(r => {
       list.push({
         id: `req-${r.id}`,
         title: 'Study Resource Request',
-        description: `${r.name} requested: "${r.resource_title}"`,
-        time: 'Request',
-        bg: 'bg-blue-500/10 text-blue-600'
+        description: `${r.name} requested: "${r.resource_title || 'Resource'}"`,
+        time: r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Request',
+        bg: 'bg-blue-500/10 text-blue-600',
+        type: 'request'
       });
     });
     return list;
   };
   const notificationsList = getNotificationsList();
+
+  const markAdminNotificationAsRead = (id) => {
+    setAdminReadIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem('thetaxman_admin_read_notifs', JSON.stringify(Array.from(next)));
+      } catch (e) {
+        console.warn('Failed to save admin read notifs:', e);
+      }
+      return next;
+    });
+  };
+
+  const markAllAdminNotificationsAsRead = () => {
+    setAdminReadIds(prev => {
+      const next = new Set(prev);
+      notificationsList.forEach(n => next.add(n.id));
+      try {
+        localStorage.setItem('thetaxman_admin_read_notifs', JSON.stringify(Array.from(next)));
+      } catch (e) {
+        console.warn('Failed to save admin read notifs:', e);
+      }
+      return next;
+    });
+  };
+
+  const unreadAdminCount = notificationsList.filter(n => !adminReadIds.has(n.id)).length;
 
   return (
     <div className="flex bg-[#F8F9FB] h-screen overflow-hidden text-gray-800 font-sans relative w-full" data-admin-dashboard="true">
@@ -1473,13 +1512,15 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             {/* Notification Bell */}
             <div className="relative">
               <button
-                onClick={() => setNotificationsDropdownOpen(!notificationsDropdownOpen)}
-                className="relative p-2 text-gray-500 hover:text-navy transition-colors rounded-full hover:bg-gray-50 cursor-pointer focus:outline-none"
+                type="button"
+                onClick={() => setNotificationsDropdownOpen(prev => !prev)}
+                className="relative p-2 text-gray-500 hover:text-navy transition-colors rounded-full hover:bg-gray-100/80 cursor-pointer focus:outline-none"
+                aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
-                {notificationsList.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                    {notificationsList.length}
+                {unreadAdminCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[17px] h-4 px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-scaleIn">
+                    {unreadAdminCount > 9 ? '9+' : unreadAdminCount}
                   </span>
                 )}
               </button>
@@ -1490,20 +1531,38 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                   <div className="fixed inset-0 z-40" onClick={() => setNotificationsDropdownOpen(false)} />
 
                   {/* Dropdown Box */}
-                  <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-84 max-w-sm sm:max-w-md bg-white border border-gray-100 rounded-2xl shadow-xl py-3 z-50 animate-scaleIn text-xs">
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[350px] max-w-sm bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-50 animate-scaleIn text-xs overflow-hidden"
+                  >
+                    {/* Header */}
                     <div className="px-4 pb-2.5 border-b border-gray-100 flex items-center justify-between">
-                      <span className="font-extrabold text-gray-800">Notifications ({notificationsList.length})</span>
                       <div className="flex items-center space-x-2">
+                        <span className="font-extrabold text-gray-900 text-sm">Notifications</span>
+                        {unreadAdminCount > 0 ? (
+                          <span className="px-2 py-0.5 text-[10px] font-black bg-brandGreen/10 text-brandGreen rounded-full">
+                            {unreadAdminCount} new
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-400 rounded-full">
+                            All read
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        {unreadAdminCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllAdminNotificationsAsRead}
+                            className="inline-flex items-center space-x-1 text-[11px] font-bold text-brandGreen hover:text-emerald-700 hover:bg-brandGreen/10 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                            title="Mark all as read"
+                          >
+                            <CheckCheck className="w-3.5 h-3.5" />
+                            <span>Read all</span>
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            setNotificationsDropdownOpen(false);
-                            setActiveSubTab('Messages');
-                          }}
-                          className="text-[11px] text-brandGreen hover:underline font-bold cursor-pointer"
-                        >
-                          View Messages
-                        </button>
-                        <button
+                          type="button"
                           onClick={() => setNotificationsDropdownOpen(false)}
                           className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                           aria-label="Close notifications"
@@ -1512,34 +1571,80 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                         </button>
                       </div>
                     </div>
-                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
-                      {notificationsList.map((n) => (
-                        <div
-                          key={n.id}
-                          onClick={() => {
-                            setNotificationsDropdownOpen(false);
-                            if (n.id.startsWith('msg')) {
-                              setActiveSubTab('Messages');
-                            } else {
-                              setActiveSubTab('Dashboard');
-                            }
-                          }}
-                          className="px-4 py-3 hover:bg-[#F8F9FB] transition-colors cursor-pointer text-left"
-                        >
-                          <div className="flex items-center space-x-1.5 mb-1">
-                            <span className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold uppercase ${n.bg}`}>
-                              {n.time}
-                            </span>
-                            <span className="font-bold text-gray-800">{n.title}</span>
+
+                    {/* Notification Items */}
+                    <div className="max-h-[300px] overflow-y-auto divide-y divide-gray-50">
+                      {notificationsList.map((n) => {
+                        const isRead = adminReadIds.has(n.id);
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              markAdminNotificationAsRead(n.id);
+                              setNotificationsDropdownOpen(false);
+                              if (n.id.startsWith('msg')) {
+                                setActiveSubTab('Messages');
+                              } else if (n.id.startsWith('req')) {
+                                setActiveSubTab('Resources');
+                              } else {
+                                setActiveSubTab('Dashboard');
+                              }
+                            }}
+                            className={`px-4 py-3 hover:bg-[#F8F9FB] transition-all cursor-pointer text-left flex items-start space-x-2.5 ${
+                              !isRead ? 'bg-emerald-50/20' : 'opacity-80'
+                            }`}
+                          >
+                            {!isRead ? (
+                              <span className="w-2 h-2 rounded-full bg-brandGreen mt-1.5 flex-shrink-0 animate-pulse" />
+                            ) : (
+                              <span className="w-2 h-2 rounded-full bg-transparent mt-1.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-1.5 mb-1">
+                                <span className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold uppercase tracking-wider ${n.bg}`}>
+                                  {n.time}
+                                </span>
+                                <span className={`font-bold truncate text-xs ${!isRead ? 'text-gray-900 font-extrabold' : 'text-gray-600'}`}>
+                                  {n.title}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-gray-500 font-medium line-clamp-2 leading-snug">
+                                {n.description}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-gray-400 font-semibold line-clamp-2">{n.description}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
+
                       {notificationsList.length === 0 && (
-                        <div className="px-4 py-6 text-center text-gray-400 italic">
-                          No new notifications.
+                        <div className="px-4 py-8 text-center text-gray-400 italic">
+                          No notifications yet.
                         </div>
                       )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNotificationsDropdownOpen(false);
+                          setActiveSubTab('Messages');
+                        }}
+                        className="text-brandGreen hover:underline font-bold cursor-pointer"
+                      >
+                        View Messages →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNotificationsDropdownOpen(false);
+                          setActiveSubTab('Resources');
+                        }}
+                        className="text-gray-500 hover:underline font-semibold cursor-pointer"
+                      >
+                        View Resources →
+                      </button>
                     </div>
                   </div>
                 </>
@@ -1678,8 +1783,8 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
                   {[
-                    { label: 'Post Pakistan Job', onClick: () => { setSelectedJob(null); setJobForm({ company: '', title: '', location: '', level: '', job_type: 'Full-time', deadline: '', description: '', requirements: '', is_overseas: false }); setIsJobModalOpen(true); }, color: 'bg-brandGreen/5 hover:bg-brandGreen text-brandGreen hover:text-white border border-brandGreen/10', desc: 'Create full/part-time local vacancies' },
-                    { label: 'Post Trainee Induction', onClick: () => { setSelectedJob(null); setJobForm({ company: '', title: 'Audit Associate (Trainee)', location: 'Lahore', level: 'CA CAF Qualified', job_type: 'Articleship', deadline: '', description: '', requirements: '', is_overseas: false }); setIsJobModalOpen(true); }, color: 'bg-emerald-500/5 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/10', desc: 'Add new CA/ACCA articleships' },
+                    { label: 'Post Pakistan Job', onClick: () => { setSelectedJob(null); setJobForm({ company: '', title: '', location: '', country: 'Pakistan', level: 'CA Qualified', job_type: 'Full-time', workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: false }); setIsJobModalOpen(true); }, color: 'bg-brandGreen/5 hover:bg-brandGreen text-brandGreen hover:text-white border border-brandGreen/10', desc: 'Create full/part-time local vacancies' },
+                    { label: 'Post Trainee Induction', onClick: () => { setSelectedJob(null); setJobForm({ company: '', title: 'Audit Associate (Trainee)', location: 'Lahore', country: 'Pakistan', level: 'CAF / CA Inter', job_type: 'Articleship', workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: false }); setIsJobModalOpen(true); }, color: 'bg-emerald-500/5 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/10', desc: 'Add new CA/ACCA articleships' },
                     { label: 'Add Study Resource', onClick: () => { setSelectedResource(null); setResourceForm({ title: '', description: '', category: 'CAF', type: 'PDF', downloads: 0, tag: '', tag_color: 'bg-blue-500/10 text-blue-600', btn_color: 'bg-blue-600 hover:bg-blue-700', download_url: '', is_featured: false }); setIsResourceModalOpen(true); }, color: 'bg-blue-500/5 hover:bg-blue-500 text-blue-500 hover:text-white border border-blue-500/10', desc: 'Upload preparation PDFs & packs' },
                     { label: 'Publish Announcement', onClick: () => { setSelectedAnnouncement(null); setAnnouncementForm({ title: '', summary: '', content: '', category: 'General', event_date: '' }); setIsAnnouncementModalOpen(true); }, color: 'bg-purple-500/5 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/10', desc: 'Broadcast news & alerts to feed' },
                     { label: 'Upload Video / Podcast', onClick: () => { setSelectedVideo(null); setVideoForm({ title: '', youtubeId: '', guest: 'Saboor Ahmad CA', role: 'Founder & Lead Mentor @ The TaxMan\'s Capital', type: 'Inductions & Guidance', duration: '30:00', date: 'July 2026', views: '1.5K', likes: '200', desc: '', thumbnail: '', qualification: 'CA', isFeatured: false }); setIsVideoModalOpen(true); }, color: 'bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/10', desc: 'Add latest video & podcast link' },
@@ -2040,7 +2145,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 <button
                   onClick={() => {
                     setSelectedJob(null);
-                    setJobForm({ company: '', title: '', location: '', level: '', job_type: 'Full-time', deadline: '', description: '', requirements: '', is_overseas: false });
+                    setJobForm({ company: '', title: '', location: '', country: 'Pakistan', level: 'CA Qualified', job_type: 'Full-time', workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: false });
                     setIsJobModalOpen(true);
                   }}
                   className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
@@ -2242,7 +2347,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 <button
                   onClick={() => {
                     setSelectedJob(null);
-                    setJobForm({ company: '', title: 'Audit Associate (Trainee)', location: 'Lahore', level: 'CA CAF Qualified', job_type: 'Articleship', deadline: '', description: '', requirements: '', is_overseas: false });
+                    setJobForm({ company: '', title: 'Audit Associate (Trainee)', location: 'Lahore', country: 'Pakistan', level: 'CAF / CA Inter', job_type: 'Articleship', workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: false });
                     setIsJobModalOpen(true);
                   }}
                   className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
@@ -2444,7 +2549,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 <button
                   onClick={() => {
                     setSelectedJob(null);
-                    setJobForm({ company: '', title: '', location: 'Riyadh, Saudi Arabia', level: 'ACCA Member', job_type: 'Full-time', deadline: '', description: '', requirements: '', is_overseas: true });
+                    setJobForm({ company: '', title: '', location: 'Riyadh, Saudi Arabia', country: 'Saudi Arabia', level: 'CA Qualified', job_type: 'Full-time', workMode: 'On-site', deadline: '', description: '', requirements: '', is_overseas: true });
                     setIsJobModalOpen(true);
                   }}
                   className="w-full sm:w-auto px-4 py-2.5 bg-brandGreen hover:bg-brandGreen-dark text-white font-black text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
@@ -4775,26 +4880,71 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             <div className="flex flex-col space-y-1">
-              <label className="font-bold text-gray-500">Location</label>
+              <label className="font-bold text-gray-500">Location (City / Base)</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Lahore / Online"
+                placeholder="e.g. Lahore / Dubai / London"
                 value={jobForm.location}
                 onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
                 className="p-2.5 border border-gray-100 bg-[#F8F9FB] rounded-lg focus:outline-none focus:border-brandGreen"
               />
             </div>
             <div className="flex flex-col space-y-1">
-              <label className="font-bold text-gray-500">Required Level</label>
-              <input
-                type="text"
+              <label className="font-bold text-gray-500">Country</label>
+              <select
+                value={jobForm.country || (jobForm.is_overseas ? 'UAE' : 'Pakistan')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setJobForm({
+                    ...jobForm,
+                    country: val,
+                    is_overseas: val !== 'Pakistan'
+                  });
+                }}
+                className="p-2.5 border border-gray-100 bg-[#F8F9FB] rounded-lg focus:outline-none focus:border-brandGreen font-medium text-gray-700"
+              >
+                <option value="Pakistan">🇵🇰 Pakistan</option>
+                <option value="UAE">🇦🇪 UAE (Dubai / Abu Dhabi)</option>
+                <option value="Saudi Arabia">🇸🇦 Saudi Arabia (Riyadh / Jeddah)</option>
+                <option value="Qatar">🇶🇦 Qatar (Doha)</option>
+                <option value="Oman">🇴🇲 Oman (Muscat)</option>
+                <option value="UK">🇬🇧 United Kingdom</option>
+                <option value="Other">🌍 Other International</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+            <div className="flex flex-col space-y-1">
+              <label className="font-bold text-gray-500">Target Level / Qualification</label>
+              <select
                 required
-                placeholder="e.g. CA CAF / ACCA Part-Qualified"
                 value={jobForm.level}
                 onChange={(e) => setJobForm({ ...jobForm, level: e.target.value })}
-                className="p-2.5 border border-gray-100 bg-[#F8F9FB] rounded-lg focus:outline-none focus:border-brandGreen"
-              />
+                className="p-2.5 border border-gray-100 bg-[#F8F9FB] rounded-lg focus:outline-none focus:border-brandGreen font-medium text-gray-700"
+              >
+                <option value="">-- Select Target Qualification --</option>
+                <option value="PRC">PRC (Foundation)</option>
+                <option value="CAF / CA Inter">CAF / CA Inter (Inductions / Training)</option>
+                <option value="ACCA Finalist">ACCA Finalist (Internships & Training)</option>
+                <option value="ACCA Affiliate">ACCA Affiliate (Trainee & Roles)</option>
+                <option value="CA Finalist">CA Finalist (Articles Done - Employment)</option>
+                <option value="CA Qualified">CA Qualified (Professional Positions)</option>
+                <option value="ACCA Member">ACCA Member (Professional Positions)</option>
+              </select>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <label className="font-bold text-gray-500">Work Mode</label>
+              <select
+                value={jobForm.workMode || 'On-site'}
+                onChange={(e) => setJobForm({ ...jobForm, workMode: e.target.value })}
+                className="p-2.5 border border-gray-100 bg-[#F8F9FB] rounded-lg focus:outline-none focus:border-brandGreen font-medium text-gray-700"
+              >
+                <option value="On-site">🏢 On-site</option>
+                <option value="Virtual / Remote">🌐 Virtual / Remote</option>
+                <option value="Hybrid">🔄 Hybrid</option>
+              </select>
             </div>
           </div>
 
@@ -4807,8 +4957,9 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                 className="p-2.5 border border-gray-100 bg-[#F8F9FB] rounded-lg focus:outline-none focus:border-brandGreen"
               >
                 <option value="Articleship">Articleship / Induction</option>
-                <option value="Internship">Internship</option>
+                <option value="Internship">Internship (Audit / Tax)</option>
                 <option value="Full-time">Full-time Job</option>
+                <option value="Contract">Contract Placement</option>
                 <option value="Part-time">Part-time Job</option>
               </select>
             </div>
@@ -4856,10 +5007,17 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
               type="checkbox"
               id="is_overseas"
               checked={jobForm.is_overseas}
-              onChange={(e) => setJobForm({ ...jobForm, is_overseas: e.target.checked })}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setJobForm({
+                  ...jobForm,
+                  is_overseas: checked,
+                  country: checked ? (jobForm.country === 'Pakistan' ? 'UAE' : jobForm.country) : 'Pakistan'
+                });
+              }}
               className="rounded text-brandGreen focus:ring-brandGreen"
             />
-            <label htmlFor="is_overseas" className="font-bold text-gray-500 select-none">This is an international/overseas listing</label>
+            <label htmlFor="is_overseas" className="font-bold text-gray-500 select-none">This is an international/overseas listing (Gulf / Europe)</label>
           </div>
 
           <div className="flex flex-col space-y-1">

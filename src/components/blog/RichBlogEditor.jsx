@@ -22,9 +22,11 @@ import {
 /**
  * Enhanced markdown/content parser for preview & rendering
  */
-export function renderRichContent(content = '') {
+export function renderRichContent(content = '', theme = 'light') {
+  const isLight = theme === 'light';
+
   if (!content) {
-    return <p className="text-gray-400 italic text-sm">No content yet...</p>;
+    return <p className={`italic text-sm ${isLight ? 'text-gray-400' : 'text-gray-400'}`}>No content yet...</p>;
   }
 
   // Parse inline tokens: [link](url), **bold**, *italic*, `code`
@@ -60,7 +62,7 @@ export function renderRichContent(content = '') {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-brandGreen hover:text-emerald-300 underline underline-offset-4 font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer mx-0.5"
+            className={`${isLight ? 'text-brandGreen hover:text-brandGreen-dark' : 'text-brandGreen hover:text-emerald-300'} underline underline-offset-4 font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer mx-0.5`}
           >
             <span>{part.label}</span>
             <ExternalLink className="w-3 h-3 inline-block opacity-75" />
@@ -74,20 +76,20 @@ export function renderRichContent(content = '') {
       const boldSegments = raw.split(/\*\*(.*?)\*\*/g);
       return boldSegments.map((seg, sIdx) => {
         if (sIdx % 2 === 1) {
-          return <strong key={`${pIdx}-${sIdx}`} className="font-bold text-white">{seg}</strong>;
+          return <strong key={`${pIdx}-${sIdx}`} className={`font-bold ${isLight ? 'text-navy' : 'text-white'}`}>{seg}</strong>;
         }
         // Split on *italic*
         const italicSegments = seg.split(/\*(.*?)\*/g);
         return italicSegments.map((it, iIdx) => {
           if (iIdx % 2 === 1) {
-            return <em key={`${pIdx}-${sIdx}-${iIdx}`} className="italic text-gray-200">{it}</em>;
+            return <em key={`${pIdx}-${sIdx}-${iIdx}`} className={`italic ${isLight ? 'text-gray-600' : 'text-gray-200'}`}>{it}</em>;
           }
           // Split on `code`
           const codeSegments = it.split(/`(.*?)`/g);
           return codeSegments.map((c, cIdx) => {
             if (cIdx % 2 === 1) {
               return (
-                <code key={`${pIdx}-${sIdx}-${iIdx}-${cIdx}`} className="px-1.5 py-0.5 bg-black/40 text-emerald-300 rounded text-xs font-mono">
+                <code key={`${pIdx}-${sIdx}-${iIdx}-${cIdx}`} className={`px-1.5 py-0.5 rounded text-xs font-mono ${isLight ? 'bg-gray-100 text-brandGreen-dark border border-gray-200' : 'bg-black/40 text-emerald-300'}`}>
                   {c}
                 </code>
               );
@@ -217,18 +219,18 @@ export function renderRichContent(content = '') {
   flushAll();
 
   return (
-    <div className="space-y-4 text-sm sm:text-base leading-relaxed text-gray-300 font-normal">
+    <div className={`space-y-4 text-sm sm:text-base leading-relaxed font-normal ${isLight ? 'text-gray-700' : 'text-gray-300'}`}>
       {blocks.map((block, idx) => {
         if (block.type === 'h1') {
           return (
-            <h1 key={idx} className="text-2xl sm:text-3xl font-black text-white pt-6 pb-2 border-b border-white/10 font-['Outfit',sans-serif]">
+            <h1 key={idx} className={`text-2xl sm:text-3xl font-black pt-6 pb-2 border-b font-['Outfit',sans-serif] ${isLight ? 'text-navy border-gray-100' : 'text-white border-white/10'}`}>
               {parseInline(block.text)}
             </h1>
           );
         }
         if (block.type === 'h2') {
           return (
-            <h2 key={idx} className="text-xl sm:text-2xl font-extrabold text-white pt-5 pb-1 border-b border-white/10 font-['Outfit',sans-serif]">
+            <h2 key={idx} className={`text-xl sm:text-2xl font-extrabold pt-5 pb-1 border-b font-['Outfit',sans-serif] ${isLight ? 'text-navy border-gray-100' : 'text-white border-white/10'}`}>
               {parseInline(block.text)}
             </h2>
           );
@@ -241,18 +243,18 @@ export function renderRichContent(content = '') {
           );
         }
         if (block.type === 'hr') {
-          return <hr key={idx} className="my-6 border-white/10" />;
+          return <hr key={idx} className={`my-6 ${isLight ? 'border-gray-200' : 'border-white/10'}`} />;
         }
         if (block.type === 'quote') {
           return (
-            <div key={idx} className="p-4 sm:p-5 rounded-2xl bg-brandGreen/10 border-l-4 border-brandGreen text-gray-200 italic my-3">
+            <div key={idx} className={`p-4 sm:p-5 rounded-2xl border-l-4 border-brandGreen italic my-3 ${isLight ? 'bg-emerald-50/70 text-gray-700' : 'bg-brandGreen/10 text-gray-200'}`}>
               {parseInline(block.text)}
             </div>
           );
         }
         if (block.type === 'ul') {
           return (
-            <ul key={idx} className="list-disc pl-6 space-y-1.5 text-gray-300 my-2">
+            <ul key={idx} className={`list-disc pl-6 space-y-1.5 my-2 ${isLight ? 'text-gray-700' : 'text-gray-300'}`}>
               {block.items.map((item, iIdx) => (
                 <li key={iIdx} className="leading-relaxed font-normal">{parseInline(item)}</li>
               ))}
@@ -261,7 +263,7 @@ export function renderRichContent(content = '') {
         }
         if (block.type === 'ol') {
           return (
-            <ol key={idx} className="list-decimal pl-6 space-y-2 text-gray-300 my-2">
+            <ol key={idx} className={`list-decimal pl-6 space-y-2 my-2 ${isLight ? 'text-gray-700' : 'text-gray-300'}`}>
               {block.items.map((item, iIdx) => (
                 <li key={iIdx} className="leading-relaxed font-normal">{parseInline(item)}</li>
               ))}
@@ -270,7 +272,7 @@ export function renderRichContent(content = '') {
         }
         if (block.type === 'p') {
           return (
-            <p key={idx} className="text-gray-300 leading-relaxed font-normal">
+            <p key={idx} className={`leading-relaxed font-normal ${isLight ? 'text-gray-700' : 'text-gray-300'}`}>
               {parseInline(block.text)}
             </p>
           );
@@ -565,16 +567,16 @@ export default function RichBlogEditor({ value = '', onChange, onReadTimeChange 
             className="w-full h-full p-4 font-mono text-xs sm:text-sm text-gray-800 dark:text-gray-100 bg-white dark:bg-[#071326] focus:outline-none resize-none leading-relaxed"
           />
         ) : (
-          <div className="p-6 bg-[#021B3A] text-white min-h-[360px] rounded-b-2xl">
+          <div className="p-6 bg-white text-gray-800 min-h-[360px] rounded-b-2xl border-t border-gray-100">
             <div className="max-w-3xl mx-auto space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs text-gray-400">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 text-xs text-gray-500">
                 <span className="flex items-center space-x-1.5 text-brandGreen font-bold">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Interactive Public View Preview</span>
                 </span>
                 <span>Links are clickable in preview</span>
               </div>
-              {renderRichContent(value)}
+              {renderRichContent(value, 'light')}
             </div>
           </div>
         )}

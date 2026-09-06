@@ -127,9 +127,24 @@ export default function CareerTools() {
     isStudioActive: interviewState !== 'IDLE' && interviewState !== 'REPORT_READY',
     isCameraActive: deviceManager.isCameraActive
   });
+  const submitTurnRef = useRef(null);
+
   const voiceEngine = useVoiceInterviewEngine({
     aiAudioEnabled,
-    onSpeechFinalized: () => {}
+    onSpeechFinalized: () => {},
+    onSilenceDetected: (finalizedTranscript) => {
+      // Auto-submit candidate answer turn after silence when in active interview
+      if (
+        interviewState === 'INTERVIEW_ACTIVE' &&
+        (mockMode === 'studio' || mockMode === 'voice_only') &&
+        finalizedTranscript &&
+        finalizedTranscript.trim().split(/\s+/).length >= 2
+      ) {
+        if (submitTurnRef.current) {
+          submitTurnRef.current(finalizedTranscript);
+        }
+      }
+    }
   });
 
   // Sync voice transcript with input box
@@ -182,7 +197,7 @@ export default function CareerTools() {
     questionCountChoice === 'Custom' ? Number(customQuestionCount) || 5 : Number(questionCountChoice) || 5;
 
   // ==========================================
-  // NATURAL LANGUAGE READINESS LISTENER
+  // NATURAL LANGUAGE READINESS LISTENER (English & Roman Urdu)
   // ==========================================
   useEffect(() => {
     if (interviewState !== 'WAITING_FOR_READY') return;
@@ -190,8 +205,10 @@ export default function CareerTools() {
     const text = (voiceEngine.liveTranscript || userAnswer || '').trim().toLowerCase();
     if (!text || text.length < 2) return;
 
-    const readyRegex = /\b(yes|yeah|yep|yup|ready|i am ready|i'm ready|sure|start|begin|go ahead|let's do it|lets go|lets start|yes sir|yes ma'am|all set|absolutely)\b/i;
-    const notReadyRegex = /\b(no|not yet|wait|hold on|give me a moment|give me a second|one minute|1 minute|not ready|stop|pause)\b/i;
+    const readyRegex =
+      /\b(yes|yeah|yep|yup|ready|i am ready|i'm ready|sure|start|begin|go ahead|let's do it|lets go|lets start|yes sir|yes ma'am|all set|absolutely|jee|ji|g|haan|han|tayyar|theek|ready hn|ready hoon|shuru|shuru karein|bilkul|ok|done)\b/i;
+    const notReadyRegex =
+      /\b(no|not yet|wait|hold on|give me a moment|give me a second|one minute|1 minute|not ready|stop|pause|rukain|ruko|abhi nahi|abhi ni|thori der|ek minute)\b/i;
 
     if (readyRegex.test(text)) {
       handleConfirmReady(text);
@@ -388,11 +405,14 @@ export default function CareerTools() {
   // ==========================================
   // SUBMIT CANDIDATE ANSWER TURN
   // ==========================================
-  const handleSubmitAnswerTurn = async (e) => {
-    if (e) e.preventDefault();
+  const handleSubmitAnswerTurn = async (eOrText) => {
+    if (eOrText && typeof eOrText.preventDefault === 'function') {
+      eOrText.preventDefault();
+    }
     if (isSubmittingAnswer || isFinalizingSession) return;
 
-    const answer = (userAnswer || voiceEngine.liveTranscript || '').trim();
+    const explicitText = typeof eOrText === 'string' ? eOrText : null;
+    const answer = (explicitText || userAnswer || voiceEngine.liveTranscript || '').trim();
     if (!answer && mockMode === 'chat') return;
 
     voiceEngine.stopListening();
@@ -487,6 +507,10 @@ export default function CareerTools() {
       setIsSubmittingAnswer(false);
     }
   };
+
+  useEffect(() => {
+    submitTurnRef.current = handleSubmitAnswerTurn;
+  });
 
   // ==========================================
   // FINALIZE & COMPLETE INTERVIEW (SCORECARD)
@@ -1267,6 +1291,7 @@ export default function CareerTools() {
                 isCameraActive={deviceManager.isCameraActive}
                 deviceError={deviceManager.deviceError}
                 voiceStatusMessage={voiceEngine.statusMessage}
+                silenceCountdown={voiceEngine.silenceCountdown}
                 behavioralMetrics={videoAnalyzer.metrics}
                 onConfirmReady={handleConfirmReady}
                 onConfirmNotReady={handleConfirmNotReady}

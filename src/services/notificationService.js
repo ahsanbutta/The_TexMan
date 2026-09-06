@@ -36,20 +36,45 @@ const DEFAULT_NOTIFICATIONS = [
 ];
 
 const NOTIFICATIONS_STORAGE_KEY = 'taxman_user_notifications';
+const READ_IDS_KEY = 'taxman_read_notification_ids';
+
+const getPersistedReadIds = () => {
+  try {
+    const raw = localStorage.getItem(READ_IDS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
+const savePersistedReadIds = (setOfIds) => {
+  try {
+    localStorage.setItem(READ_IDS_KEY, JSON.stringify(Array.from(setOfIds)));
+  } catch {}
+};
 
 export const getNotifications = async () => {
+  const readIds = getPersistedReadIds();
+
   try {
     const res = await api.get('/notifications');
     const serverNotifs = res?.data?.notifications || res?.data;
     if (Array.isArray(serverNotifs) && serverNotifs.length > 0) {
-      return serverNotifs.map(n => ({
-        id: n._id || n.id,
-        title: n.title,
-        message: n.message || n.content,
-        type: n.type || 'general',
-        read: !!n.read,
-        timestamp: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent',
-      }));
+      const mapped = serverNotifs.map(n => {
+        const id = String(n._id || n.id);
+        const isRead = Boolean(n.read) || readIds.has(id);
+        return {
+          id,
+          title: n.title,
+          message: n.message || n.content,
+          type: n.type || 'general',
+          read: isRead,
+          timestamp: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent',
+          link: n.link || '#'
+        };
+      });
+      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(mapped));
+      return mapped;
     }
   } catch (err) {
     // Graceful fallback to local storage if backend server is starting up or offline
@@ -59,65 +84,120 @@ export const getNotifications = async () => {
   try {
     const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(n => ({
+          ...n,
+          read: Boolean(n.read) || readIds.has(String(n.id))
+        }));
+      }
     }
   } catch {
     // Ignore storage parse error
   }
 
-  localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(DEFAULT_NOTIFICATIONS));
-  return DEFAULT_NOTIFICATIONS;
+  const initial = DEFAULT_NOTIFICATIONS.map(n => ({
+    ...n,
+    read: readIds.has(String(n.id))
+  }));
+  localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(initial));
+  return initial;
 };
 
-export const markNotificationAsRead = async (id) => {
+export const markNotificationAsRead = async (id, currentList = null) => {
+  const idStr = String(id);
+  const readIds = getPersistedReadIds();
+  readIds.add(idStr);
+  savePersistedReadIds(readIds);
+
   try {
-    await api.patch(`/notifications/${id}/read`, {}).catch(() => {});
+    await api.put(`/notifications/${idStr}/read`, {}).catch(() =>
+      api.patch(`/notifications/${idStr}/read`, {})
+    );
   } catch {
     // Ignore offline errors
   }
 
-  try {
-    const notifs = await getNotifications();
-    const updated = notifs.map(n => n.id === id ? { ...n, read: true } : n);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
-    return updated;
-  } catch {
-    return [];
+  let list = currentList;
+  if (!Array.isArray(list) || list.length === 0) {
+    try {
+      const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      list = stored ? JSON.parse(stored) : DEFAULT_NOTIFICATIONS;
+    } catch {
+      list = DEFAULT_NOTIFICATIONS;
+    }
   }
+
+  const updated = list.map(n =>
+    String(n.id) === idStr || readIds.has(String(n.id)) ? { ...n, read: true } : n
+  );
+
+  try {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+  } catch {}
+
+  return updated;
 };
 
-export const markAllNotificationsAsRead = async () => {
+export const markAllNotificationsAsRead = async (currentList = null) => {
   try {
-    await api.patch('/notifications/read-all', {}).catch(() => {});
+    await api.put('/notifications/read-all', {}).catch(() =>
+      api.patch('/notifications/read-all', {})
+    );
   } catch {
     // Ignore offline errors
   }
 
-  try {
-    const notifs = await getNotifications();
-    const updated = notifs.map(n => ({ ...n, read: true }));
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
-    return updated;
-  } catch {
-    return [];
+  let list = currentList;
+  if (!Array.isArray(list) || list.length === 0) {
+    try {
+      const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      list = stored ? JSON.parse(stored) : DEFAULT_NOTIFICATIONS;
+    } catch {
+      list = DEFAULT_NOTIFICATIONS;
+    }
   }
+
+  const readIds = getPersistedReadIds();
+  list.forEach(n => {
+    if (n.id) readIds.add(String(n.id));
+  });
+  savePersistedReadIds(readIds);
+
+  const updated = list.map(n => ({ ...n, read: true }));
+
+  try {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+  } catch {}
+
+  return updated;
 };
 
-export const deleteNotification = async (id) => {
+export const deleteNotification = async (id, currentList = null) => {
+  const idStr = String(id);
   try {
-    await api.delete(`/notifications/${id}`).catch(() => {});
+    await api.delete(`/notifications/${idStr}`).catch(() => {});
   } catch {
     // Ignore offline errors
   }
 
-  try {
-    const notifs = await getNotifications();
-    const updated = notifs.filter(n => n.id !== id);
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
-    return updated;
-  } catch {
-    return [];
+  let list = currentList;
+  if (!Array.isArray(list) || list.length === 0) {
+    try {
+      const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      list = stored ? JSON.parse(stored) : DEFAULT_NOTIFICATIONS;
+    } catch {
+      list = DEFAULT_NOTIFICATIONS;
+    }
   }
+
+  const updated = list.filter(n => String(n.id) !== idStr);
+
+  try {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+  } catch {}
+
+  return updated;
 };
 
 export const broadcastNotification = async (notificationData) => {
@@ -137,7 +217,9 @@ export const broadcastNotification = async (notificationData) => {
       link: notificationData.link || '#'
     };
     const updated = [newNotif, ...notifs];
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    try {
+      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
     return { success: true, notification: newNotif };
   }
 };

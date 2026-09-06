@@ -51,6 +51,31 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [headerDropdownOpen, setHeaderDropdownOpen] = useState(false);
   const [notificationsDropdownOpen, setNotificationsDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    getNotifications().then(setNotifications).catch(() => {});
+  }, []);
+
+  const handleMarkNotifRead = async (id) => {
+    setNotifications(prev => prev.map(n => String(n.id) === String(id) ? { ...n, read: true } : n));
+    const updated = await markNotificationAsRead(id, notifications);
+    if (Array.isArray(updated)) setNotifications(updated);
+  };
+
+  const handleMarkAllNotifsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const updated = await markAllNotificationsAsRead(notifications);
+    if (Array.isArray(updated)) setNotifications(updated);
+  };
+
+  const handleDeleteNotif = async (id) => {
+    setNotifications(prev => prev.filter(n => String(n.id) !== String(id)));
+    const updated = await deleteNotification(id, notifications);
+    if (Array.isArray(updated)) setNotifications(updated);
+  };
+
+  const unreadNotifCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
     if (initialSubTab) {
@@ -418,97 +443,37 @@ export default function UserDashboard({ session, onLogout, onProfileUpdate, save
             </button>
 
             {/* Notification Bell */}
-            {/* Notification Bell */}
             <div className="relative">
               <button
+                data-notification-trigger
                 onClick={() => setNotificationsDropdownOpen(!notificationsDropdownOpen)}
                 className="relative p-2 text-gray-500 hover:text-navy transition-colors rounded-full hover:bg-gray-100 cursor-pointer focus:outline-none"
                 aria-label="Toggle notifications"
               >
                 <Bell className="w-5 h-5" />
-                {notificationsList.length > 0 && (
+                {unreadNotifCount > 0 && (
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-brandGreen text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm animate-pulse">
-                    {notificationsList.length}
+                    {unreadNotifCount}
                   </span>
                 )}
               </button>
 
-              {notificationsDropdownOpen && (
-                <>
-                  {/* Backdrop */}
-                  <div className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent backdrop-blur-[1px] sm:backdrop-blur-none" onClick={() => setNotificationsDropdownOpen(false)} />
-
-                  {/* Responsive Dropdown Card */}
-                  <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 max-w-sm sm:max-w-md bg-white border border-gray-100/90 rounded-2xl shadow-2xl py-3 z-50 animate-scaleIn text-xs">
-                    <div className="px-4 pb-2.5 border-b border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                          <Bell className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-extrabold text-navy text-xs sm:text-sm block leading-none">Alerts & Updates</span>
-                          <span className="text-[10px] text-gray-400 font-semibold">{notificationsList.length} job deadline alert{notificationsList.length !== 1 ? 's' : ''}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setNotificationsDropdownOpen(false);
-                            setActiveSubTab('Saved Jobs');
-                          }}
-                          className="text-[11px] text-brandGreen hover:text-brandGreen-dark font-bold hover:underline cursor-pointer"
-                        >
-                          View Saved Jobs
-                        </button>
-                        <button
-                          onClick={() => setNotificationsDropdownOpen(false)}
-                          className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                          aria-label="Close alerts"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                      {notificationsList.map((n) => (
-                        <div
-                          key={n.id}
-                          onClick={() => {
-                            setNotificationsDropdownOpen(false);
-                            setActiveSubTab('Saved Jobs');
-                          }}
-                          className="p-3.5 hover:bg-[#F8F9FB] transition-colors cursor-pointer text-left flex items-start space-x-3 group"
-                        >
-                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                            <Clock className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1 mb-1">
-                              <span className="font-bold text-navy text-xs truncate group-hover:text-brandGreen transition-colors">
-                                {n.title}
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold uppercase bg-amber-500/10 text-amber-700 border border-amber-500/20 shrink-0">
-                                {n.time}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
-                              Don't miss the deadline at <span className="font-semibold text-gray-700">{n.company}</span> ({n.deadline}).
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                      {notificationsList.length === 0 && (
-                        <div className="px-4 py-8 text-center text-gray-400 space-y-1.5">
-                          <Bell className="w-8 h-8 mx-auto text-gray-300 stroke-1" />
-                          <p className="text-xs font-semibold text-gray-600">No active job alerts</p>
-                          <p className="text-[10px] text-gray-400">Bookmark jobs in Placements to track upcoming deadlines here.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
+              <NotificationPanel
+                isOpen={notificationsDropdownOpen}
+                onClose={() => setNotificationsDropdownOpen(false)}
+                notifications={notifications}
+                onMarkAsRead={handleMarkNotifRead}
+                onMarkAllAsRead={handleMarkAllNotifsRead}
+                onDelete={handleDeleteNotif}
+                onNavigateTab={(tab) => {
+                  if (onNavigateTab) {
+                    onNavigateTab(tab);
+                  } else if (tab === 'Jobs') {
+                    setActiveSubTab('Saved Jobs');
+                  }
+                  setNotificationsDropdownOpen(false);
+                }}
+              />
             </div>
 
             {/* Profile Dropdown */}

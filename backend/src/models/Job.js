@@ -43,9 +43,20 @@ const jobSchema = new mongoose.Schema(
       required: [true, 'Please specify city'],
       index: true
     },
+    country: {
+      type: String,
+      default: 'Pakistan',
+      index: true
+    },
+    workMode: {
+      type: String,
+      enum: ['On-site', 'Virtual / Remote', 'Hybrid'],
+      default: 'On-site',
+      index: true
+    },
     jobType: {
       type: String,
-      enum: ['Internship', 'Full Time', 'Part Time', 'Trainee', 'Articleship', 'Contract'],
+      enum: ['Internship', 'Articleship', 'Full Time', 'Part Time', 'Trainee', 'Contract'],
       required: [true, 'Please specify job type'],
       index: true
     },
@@ -80,12 +91,13 @@ const jobSchema = new mongoose.Schema(
     },
     qualification: {
       type: String,
-      required: [true, 'Please specify target qualification level (e.g. CAF Qualified, ACCA Member)'],
+      required: [true, 'Please specify target qualification level (e.g. CAF / CA Inter, ACCA Finalist, CA Finalist, CA Qualified)'],
       index: true
     },
     level: {
       type: String,
-      default: 'CAF'
+      default: 'CAF / CA Inter',
+      index: true
     },
     deadline: {
       type: Date,
@@ -142,7 +154,9 @@ jobSchema.index({
   company: 'text',
   description: 'text',
   city: 'text',
-  qualification: 'text'
+  country: 'text',
+  qualification: 'text',
+  level: 'text'
 });
 
 export const Job = mongoose.model('Job', jobSchema);

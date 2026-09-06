@@ -43,12 +43,12 @@ export const SEED_MENTOR = {
 
 export const SEED_JOBS = [
   {
-    title: 'Audit Trainee (Articleship)',
+    title: 'CA Articleship Training Induction',
     company: 'A.F. Ferguson & Co. (PwC Pakistan)',
     companyLogo: '',
-    description: 'A.F. Ferguson & Co. (a member firm of the PwC network) invites applications from energetic, highly motivated CA CAF qualified candidates and ACCA affiliates for its Fall training induction batch in Assurance & Business Advisory Services.\n\nTrainees will gain comprehensive exposure to statutory financial audits, internal control reviews, IFRS compliance, and client risk assessments across leading multinational corporations and financial institutions in Pakistan.',
+    description: 'A.F. Ferguson & Co. (a member firm of the PwC network) invites applications from energetic, highly motivated CA CAF qualified candidates for its Fall training induction batch in Assurance & Business Advisory Services.\n\nTrainees will gain comprehensive exposure to statutory financial audits, internal control reviews, IFRS compliance, and client risk assessments across leading multinational corporations and financial institutions in Pakistan.',
     requirements: [
-      'CA CAF Qualified (preferably in first 2 attempts) or ACCA Affiliate',
+      'CAF Qualified from ICAP (all 8 papers cleared)',
       'Strong conceptual clarity in IFRS and International Standards on Auditing (ISAs)',
       'Proficiency in Microsoft Excel, data analytics, and verbal communication',
       'High standard of professional ethics, integrity, and time management'
@@ -60,51 +60,56 @@ export const SEED_JOBS = [
     ],
     location: 'Lahore, Karachi, Islamabad',
     city: 'Lahore',
+    country: 'Pakistan',
+    workMode: 'On-site',
     jobType: 'Articleship',
     category: 'Audit',
     salary: 'ICAP Standard Stipend (Rs. 29,700/mo)',
     stipend: 'Rs. 29,700 / month',
-    qualification: 'CA CAF Qualified',
-    level: 'CAF',
+    qualification: 'CAF / CA Inter',
+    level: 'CAF / CA Inter',
     deadline: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
     isOverseas: false,
     featured: true
   },
   {
-    title: 'Tax Associate / Trainee',
+    title: 'ACCA Finalist Assurance Internship',
     company: 'EY Ford Rhodes',
+    companyKey: 'ey',
     companyLogo: '',
-    description: 'EY Pakistan is hiring Trainees & Associates for its Direct & Indirect Tax Compliance and Advisory Practice. Candidates will work alongside leading tax partners on corporate income tax returns, withholding tax audits, sales tax provincial filings, and tax litigation before the Appellate Tribunal.',
+    description: 'EY Pakistan is hiring ACCA Finalists for its 8-week corporate Assurance & Tax Internship program. Gain real audit room experience, perform client substantive testing, and work alongside seasoned Big 4 audit managers.',
     requirements: [
-      'CA CAF Qualified or ACCA Affiliate / Finalist',
-      'Strong grasp of Income Tax Ordinance 2001 and Sales Tax Act 1990',
+      'ACCA Finalist (passed Applied Skills, attempting Strategic Professional exams)',
+      'Strong grasp of IFRS standards and auditing principles',
       'Analytical aptitude and high attention to detail'
     ],
     responsibilities: [
-      'Prepare tax computation workpapers and e-filings on FBR IRIS portal',
-      'Draft responses to statutory notices issued under Section 122/177',
-      'Conduct research on recent Finance Act amendments and tax treaty provisions'
+      'Assist audit engagement teams with working papers and bank confirmations',
+      'Test internal financial controls under International Standards on Auditing',
+      'Participate in stock-count observations and analytical reconciliations'
     ],
     location: 'Karachi, Lahore, Islamabad',
     city: 'Karachi',
-    jobType: 'Articleship',
-    category: 'Tax',
-    salary: 'Rs. 29,700 / month',
-    stipend: 'Rs. 29,700 / month',
-    qualification: 'CA Inter / ACCA',
-    level: 'CAF',
+    country: 'Pakistan',
+    workMode: 'On-site',
+    jobType: 'Internship',
+    category: 'Audit',
+    salary: 'Rs. 25,000 / month',
+    stipend: 'Rs. 25,000 / month',
+    qualification: 'ACCA Finalist',
+    level: 'ACCA Finalist',
     deadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
     isOverseas: false,
     featured: true
   },
   {
-    title: 'Audit Senior (Overseas Placement)',
+    title: 'Senior Auditor - Assurance (CA Qualified)',
     company: 'PwC Middle East',
     companyLogo: '',
-    description: 'PwC Middle East is seeking high-performing Qualified Chartered Accountants and ACCA Members with 2-4 years of post-qualification or articleship experience for its Dubai and Riyadh assurance practices. Package includes tax-free salary, relocation allowance, visa sponsorship, and private medical insurance.',
+    description: 'PwC Middle East is seeking high-performing Qualified Chartered Accountants (ICAP ACA / FCA) with 2-4 years of external audit experience for its Dubai and Abu Dhabi assurance practices. Package includes tax-free salary, relocation allowance, visa sponsorship, and private medical insurance.',
     requirements: [
       'Qualified CA (ICAP/ICAEW) or ACCA Member',
-      '3+ years external audit experience with a Big 4 or major accounting firm',
+      '2+ years post-qualification external audit experience in Big 4',
       'Demonstrated leadership in managing engagement field teams'
     ],
     responsibilities: [
@@ -112,36 +117,76 @@ export const SEED_JOBS = [
       'Review working paper files and supervise junior associates',
       'Coordinate directly with Partner and client C-suite executives'
     ],
-    location: 'Dubai, UAE / Riyadh, KSA',
+    location: 'Dubai, UAE',
     city: 'Dubai, UAE',
+    country: 'United Arab Emirates',
+    workMode: 'On-site',
     jobType: 'Full Time',
     category: 'Audit',
     salary: 'AED 16,000 - 22,000 / month (Tax Free)',
-    qualification: 'Qualified (CAF / CFAP)',
-    level: 'Qualified',
+    qualification: 'CA Qualified',
+    level: 'CA Qualified',
     deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
     isOverseas: true,
     featured: true
   },
   {
-    title: 'Financial Advisory & Valuation Trainee',
-    company: 'Deloitte Pakistan (Yousuf Adil)',
+    title: 'Audit Senior (CA Finalist Hire - Articles Completed)',
+    company: 'KPMG Saudi Arabia (Gulf Practice)',
     companyLogo: '',
-    description: 'Deloitte Corporate Finance Advisory practice invites applications for its M&A, Financial Due Diligence, and Business Valuation team.',
+    description: 'KPMG Saudi Arabia has an open hiring pipeline specifically for CA Finalists who have completed their 3.5 years of articleship in Pakistan. Position offers tax-free Gulf compensation, Saudi work visa, and rapid career progression in Riyadh.',
     requirements: [
-      'CA CAF Qualified or CFA Level 1 / ACCA Member',
-      'Proficiency in DCF, WACC, and financial modeling in Excel'
+      'CA Finalist (Articleship fully completed from Big 4 / top-10 CA firm in Pakistan)',
+      'Demonstrated audit senior experience leading engagement teams',
+      'High technical clarity in IFRS revenue recognition and leasing',
+      'Available for prompt overseas deployment to Riyadh'
     ],
-    location: 'Islamabad, Lahore',
-    city: 'Islamabad',
+    responsibilities: [
+      'Manage fieldwork audit teams across large Saudi corporations',
+      'Draft ISA-compliant audit deliverables and management letters',
+      'Facilitate audit reporting to Partners and client audit committees'
+    ],
+    location: 'Riyadh, KSA',
+    city: 'Riyadh, KSA',
+    country: 'Saudi Arabia',
+    workMode: 'On-site',
     jobType: 'Full Time',
-    category: 'Advisory',
-    salary: 'Rs. 50,000 - 75,000 / month',
-    qualification: 'CA Inter / ACCA',
-    level: 'CFAP',
+    category: 'Audit',
+    salary: 'SAR 14,000 - 18,000 / month (Tax Free)',
+    qualification: 'CA Finalist',
+    level: 'CA Finalist',
+    deadline: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000),
+    isOverseas: true,
+    featured: true
+  },
+  {
+    title: 'Virtual Financial Controller (Remote UK/US Practice)',
+    company: 'Global Offshore CFO Advisory',
+    companyLogo: '',
+    description: 'Work from home as a Virtual Financial Controller managing financial consolidation, monthly management accounts, and cash flow forecasting for UK and European SME clients.',
+    requirements: [
+      'Qualified CA or ACCA Member with 2+ years experience',
+      'Comprehensive understanding of US GAAP or UK GAAP (FRS 102)',
+      'Hands-on mastery of NetSuite, Xero, or QuickBooks',
+      'Dedicated remote home office setup'
+    ],
+    responsibilities: [
+      'Deliver monthly management accounts and variance analyses',
+      'Oversee offshore accounts payable, receivable, and VAT filings',
+      'Lead quarterly financial forecasting models for overseas executive leadership'
+    ],
+    location: 'Remote, Pakistan',
+    city: 'Islamabad',
+    country: 'Pakistan',
+    workMode: 'Virtual / Remote',
+    jobType: 'Full Time',
+    category: 'Finance',
+    salary: 'Rs. 250,000 - 350,000 / month',
+    qualification: 'CA Qualified',
+    level: 'CA Qualified',
     deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     isOverseas: false,
-    featured: false
+    featured: true
   }
 ];
 

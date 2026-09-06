@@ -29,7 +29,8 @@ import {
   CheckCircle2,
   User,
   LayoutDashboard,
-  LogOut
+  LogOut,
+  GraduationCap
 } from 'lucide-react';
 import { AnimatedCounter, AnimatedSection, AnimatedCard, PageTransition, AntigravityCanvas } from '../../../components/motion/MotionSystem';
 import mentorImage from '../../../assets/mentor_portrait.png';
@@ -50,6 +51,8 @@ import Podcasts from '../Podcasts/Podcasts';
 import CareerTools from '../CareerTools/CareerTools';
 import Blog from '../Blog/Blog';
 import NotificationPanel from '../../../components/NotificationPanel';
+import BeginnerGuide from '../BeginnerGuide/BeginnerGuide';
+import TermsAndPrivacyModal from '../../../components/legal/TermsAndPrivacyModal';
 import {
   getNotifications,
   markNotificationAsRead,
@@ -114,6 +117,8 @@ const parseRouteToTabState = () => {
   } else if (route === 'team' || route === 'our-team') {
     tab = 'Our Mission';
     scrollTarget = 'our-team';
+  } else if (route === 'what-is-ca' || route === 'beginner-guide' || route === 'how-to-start-ca' || route === 'ca-guide') {
+    tab = 'WhatIsCA';
   } else if (route === 'login') {
     tab = 'Login';
     loginStartFlipped = false;
@@ -144,6 +149,7 @@ const TAB_TO_PATH = {
   'Our Mission': '/mission',
   'Resources': '/resources',
   'Contact Us': '/contact',
+  'WhatIsCA': '/what-is-ca',
   'Announcements': '/announcements',
   'Events': '/events',
   'Blog': '/blog',
@@ -194,24 +200,30 @@ export default function Home({ session, sessionLoading }) {
   const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState('terms');
+  const [feedbackViewMode, setFeedbackViewMode] = useState('reviews');
 
   useEffect(() => {
     getNotifications().then(setNotifications).catch(() => { });
   }, []);
 
   const handleMarkNotifRead = async (id) => {
-    const updated = await markNotificationAsRead(id);
-    setNotifications(updated);
+    setNotifications(prev => prev.map(n => String(n.id) === String(id) ? { ...n, read: true } : n));
+    const updated = await markNotificationAsRead(id, notifications);
+    if (Array.isArray(updated)) setNotifications(updated);
   };
 
   const handleMarkAllNotifsRead = async () => {
-    const updated = await markAllNotificationsAsRead();
-    setNotifications(updated);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const updated = await markAllNotificationsAsRead(notifications);
+    if (Array.isArray(updated)) setNotifications(updated);
   };
 
   const handleDeleteNotif = async (id) => {
-    const updated = await deleteNotification(id);
-    setNotifications(updated);
+    setNotifications(prev => prev.filter(n => String(n.id) !== String(id)));
+    const updated = await deleteNotification(id, notifications);
+    if (Array.isArray(updated)) setNotifications(updated);
   };
 
   const unreadNotifCount = notifications.filter(n => !n.read).length;
@@ -571,6 +583,63 @@ export default function Home({ session, sessionLoading }) {
     }
   ];
 
+  const chatScreenshots = [
+    {
+      id: 1,
+      sender: "Muhammad Bilal",
+      firm: "KPMG Lahore",
+      category: "Audit Trainee",
+      message: "Assalam o Alaikum Sir Saboor! Alhamdulillah I got call from KPMG today and partner round was cleared! Sir aap ka CV template and mock interview questions bilkul exact thay jo partner ne poochay!",
+      date: "WhatsApp Chat • 2 days ago",
+      verifiedBadge: "Verified Placement"
+    },
+    {
+      id: 2,
+      sender: "Zainab Shah",
+      firm: "PwC Karachi",
+      category: "CAF Qualified",
+      message: "Sir Saboor thank you so much! Secured induction in PwC Assurance department. Your guidance on IFRS standards and mock interview confidence was a game changer for me.",
+      date: "LinkedIn Message • 1 week ago",
+      verifiedBadge: "Verified Placement"
+    },
+    {
+      id: 3,
+      sender: "Danish Mehmood",
+      firm: "EY Rawalpindi",
+      category: "CA Trainee",
+      message: "Alhamdulillah received formal offer letter from EY. Thank you to The TaxMan's Capital team! From CV audit to final interview prep, pure honest guidance. Best free resource for every student.",
+      date: "WhatsApp Group • Recent",
+      verifiedBadge: "Verified Placement"
+    }
+  ];
+
+  const videoTestimonials = [
+    {
+      id: 1,
+      name: "Saad Rehman",
+      firm: "Deloitte Pakistan",
+      title: "From 3rd CAF Attempt to Big 4 Articleship",
+      duration: "3:45 mins",
+      desc: "How structured CV restructuring and technical mock sessions helped clear the partner interview."
+    },
+    {
+      id: 2,
+      name: "Fatima Noor",
+      firm: "BDO Ebrahim & Co.",
+      title: "How I Prepared for Partner Round & Tax Case Studies",
+      duration: "4:12 mins",
+      desc: "Step-by-step breakdown of questions asked in firm induction interviews."
+    },
+    {
+      id: 3,
+      name: "Ali Hassan CA",
+      firm: "EY Overseas / UAE",
+      title: "Transitioning from Trainee to Overseas Senior Associate",
+      duration: "5:20 mins",
+      desc: "Advice on international placement, visa benchmarks, and GCC corporate tax opportunities."
+    }
+  ];
+
   const handleSubscribe = (e) => {
     e.preventDefault();
     if (emailInput.trim() !== '') {
@@ -909,6 +978,22 @@ export default function Home({ session, sessionLoading }) {
                       Our Vision
                     </a>
                     <a
+                      href="/team"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActiveTab('Our Mission');
+                        updateAppUrl('/team');
+                        setTimeout(() => {
+                          const el = document.getElementById('our-team');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                      }}
+                      className={`block px-4 py-2.5 text-xs xl:text-sm font-medium transition-colors hover:text-brandGreen hover:bg-white/5 ${activeTab === 'Our Mission' && window.location.pathname === '/team' ? 'text-brandGreen bg-white/5' : 'text-gray-300'
+                        }`}
+                    >
+                      Team Profiles & Mentors
+                    </a>
+                    <a
                       href="/contact"
                       onClick={(e) => {
                         e.preventDefault();
@@ -944,19 +1029,37 @@ export default function Home({ session, sessionLoading }) {
               <div className="hidden lg:flex items-center space-x-3 relative">
                 {isLoggedIn ? (
                   <>
-                    <button
-                      data-notification-trigger
-                      onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                      className="relative p-2 text-gray-300 hover:text-white transition-colors cursor-pointer"
-                      title="Notifications"
-                    >
-                      <Bell className="w-5.5 h-5.5" />
-                      {unreadNotifCount > 0 && (
-                        <span className="absolute top-1 right-1 w-4 h-4 bg-brandGreen text-white text-[9px] font-bold rounded-full border-2 border-navy flex items-center justify-center animate-pulse">
-                          {unreadNotifCount}
-                        </span>
-                      )}
-                    </button>
+                    <div className="relative">
+                      <button
+                        data-notification-trigger
+                        onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                        className="relative p-2 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                        title="Notifications"
+                      >
+                        <Bell className="w-5.5 h-5.5" />
+                        {unreadNotifCount > 0 && (
+                          <span className="absolute top-1 right-1 w-4 h-4 bg-brandGreen text-white text-[9px] font-bold rounded-full border-2 border-navy flex items-center justify-center animate-pulse">
+                            {unreadNotifCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Desktop Notification Panel Dropdown */}
+                      <NotificationPanel
+                        isOpen={isNotificationOpen}
+                        onClose={() => setIsNotificationOpen(false)}
+                        notifications={notifications}
+                        onMarkAsRead={handleMarkNotifRead}
+                        onMarkAllAsRead={handleMarkAllNotifsRead}
+                        onDelete={handleDeleteNotif}
+                        onNavigateTab={(tab) => {
+                          setActiveTab(tab);
+                          updateAppUrl(TAB_TO_PATH[tab] || '/');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          setIsNotificationOpen(false);
+                        }}
+                      />
+                    </div>
 
                     {/* User Avatar Dropdown (Hover & Click Supported) */}
                     <div className="relative group flex items-center h-full py-2">
@@ -1068,20 +1171,6 @@ export default function Home({ session, sessionLoading }) {
                     </button>
                   </>
                 )}
-
-                {/* Desktop Notification Panel Dropdown */}
-                <NotificationPanel
-                  isOpen={isNotificationOpen}
-                  onClose={() => setIsNotificationOpen(false)}
-                  notifications={notifications}
-                  onMarkAsRead={handleMarkNotifRead}
-                  onMarkAllAsRead={handleMarkAllNotifsRead}
-                  onDelete={handleDeleteNotif}
-                  onNavigateTab={(tab) => {
-                    setActiveTab(tab);
-                    setIsNotificationOpen(false);
-                  }}
-                />
               </div>
 
               {/* Mobile Auth Actions & Menu Trigger */}
@@ -1127,19 +1216,37 @@ export default function Home({ session, sessionLoading }) {
                 )}
 
                 {isLoggedIn && (
-                  <button
-                    data-notification-trigger
-                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                    className="relative p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer"
-                    title="Notifications"
-                  >
-                    <Bell className="w-5 h-5" />
-                    {unreadNotifCount > 0 && (
-                      <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-brandGreen text-white text-[8px] font-bold rounded-full border border-navy flex items-center justify-center animate-pulse">
-                        {unreadNotifCount}
-                      </span>
-                    )}
-                  </button>
+                  <div className="relative">
+                    <button
+                      data-notification-trigger
+                      onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                      className="relative p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                      title="Notifications"
+                    >
+                      <Bell className="w-5 h-5" />
+                      {unreadNotifCount > 0 && (
+                        <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-brandGreen text-white text-[8px] font-bold rounded-full border border-navy flex items-center justify-center animate-pulse">
+                          {unreadNotifCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Mobile Notification Panel */}
+                    <NotificationPanel
+                      isOpen={isNotificationOpen}
+                      onClose={() => setIsNotificationOpen(false)}
+                      notifications={notifications}
+                      onMarkAsRead={handleMarkNotifRead}
+                      onMarkAllAsRead={handleMarkAllNotifsRead}
+                      onDelete={handleDeleteNotif}
+                      onNavigateTab={(tab) => {
+                        setActiveTab(tab);
+                        updateAppUrl(TAB_TO_PATH[tab] || '/');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setIsNotificationOpen(false);
+                      }}
+                    />
+                  </div>
                 )}
 
                 <button
@@ -1149,22 +1256,6 @@ export default function Home({ session, sessionLoading }) {
                 >
                   {mobileMenuOpen ? <X className="w-6 h-6 text-brandGreen" /> : <Menu className="w-6 h-6" />}
                 </button>
-
-                {/* Mobile Notification Panel */}
-                {isLoggedIn && (
-                  <NotificationPanel
-                    isOpen={isNotificationOpen}
-                    onClose={() => setIsNotificationOpen(false)}
-                    notifications={notifications}
-                    onMarkAsRead={handleMarkNotifRead}
-                    onMarkAllAsRead={handleMarkAllNotifsRead}
-                    onDelete={handleDeleteNotif}
-                    onNavigateTab={(tab) => {
-                      setActiveTab(tab);
-                      setIsNotificationOpen(false);
-                    }}
-                  />
-                )}
               </div>
             </div>
           </div>
@@ -1584,6 +1675,23 @@ export default function Home({ session, sessionLoading }) {
                   >
                     • Our Vision
                   </a>
+                  <a
+                    href="/team"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveTab('Our Mission');
+                      updateAppUrl('/team');
+                      setMobileMenuOpen(false);
+                      setTimeout(() => {
+                        const el = document.getElementById('our-team');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    className={`block py-2 px-4 rounded-xl text-sm ${activeTab === 'Our Mission' && window.location.pathname === '/team' ? 'text-brandGreen bg-white/5 font-semibold' : 'text-gray-300'
+                      }`}
+                  >
+                    • Team Profiles & Mentors
+                  </a>
 
                   <a
                     href="/contact"
@@ -1609,7 +1717,15 @@ export default function Home({ session, sessionLoading }) {
       )}
 
       <div key={activeTab} className={`${(activeTab === 'AdminDashboard' || activeTab === 'UserDashboard') ? 'h-screen overflow-hidden' : 'animate-page-transition'} flex-grow flex flex-col`}>
-        {activeTab === 'Jobs' ? (
+        {activeTab === 'WhatIsCA' ? (
+          <BeginnerGuide
+            onNavigateTab={(tab) => {
+              setActiveTab(tab);
+              updateAppUrl(TAB_TO_PATH[tab] || '/');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        ) : activeTab === 'Jobs' ? (
           <Jobs mode="jobs" initialSelectedJobId={selectedJobIdForModal} onClearInitialJob={() => setSelectedJobIdForModal(null)} savedJobs={savedJobs} onToggleSaveJob={handleToggleSaveJob} />
         ) : activeTab === 'Inductions' ? (
           <Jobs mode="inductions" initialSelectedJobId={selectedJobIdForModal} onClearInitialJob={() => setSelectedJobIdForModal(null)} savedJobs={savedJobs} onToggleSaveJob={handleToggleSaveJob} />
@@ -1729,6 +1845,11 @@ export default function Home({ session, sessionLoading }) {
             onGoHome={() => {
               setActiveTab('Home');
             }}
+            onNavigateTab={(tab) => {
+              setActiveTab(tab);
+              updateAppUrl(TAB_TO_PATH[tab] || '/');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             savedJobs={savedJobs}
             onRemoveSavedJob={(id) => handleToggleSaveJob(id)}
             onProfileUpdate={(newProfile) => {
@@ -1774,7 +1895,7 @@ export default function Home({ session, sessionLoading }) {
                     </p>
 
                     {/* CTAs */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2.5 sm:space-y-0 sm:space-x-3 pt-1 w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2.5 sm:space-y-0 sm:space-x-3 pt-1 w-full sm:w-auto flex-wrap gap-y-2.5">
                       <a
                         href="/jobs"
                         onClick={(e) => {
@@ -1786,17 +1907,19 @@ export default function Home({ session, sessionLoading }) {
                         <Briefcase className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                         <span>Explore Opportunities</span>
                       </a>
+
                       <a
-                        href="/careertools"
+                        href="/what-is-ca"
                         onClick={(e) => {
                           e.preventDefault();
-                          if (!requireAuth('access CV Studio & AI Mock Interviews')) return;
-                          setActiveTab('Career Tools');
+                          setActiveTab('WhatIsCA');
+                          updateAppUrl('/what-is-ca');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="flex items-center justify-center px-4.5 py-2.5 sm:px-5 sm:py-3 border border-white/20 hover:border-brandGreen/40 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs sm:text-sm rounded-xl transition-all duration-200 backdrop-blur-md cursor-pointer group"
+                        className="flex items-center justify-center px-5 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-amber-400/40 text-amber-200 hover:text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/5 hover:scale-[1.02] active:scale-95 cursor-pointer"
                       >
-                        <Sparkles className="w-4 h-4 mr-2 text-brandGreen group-hover:rotate-12 transition-transform" />
-                        <span>CV Studio & AI Mock</span>
+                        <GraduationCap className="w-4 h-4 mr-2 text-amber-400" />
+                        <span>What is CA & How to Start</span>
                       </a>
                     </div>
 
@@ -2377,54 +2500,170 @@ export default function Home({ session, sessionLoading }) {
               </div>
             </section>
 
-            {/* 9. Success Stories Section */}
+            {/* 9. Success Stories & Verified Feedback Section */}
             <section className="w-full max-w-full py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll">
 
-              <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 flex flex-col items-center">
-                <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">Testimonials</span>
+              <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 flex flex-col items-center">
+                <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">Student Proof & Reviews</span>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
-                  SUCCESS STORIES
+                  SUCCESS STORIES & FEEDBACK
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
                 </h2>
                 <p className="text-gray-500 mt-4 text-xs sm:text-sm md:text-base">
-                  Read stories of how CA and ACCA students secured articleships and careers through our guidance resources.
+                  Real feedback from students placed in Big 4 and corporate firms through our free mentorship ecosystem.
                 </p>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {successStories.map((story, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative premium-card-hover"
+                {/* 3-Way Feedback View Mode Switcher */}
+                <div className="flex items-center space-x-1 sm:space-x-2 mt-6 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackViewMode('reviews')}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      feedbackViewMode === 'reviews'
+                        ? 'bg-white text-navy shadow-sm font-black'
+                        : 'text-gray-500 hover:text-navy'
+                    }`}
                   >
-                    {/* Green quote icon absolute at top right */}
-                    <div className="absolute top-5 right-5 sm:top-6 sm:right-6 text-brandGreen/25">
-                      <svg className="w-8 h-8 sm:w-10 sm:h-10 fill-current" viewBox="0 0 24 24">
-                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                      </svg>
-                    </div>
-
-                    <div>
-                      <p className="text-xs sm:text-sm text-gray-600 italic leading-relaxed pt-2">
-                        "{story.quote}"
-                      </p>
-                    </div>
-
-                    <div className="mt-6 sm:mt-8 pt-4 border-t border-gray-100 flex items-center space-x-3 sm:space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-600 text-white font-bold flex items-center justify-center flex-shrink-0 shadow-md text-xs sm:text-sm">
-                        {story.avatar}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-navy text-xs sm:text-sm leading-none truncate">{story.name}</span>
-                        <span className="text-[11px] sm:text-xs text-brandGreen font-medium mt-1 truncate">{story.role}</span>
-                        <span className="text-[10px] text-gray-400 mt-0.5 truncate">Placed at {story.placedAt}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    💬 Student Quotes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackViewMode('chats')}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      feedbackViewMode === 'chats'
+                        ? 'bg-white text-navy shadow-sm font-black'
+                        : 'text-gray-500 hover:text-navy'
+                    }`}
+                  >
+                    📱 Chat Screenshots
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackViewMode('video')}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      feedbackViewMode === 'video'
+                        ? 'bg-white text-navy shadow-sm font-black'
+                        : 'text-gray-500 hover:text-navy'
+                    }`}
+                  >
+                    🎥 Video Reviews
+                  </button>
+                </div>
               </div>
 
-              {/* Carousel Dots */}
+              {/* VIEW 1: TEXT QUOTES */}
+              {feedbackViewMode === 'reviews' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 animate-fadeIn">
+                  {successStories.map((story, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between relative premium-card-hover"
+                    >
+                      <div className="absolute top-5 right-5 sm:top-6 sm:right-6 text-brandGreen/25">
+                        <svg className="w-8 h-8 sm:w-10 sm:h-10 fill-current" viewBox="0 0 24 24">
+                          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                        </svg>
+                      </div>
+
+                      <div>
+                        <p className="text-xs sm:text-sm text-gray-600 italic leading-relaxed pt-2">
+                          "{story.quote}"
+                        </p>
+                      </div>
+
+                      <div className="mt-6 sm:mt-8 pt-4 border-t border-gray-100 flex items-center space-x-3 sm:space-x-4">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brandGreen to-emerald-600 text-white font-bold flex items-center justify-center flex-shrink-0 shadow-md text-xs sm:text-sm">
+                          {story.avatar}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-navy text-xs sm:text-sm leading-none truncate">{story.name}</span>
+                          <span className="text-[11px] sm:text-xs text-brandGreen font-medium mt-1 truncate">{story.role}</span>
+                          <span className="text-[10px] text-gray-400 mt-0.5 truncate">Placed at {story.placedAt}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* VIEW 2: VERIFIED CHAT SCREENSHOT CARDS (WHATSAPP / LINKEDIN) */}
+              {feedbackViewMode === 'chats' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
+                  {chatScreenshots.map((chat) => (
+                    <div
+                      key={chat.id}
+                      className="bg-[#0b141a] rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-950/60 flex flex-col justify-between text-left space-y-4 relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center">
+                            {chat.sender.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="font-bold text-white text-xs block">{chat.sender}</span>
+                            <span className="text-[10px] text-emerald-400 font-semibold">{chat.firm}</span>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-wider border border-emerald-500/30">
+                          {chat.verifiedBadge}
+                        </span>
+                      </div>
+
+                      {/* WhatsApp chat bubble */}
+                      <div className="bg-[#1f2c34] p-4 rounded-2xl rounded-tl-sm text-xs text-gray-200 space-y-2 relative shadow-inner">
+                        <p className="leading-relaxed text-[11px] sm:text-xs font-medium text-emerald-50/90">
+                          "{chat.message}"
+                        </p>
+                        <div className="text-[9px] text-gray-400 flex items-center justify-end space-x-1">
+                          <span>{chat.date}</span>
+                          <span className="text-emerald-400 font-bold">✓✓</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex items-center justify-between text-[11px] text-gray-400">
+                        <span className="italic">{chat.category}</span>
+                        <span className="text-emerald-400 font-semibold text-[10px]">Verified Student Feedback</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* VIEW 3: VIDEO TESTIMONIALS */}
+              {feedbackViewMode === 'video' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
+                  {videoTestimonials.map((vid) => (
+                    <div
+                      key={vid.id}
+                      className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between text-left hover:shadow-lg transition-all"
+                    >
+                      {/* Video Player Card Frame */}
+                      <div className="aspect-video bg-gradient-to-tr from-[#021B3A] to-[#090C11] relative flex items-center justify-center group cursor-pointer">
+                        <div className="w-12 h-12 rounded-full bg-brandGreen text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        </div>
+                        <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono">
+                          {vid.duration}
+                        </span>
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-brandGreen text-white text-[9px] font-black uppercase">
+                          {vid.firm}
+                        </span>
+                      </div>
+
+                      <div className="p-5 space-y-2">
+                        <h4 className="font-extrabold text-navy text-sm leading-snug">{vid.title}</h4>
+                        <p className="text-xs text-gray-500 leading-relaxed">{vid.desc}</p>
+                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-gray-700">{vid.name}</span>
+                          <span className="text-brandGreen font-semibold">Video Verified</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Indicator */}
               <div className="flex items-center justify-center space-x-2 mt-8 sm:mt-10">
                 <span className="w-6 h-2 rounded-full bg-brandGreen"></span>
                 <span className="w-2 h-2 rounded-full bg-gray-300"></span>
@@ -2770,9 +3009,27 @@ export default function Home({ session, sessionLoading }) {
                 &copy; {new Date().getFullYear()} The TaxMan's Capital. All Rights Reserved.
               </p>
               <div className="flex space-x-6">
-                <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegalModalTab('privacy');
+                    setShowLegalModal(true);
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Privacy Policy
+                </button>
                 <span>|</span>
-                <a href="/terms" className="hover:text-white transition-colors">Terms & Conditions</a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegalModalTab('terms');
+                    setShowLegalModal(true);
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Terms & Conditions
+                </button>
               </div>
             </div>
           </div>
@@ -2825,6 +3082,14 @@ export default function Home({ session, sessionLoading }) {
           </div>
         </div>
       )}
+
+
+      {/* Terms & Privacy Data Protection Policy Modal */}
+      <TermsAndPrivacyModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+        initialTab={legalModalTab}
+      />
 
     </div>
   );

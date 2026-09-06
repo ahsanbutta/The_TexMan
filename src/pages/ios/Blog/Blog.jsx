@@ -137,7 +137,7 @@ export default function Blog({ onNavigateTab }) {
   // If an article is selected, render it directly in the natural document flow
   if (selectedBlog) {
     return (
-      <div className="w-full bg-[#021B3A] text-white">
+      <div className="w-full bg-bgLight">
         <BlogArticle
           blog={selectedBlog}
           onBack={handleCloseReader}
@@ -148,10 +148,10 @@ export default function Blog({ onNavigateTab }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#021B3A] text-white">
+    <div className="min-h-screen bg-bgLight">
       {/* 1. Hero Section */}
-      <section className="relative pt-12 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden skyline-bg border-b border-white/10">
-        <AntigravityCanvas className="z-0 opacity-40" particleCount={20} />
+      <section className="relative pt-12 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-navy text-white border-b border-navy-light/40">
+        <AntigravityCanvas className="z-0 opacity-30" particleCount={20} />
 
         <div className="max-w-7xl mx-auto relative z-10 text-center">
           {/* Status Pill */}
@@ -182,14 +182,14 @@ export default function Blog({ onNavigateTab }) {
                 placeholder="Search by topic, keyword (e.g. PwC, CFAP, ATS, ACCA, Tax)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-10 py-3.5 bg-navy-dark/90 border border-white/15 focus:border-brandGreen rounded-2xl text-sm text-white placeholder-gray-400 outline-none transition-all shadow-xl backdrop-blur-xl"
+                className="w-full pl-12 pr-10 py-3.5 bg-white/10 border border-white/15 focus:border-brandGreen rounded-2xl text-sm text-white placeholder-gray-400 outline-none transition-all shadow-xl backdrop-blur-xl"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3.5 p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
+                  ✕
                 </button>
               )}
             </div>
@@ -206,7 +206,7 @@ export default function Blog({ onNavigateTab }) {
                   className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                     active
                       ? 'bg-brandGreen text-white shadow-lg shadow-emerald-500/20 font-bold scale-[1.02]'
-                      : 'bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 border border-white/10'
+                      : 'bg-white/10 text-gray-200 hover:text-white hover:bg-white/20 border border-white/15'
                   }`}
                 >
                   {cat}
@@ -222,13 +222,13 @@ export default function Blog({ onNavigateTab }) {
         {loading ? (
           <div className="py-24 text-center">
             <div className="w-10 h-10 border-3 border-brandGreen border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-400 text-sm font-medium">Loading articles...</p>
+            <p className="text-gray-500 text-sm font-medium">Loading articles...</p>
           </div>
         ) : filteredBlogs.length === 0 ? (
-          <div className="py-20 text-center bg-white/[0.02] border border-white/10 rounded-3xl p-8 max-w-md mx-auto">
-            <BookOpen className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-white mb-1">No Articles Found</h3>
-            <p className="text-xs text-gray-400 mb-5">
+          <div className="py-20 text-center bg-white border border-gray-100 rounded-3xl p-8 max-w-md mx-auto shadow-sm">
+            <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-navy mb-1">No Articles Found</h3>
+            <p className="text-xs text-gray-500 mb-5">
               No blog posts match your current search query or filter.
             </p>
             <button
@@ -236,7 +236,7 @@ export default function Blog({ onNavigateTab }) {
                 setSelectedCategory('All');
                 setSearchQuery('');
               }}
-              className="px-5 py-2.5 bg-brandGreen text-white rounded-xl text-xs font-bold hover:bg-brandGreen-dark transition-colors cursor-pointer"
+              className="px-5 py-2.5 bg-brandGreen text-white rounded-xl text-xs font-bold hover:bg-brandGreen-dark transition-colors cursor-pointer shadow-md shadow-emerald-500/15"
             >
               Reset Filters
             </button>
@@ -246,23 +246,22 @@ export default function Blog({ onNavigateTab }) {
             {/* Featured Article Banner (Only on 'All' or when matched) */}
             {featuredBlog && !searchQuery && (
               <div className="mb-12">
-                <div className="flex items-center space-x-2 text-xs font-bold text-brandGreen uppercase tracking-widest mb-4">
+                <div className="flex items-center space-x-2 text-xs font-extrabold text-brandGreen uppercase tracking-widest mb-4">
                   <Sparkles className="w-4 h-4" />
                   <span>Featured Masterclass</span>
                 </div>
 
                 <div
                   onClick={() => handleOpenReader(featuredBlog)}
-                  className="group relative bg-[#04244D] border border-white/15 hover:border-brandGreen/50 rounded-3xl overflow-hidden transition-all duration-300 shadow-2xl hover:shadow-emerald-500/10 grid grid-cols-1 lg:grid-cols-12 cursor-pointer"
+                  className="group relative bg-white border border-gray-100 hover:border-brandGreen/40 rounded-3xl overflow-hidden transition-all duration-300 shadow-xl hover:shadow-2xl grid grid-cols-1 lg:grid-cols-12 cursor-pointer"
                 >
                   {/* Left Banner Image */}
-                  <div className="lg:col-span-6 h-64 sm:h-80 lg:h-full relative overflow-hidden bg-navy-dark">
+                  <div className="lg:col-span-6 h-64 sm:h-80 lg:h-full relative overflow-hidden bg-gray-100">
                     <img
                       src={featuredBlog.coverImage}
                       alt={featuredBlog.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#04244D] via-transparent to-transparent lg:hidden" />
                     <div className="absolute top-4 left-4">
                       <span className="px-3 py-1 bg-brandGreen text-white text-[11px] font-extrabold rounded-lg shadow-md uppercase tracking-wider">
                         {featuredBlog.category}
@@ -273,7 +272,7 @@ export default function Blog({ onNavigateTab }) {
                   {/* Right Banner Content */}
                   <div className="lg:col-span-6 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-4">
                     <div className="space-y-3">
-                      <div className="flex items-center space-x-3 text-xs text-gray-400">
+                      <div className="flex items-center space-x-3 text-xs text-gray-400 font-semibold">
                         <span className="flex items-center space-x-1.5">
                           <Calendar className="w-3.5 h-3.5 text-brandGreen" />
                           <span>{new Date(featuredBlog.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -290,18 +289,18 @@ export default function Blog({ onNavigateTab }) {
                         </span>
                       </div>
 
-                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white group-hover:text-brandGreen transition-colors leading-tight font-['Outfit',sans-serif]">
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-navy group-hover:text-brandGreen transition-colors leading-tight font-['Outfit',sans-serif]">
                         {featuredBlog.title}
                       </h2>
 
-                      <p className="text-xs sm:text-sm text-gray-300 line-clamp-3 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 leading-relaxed font-medium">
                         {featuredBlog.summary}
                       </p>
 
                       {featuredBlog.tags && featuredBlog.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-2">
                           {featuredBlog.tags.slice(0, 4).map((tag, idx) => (
-                            <span key={idx} className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] text-gray-300 font-medium">
+                            <span key={idx} className="px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-[11px] text-gray-600 font-medium">
                               #{tag}
                             </span>
                           ))}
@@ -309,28 +308,28 @@ export default function Blog({ onNavigateTab }) {
                       )}
                     </div>
 
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 rounded-full bg-brandGreen/20 border border-brandGreen/40 flex items-center justify-center font-bold text-xs text-brandGreen">
+                        <div className="w-9 h-9 rounded-full bg-brandGreen/10 border border-brandGreen/30 flex items-center justify-center font-bold text-xs text-brandGreen">
                           {featuredBlog.author?.name ? featuredBlog.author.name.charAt(0) : 'S'}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-white">{featuredBlog.author?.name || 'Saboor Ahmad CA'}</p>
-                          <p className="text-[10px] text-gray-400">{featuredBlog.author?.role || 'Lead Career Mentor'}</p>
+                          <p className="text-xs font-bold text-navy">{featuredBlog.author?.name || 'Saboor Ahmad CA'}</p>
+                          <p className="text-[10px] text-gray-400 font-medium">{featuredBlog.author?.role || 'Lead Career Mentor'}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={(e) => toggleBookmark(featuredBlog._id || featuredBlog.id, e)}
-                          className={`p-2 rounded-xl border transition-colors ${
+                          className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                             bookmarkedIds.includes(featuredBlog._id || featuredBlog.id)
-                              ? 'bg-brandGreen/20 border-brandGreen text-brandGreen'
-                              : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                              ? 'bg-brandGreen/10 border-brandGreen text-brandGreen'
+                              : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-navy hover:bg-gray-100'
                           }`}
                           title="Bookmark"
                         >
-                          <Bookmark className="w-4 h-4" />
+                          <Bookmark className={`w-4 h-4 ${bookmarkedIds.includes(featuredBlog._id || featuredBlog.id) ? 'fill-current' : ''}`} />
                         </button>
                         <span className="inline-flex items-center space-x-1.5 px-4 py-2 bg-brandGreen text-white text-xs font-bold rounded-xl shadow-md group-hover:bg-brandGreen-dark transition-colors">
                           <span>Read Guide</span>
@@ -347,10 +346,10 @@ export default function Blog({ onNavigateTab }) {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <BookOpen className="w-5 h-5 text-brandGreen" />
-                <h3 className="text-lg sm:text-xl font-bold text-white">
+                <h3 className="text-lg sm:text-xl font-extrabold text-navy">
                   {selectedCategory === 'All' ? 'Latest Articles' : `${selectedCategory} Articles`}
                 </h3>
-                <span className="text-xs text-gray-400 font-semibold bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+                <span className="text-xs text-gray-500 font-bold bg-white px-2.5 py-0.5 rounded-full border border-gray-200 shadow-2xs">
                   {filteredBlogs.length}
                 </span>
               </div>
@@ -364,37 +363,37 @@ export default function Blog({ onNavigateTab }) {
                   <article
                     key={blog._id || blog.id}
                     onClick={() => handleOpenReader(blog)}
-                    className="group bg-[#04244D] border border-white/10 hover:border-brandGreen/50 rounded-2xl overflow-hidden transition-all duration-300 shadow-xl hover:shadow-emerald-500/10 flex flex-col justify-between cursor-pointer hover:-translate-y-1"
+                    className="group bg-white border border-gray-100 hover:border-brandGreen/40 rounded-2xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col justify-between cursor-pointer hover:-translate-y-1"
                   >
                     <div>
                       {/* Thumbnail Container */}
-                      <div className="relative h-48 w-full overflow-hidden bg-navy-dark">
+                      <div className="relative h-48 w-full overflow-hidden bg-gray-100">
                         <img
                           src={blog.coverImage}
                           alt={blog.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute top-3 left-3">
-                          <span className="px-2.5 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-emerald-300 text-[10px] font-extrabold rounded-lg uppercase tracking-wider">
+                          <span className="px-2.5 py-1 bg-navy/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-extrabold rounded-lg uppercase tracking-wider">
                             {blog.category}
                           </span>
                         </div>
                         <button
                           onClick={(e) => toggleBookmark(blog._id || blog.id, e)}
-                          className={`absolute top-3 right-3 p-1.5 rounded-lg backdrop-blur-md border transition-colors ${
+                          className={`absolute top-3 right-3 p-1.5 rounded-lg backdrop-blur-md border transition-colors cursor-pointer ${
                             isBookmarked
                               ? 'bg-brandGreen text-white border-brandGreen'
-                              : 'bg-black/60 border-white/15 text-gray-300 hover:text-white hover:bg-black/80'
+                              : 'bg-white/80 border-gray-200 text-gray-600 hover:text-navy hover:bg-white'
                           }`}
                           title="Bookmark"
                         >
-                          <Bookmark className="w-3.5 h-3.5" />
+                          <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
                         </button>
                       </div>
 
                       {/* Content Info */}
-                      <div className="p-5 space-y-2.5">
-                        <div className="flex items-center space-x-2 text-[11px] text-gray-400">
+                      <div className="p-5 space-y-2.5 text-left">
+                        <div className="flex items-center space-x-2 text-[11px] text-gray-400 font-semibold">
                           <span>{new Date(blog.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           <span>•</span>
                           <span>{blog.readTime || '4 min read'}</span>
@@ -405,18 +404,18 @@ export default function Blog({ onNavigateTab }) {
                           </span>
                         </div>
 
-                        <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-brandGreen transition-colors line-clamp-2 leading-snug font-['Outfit',sans-serif]">
+                        <h4 className="text-base sm:text-lg font-extrabold text-navy group-hover:text-brandGreen transition-colors line-clamp-2 leading-snug font-['Outfit',sans-serif]">
                           {blog.title}
                         </h4>
 
-                        <p className="text-xs text-gray-300 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-medium">
                           {blog.summary}
                         </p>
 
                         {blog.tags && blog.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 pt-1">
                             {blog.tags.slice(0, 3).map((tag, idx) => (
-                              <span key={idx} className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-gray-400 font-medium">
+                              <span key={idx} className="px-2 py-0.5 rounded bg-gray-50 border border-gray-100 text-[10px] text-gray-500 font-medium">
                                 #{tag}
                               </span>
                             ))}
@@ -426,17 +425,17 @@ export default function Blog({ onNavigateTab }) {
                     </div>
 
                     {/* Card Footer */}
-                    <div className="p-5 pt-3 border-t border-white/10 flex items-center justify-between">
+                    <div className="p-5 pt-3 border-t border-gray-100 flex items-center justify-between">
                       <div className="flex items-center space-x-2.5">
-                        <div className="w-7 h-7 rounded-full bg-emerald-500/15 border border-brandGreen/30 flex items-center justify-center text-[10px] font-bold text-brandGreen">
+                        <div className="w-7 h-7 rounded-full bg-brandGreen/10 border border-brandGreen/25 flex items-center justify-center text-[10px] font-extrabold text-brandGreen">
                           {blog.author?.name ? blog.author.name.charAt(0) : 'S'}
                         </div>
-                        <div className="truncate max-w-[130px]">
-                          <p className="text-xs font-semibold text-gray-200 truncate">{blog.author?.name || 'Saboor Ahmad CA'}</p>
+                        <div className="truncate max-w-[130px] text-left">
+                          <p className="text-xs font-bold text-navy truncate">{blog.author?.name || 'Saboor Ahmad CA'}</p>
                         </div>
                       </div>
 
-                      <span className="text-xs font-bold text-brandGreen flex items-center space-x-1 group-hover:underline">
+                      <span className="text-xs font-extrabold text-brandGreen flex items-center space-x-1 group-hover:underline">
                         <span>Read</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </span>

@@ -23,12 +23,122 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+const CATEGORY_HERO_CONTENT = {
+  'All': {
+    badge: 'RESOURCES DIRECTORY',
+    heading1: 'Everything You Need',
+    heading2: 'To Build Your CA Career',
+    desc: 'Access high-quality study materials, career guides, templates, interview questions, firm lists and more – all in one place. 100% Free for CA/ACCA Students.',
+    searchPlaceholder: 'Search all resources (e.g. CV template, MCQs, handbook)...',
+    mockupTitle: 'Everything You Need\nTo Build Your Career',
+    mockupBadge: 'RESOURCES',
+    mockupTags: ['CV Builder', 'MCQs', 'Firm Lists'],
+    previewStack: [
+      { label: 'Study Notes', count: '30+ Files' },
+      { label: 'Career Guides', count: '22+ Files' },
+      { label: 'Firm Portals', count: '18+ Files' },
+    ]
+  },
+  'PRC': {
+    badge: 'PRC FOUNDATION HUB',
+    heading1: 'Kickstart Your CA Journey',
+    heading2: 'Master PRC with Top Study Notes',
+    desc: 'Handpicked question banks, concept revision sheets, and practice MCQs designed specifically for PRC students entering the Chartered Accountancy pathway.',
+    searchPlaceholder: 'Search PRC notes, accounting basics, law MCQs...',
+    mockupTitle: 'PRC Foundation Notes\n& Practice MCQs',
+    mockupBadge: 'PRC HUB',
+    mockupTags: ['Intro to Accounting', 'Business Law', 'Economics'],
+    previewStack: [
+      { label: 'PRC Question Banks', count: '15+ Files' },
+      { label: 'Short Revision Sheets', count: '10+ Files' },
+      { label: 'Exam Tips & Formulas', count: '8+ Files' },
+    ]
+  },
+  'CAF': {
+    badge: 'CAF INTERMEDIATE',
+    heading1: 'Excel in Intermediate',
+    heading2: 'CAF Revision Kits & Master Guides',
+    desc: 'Comprehensive study summaries, past paper analyses, and exam techniques across FAR, Audit, Tax, and Costing to clear CAF in your earliest attempts.',
+    searchPlaceholder: 'Search CAF past papers, FR guides, Tax notes...',
+    mockupTitle: 'CAF Revision Kits\n& Exam Passpacks',
+    mockupBadge: 'CAF INTERMEDIATE',
+    mockupTags: ['FAR Revision', 'Audit Standards', 'Tax Rates'],
+    previewStack: [
+      { label: 'FR & Audit Notes', count: '24+ Files' },
+      { label: 'Taxation Summaries', count: '18+ Files' },
+      { label: 'Costing Practice Packs', count: '12+ Files' },
+    ]
+  },
+  'Training/Induction': {
+    badge: 'INDUCTION & ARTICLESHIP',
+    heading1: 'Crack Big 4 Inductions',
+    heading2: 'Interview Q&As, CVs & Induction Kits',
+    desc: 'Professional ATS CV formats, Big 4 partner interview questions, firm recruitment schedules, and technical testing master handbooks for trainee inductions.',
+    searchPlaceholder: 'Search interview FAQs, CV templates, firm induction guides...',
+    mockupTitle: 'Big 4 Induction Handbook\n& Real Interview Q&As',
+    mockupBadge: 'INDUCTION PORTAL',
+    mockupTags: ['Interview FAQ', 'CV Template', 'Written Test'],
+    previewStack: [
+      { label: 'Master Interview Handbook', count: '200+ Q&As' },
+      { label: 'ATS CV Templates', count: '5+ Formats' },
+      { label: 'Firm Policy & Stips', count: '18+ Firms' },
+    ]
+  },
+  'CFAP & SCS (Finals)': {
+    badge: 'CA FINALS ACADEMY',
+    heading1: 'Conquer CA Final Exams',
+    heading2: 'CFAP Standards, IFRS & Case Studies',
+    desc: 'Advanced financial reporting digests, audit simulations, ICAP Code of Ethics, and corporate governance papers for CFAP & Multi-Subject Case Studies.',
+    searchPlaceholder: 'Search CFAP summaries, IFRS notes, Ethics codes...',
+    mockupTitle: 'CFAP Advanced Standards\n& Multi-Subject Cases',
+    mockupBadge: 'CFAP ACADEMY',
+    mockupTags: ['Advanced IFRS', 'Corporate Law', 'Case Studies'],
+    previewStack: [
+      { label: 'ICAP Code of Ethics', count: 'Official PDF' },
+      { label: 'Advanced Audit Notes', count: '14+ Files' },
+      { label: 'Case Study Frameworks', count: '10+ Files' },
+    ]
+  },
+  'CA Qualified': {
+    badge: 'CA QUALIFIED NETWORK',
+    heading1: 'Empowering Leaders',
+    heading2: 'Executive Tools & Global Careers',
+    desc: 'Practical advisory toolkits, strategic CFO frameworks, international CPD guides, and overseas career resources for qualified Chartered Accountants.',
+    searchPlaceholder: 'Search qualified advisory notes, salary benchmarks, CPD...',
+    mockupTitle: 'CFO & Advisory Frameworks\nGlobal Mobility Guides',
+    mockupBadge: 'QUALIFIED PORTAL',
+    mockupTags: ['CFO Strategy', 'Gulf Relocation', 'Tax Planning'],
+    previewStack: [
+      { label: 'Executive CV Layouts', count: '4+ Templates' },
+      { label: 'Middle East Salary Matrix', count: '2026 Edition' },
+      { label: 'CPD & Advisory Kits', count: '12+ Files' },
+    ]
+  },
+  'ACCA': {
+    badge: 'ACCA GLOBAL HUB',
+    heading1: 'Global Accounting Hub',
+    heading2: 'ACCA Exam Kits & Career Essentials',
+    desc: 'Dedicated CBE exam practice tips, ATS resumes tailored for ACCA affiliates, PER guidance, and corporate accounting resources.',
+    searchPlaceholder: 'Search ACCA CV layout, CBE exam tips, affiliate guides...',
+    mockupTitle: 'ACCA CBE Exam Guides\n& Affiliate Resumes',
+    mockupBadge: 'ACCA PORTAL',
+    mockupTags: ['CBE Exam Prep', 'Affiliate Resumes', 'PER Guides'],
+    previewStack: [
+      { label: 'ACCA CV Format Guide', count: 'ATS Ready' },
+      { label: 'Applied Skills Notes', count: '16+ Files' },
+      { label: 'Strategic Professional', count: '10+ Files' },
+    ]
+  }
+};
+
 export default function Resources({ selectedCategory: externalCategory, setSelectedCategory: setExternalCategory, setActiveTab }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [internalCategory, setInternalCategory] = useState('All');
   
   const selectedCategory = externalCategory !== undefined ? externalCategory : internalCategory;
   const setSelectedCategory = setExternalCategory !== undefined ? setExternalCategory : setInternalCategory;
+
+  const activeHero = CATEGORY_HERO_CONTENT[selectedCategory] || CATEGORY_HERO_CONTENT['All'];
 
   const [, setSubscribed] = useState(false);
   const [email, setEmail] = useState('');
@@ -282,15 +392,15 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
             
             {/* Left Column Content */}
             <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
-              <span className="bg-brandGreen/10 border border-brandGreen/25 text-brandGreen text-[11px] font-extrabold tracking-widest px-3 py-1.5 rounded-full uppercase">
-                RESOURCES
+              <span className="bg-brandGreen/10 border border-brandGreen/25 text-brandGreen text-[11px] font-extrabold tracking-widest px-3 py-1.5 rounded-full uppercase transition-all duration-300">
+                {activeHero.badge}
               </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white">
-                Everything You Need<br />
-                <span className="text-brandGreen">To Build Your CA Career</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white transition-all duration-300">
+                {activeHero.heading1}<br />
+                <span className="text-brandGreen">{activeHero.heading2}</span>
               </h1>
-              <p className="text-base sm:text-lg text-gray-300 max-w-xl font-normal leading-relaxed">
-                Access high-quality study materials, career guides, templates, interview questions, firm lists and more – all in one place. 100% Free for CA/ACCA Students.
+              <p className="text-base sm:text-lg text-gray-300 max-w-xl font-normal leading-relaxed transition-all duration-300">
+                {activeHero.desc}
               </p>
 
               {/* Functional Search Bar */}
@@ -298,7 +408,7 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
                 <Search className="w-5 h-5 text-gray-400 ml-3 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search resources (e.g. CV template, MCQs)..."
+                  placeholder={activeHero.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -380,12 +490,18 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
 
                     {/* Mock Content */}
                     <div className="my-auto text-left space-y-2 py-4">
-                      <span className="text-[9px] font-extrabold text-white uppercase tracking-widest bg-brandGreen/20 px-2 py-0.5 rounded-full">RESOURCES</span>
-                      <h3 className="text-sm font-bold text-white tracking-tight leading-snug">Everything You Need<br />To Build Your Career</h3>
-                      <div className="flex space-x-2 pt-1">
-                        <div className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[7px] text-gray-300 font-bold uppercase tracking-wider">CV Builder</div>
-                        <div className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[7px] text-gray-300 font-bold uppercase tracking-wider">MCQs</div>
-                        <div className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[7px] text-gray-300 font-bold uppercase tracking-wider">Firm Lists</div>
+                      <span className="text-[9px] font-extrabold text-white uppercase tracking-widest bg-brandGreen/20 px-2 py-0.5 rounded-full">
+                        {activeHero.mockupBadge}
+                      </span>
+                      <h3 className="text-sm font-bold text-white tracking-tight leading-snug whitespace-pre-line">
+                        {activeHero.mockupTitle}
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {activeHero.mockupTags.map((tag, i) => (
+                          <div key={i} className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[7px] text-gray-300 font-bold uppercase tracking-wider">
+                            {tag}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -405,18 +521,12 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
 
                   {/* Connected stack of labeled book mockup cards below */}
                   <div className="mt-5 w-full flex flex-col space-y-2 relative">
-                    <div className="flex justify-between items-center bg-white/5 border border-white/10 hover:border-brandGreen/45 px-4 py-2.5 rounded-xl transition-all duration-200">
-                      <span className="text-xs font-extrabold text-white uppercase tracking-wider">Study Notes</span>
-                      <span className="text-[9px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded-full">30 Files</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-white/5 border border-white/10 hover:border-brandGreen/45 px-4 py-2.5 rounded-xl transition-all duration-200">
-                      <span className="text-xs font-extrabold text-white uppercase tracking-wider">Career Guides</span>
-                      <span className="text-[9px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded-full">22 Files</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-white/5 border border-white/10 hover:border-brandGreen/45 px-4 py-2.5 rounded-xl transition-all duration-200">
-                      <span className="text-xs font-extrabold text-white uppercase tracking-wider">Firm Portals</span>
-                      <span className="text-[9px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded-full">18 Files</span>
-                    </div>
+                    {activeHero.previewStack.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/10 hover:border-brandGreen/45 px-4 py-2.5 rounded-xl transition-all duration-200">
+                        <span className="text-xs font-extrabold text-white uppercase tracking-wider">{item.label}</span>
+                        <span className="text-[9px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded-full">{item.count}</span>
+                      </div>
+                    ))}
                   </div>
 
                 </div>
@@ -427,46 +537,52 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
         </div>
       </section>
 
-      {/* ── 2. Category Browse Grid ── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
-          <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">DIRECTORY</span>
-          <h2 className="text-3xl font-extrabold text-navy tracking-tight pb-3 relative">
-            Browse Resources by Category
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
-          </h2>
+      {/* ── 2. Main Resources Catalog ── */}
+      <section id="resources-catalog-section" className="py-10 bg-bgLight">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Categories Horizontal Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mt-12 w-full">
-            {categories.map((cat, idx) => (
-              <div
-                key={idx}
+          {/* Quick Category Filter Tabs */}
+          <div className="flex items-center justify-between gap-3 overflow-x-auto pb-4 mb-8 scrollbar-none border-b border-gray-200/80">
+            <div className="flex items-center gap-2 shrink-0">
+              {categories.map((cat) => {
+                const isActive = selectedCategory === cat.name;
+                return (
+                  <button
+                    key={cat.name}
+                    onClick={() => {
+                      setSelectedCategory(cat.name);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                      isActive
+                        ? 'bg-brandGreen text-white shadow-md shadow-emerald-500/20'
+                        : 'bg-white text-navy hover:bg-gray-50 border border-gray-200/80 hover:border-brandGreen'
+                    }`}
+                  >
+                    <span>{cat.name}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {cat.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedCategory !== 'All' && (
+              <button
                 onClick={() => {
-                  setSelectedCategory(cat.name);
+                  setSelectedCategory('All');
                   setCurrentPage(1);
                 }}
-                className={`flex flex-col items-center text-center p-6 bg-white border rounded-3xl transition-all duration-300 cursor-pointer shadow-sm ${
-                  selectedCategory === cat.name
-                    ? 'border-brandGreen ring-4 ring-emerald-500/5 -translate-y-1'
-                    : 'border-gray-100 hover:shadow-md hover:-translate-y-1'
-                }`}
+                className="text-xs font-bold text-gray-400 hover:text-brandGreen underline shrink-0 cursor-pointer transition-colors"
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
-                  selectedCategory === cat.name ? 'bg-brandGreen text-white' : `${cat.bg || 'bg-gray-100'} ${cat.color || 'text-navy'}`
-                }`}>
-                  {cat.icon}
-                </div>
-                <h3 className="text-sm font-extrabold text-navy leading-snug mb-1">{cat.name}</h3>
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{cat.count} Resources</span>
-              </div>
-            ))}
+                Show All
+              </button>
+            )}
           </div>
-        </div>
-      </section>
 
-      {/* ── 3. Main Split Column Content ── */}
-      <section id="resources-catalog-section" className="py-12 bg-bgLight">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* ── LEFT COLUMN: Main Resource Lists ── */}

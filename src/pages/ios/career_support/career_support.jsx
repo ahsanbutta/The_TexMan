@@ -30,16 +30,16 @@ import counselingHeroBg from '../../../assets/counseling_hero_bg.png';
 
 const SERVICES = [
   {
-    title: 'Career Roadmap',
-    desc: 'Get a step-by-step plan for CA / ACCA from experts.',
+    title: 'Lifelong Professional Mentorship',
+    desc: 'Continuous 3-Tier mentorship from student entry to partner level.',
     icon: <GraduationCap className="w-6 h-6 text-brandGreen" />,
     bg: 'bg-emerald-50',
-    detailedDesc: 'Our expert mentors will map out a customized, step-by-step career path for you, outlining key milestones, exam strategies, and technical skills needed to land top-tier roles.',
+    detailedDesc: 'Our structured 3-tier industry mentorship model provides continuous career guidance across your entire journey: from student entry and exam survival to Big 4 articleship, manager promotion, and executive leadership.',
     points: [
-      'Comprehensive timeline of ICAP & ACCA milestones from entry to final levels.',
-      'Strategic study plans, subject grouping tips, and mock exam strategies.',
-      'Analysis of firm types (Big 4 vs SMPs) and departmental scopes (Audit vs Tax).',
-      'Career mapping for international qualifications and global corporate pathways.'
+      'Tier 1: Trainee & Finalist Peer Mentors (CAF passed, active in Big 4/Top 10 articleship).',
+      'Tier 2: Experienced Qualified CAs & Managers (3–7 years post-qualification in industry & Big 4).',
+      'Tier 3: Industry Leaders, Partners & CFOs (Executive leadership, audit partners, and CFOs).',
+      'Lifelong professional career mapping and direct booking support.'
     ]
   },
   {
@@ -100,30 +100,74 @@ const MENTORS = [
   {
     name: 'Saboor Ahmad',
     credentials: 'CA, ACCA',
-    role: 'Career Counselor & Mentor',
+    tier: 'tier3',
+    tierBadge: 'Tier 3: Leadership & Partners',
+    tierColor: 'bg-purple-100 text-purple-700 border-purple-200',
+    role: 'Founder, Career Counselor & Senior Advisor',
+    firmExperience: 'PwC Alum • 10+ Years Experience',
     experience: '10+ Years Experience',
-    image: mentorPortrait
+    image: mentorPortrait,
+    focus: 'Partner Interviews, Career Pivots, Big 4 Strategy'
   },
   {
     name: 'Usman Saleem',
     credentials: 'CA, CFA',
-    role: 'Audit & Assurance Expert',
+    tier: 'tier2',
+    tierBadge: 'Tier 2: Experienced CAs & Managers',
+    tierColor: 'bg-blue-100 text-blue-700 border-blue-200',
+    role: 'Audit & Assurance Manager',
+    firmExperience: 'Big 4 Alum • 8+ Years Experience',
     experience: '8+ Years Experience',
-    image: usmanSaleem
+    image: usmanSaleem,
+    focus: 'CFAP Guidance, Assurance Practice, Corporate Finance'
   },
   {
     name: 'Hassan Raza',
     credentials: 'CA, ACCA',
-    role: 'Taxation & Advisory Expert',
+    tier: 'tier2',
+    tierBadge: 'Tier 2: Experienced CAs & Managers',
+    tierColor: 'bg-blue-100 text-blue-700 border-blue-200',
+    role: 'Taxation & Advisory Manager',
+    firmExperience: 'Top Tier Alum • 7+ Years Experience',
     experience: '7+ Years Experience',
-    image: hassanRaza
+    image: hassanRaza,
+    focus: 'Direct & Indirect Tax, Advisory Track, CV Structuring'
   },
   {
     name: 'Ali Iqbal',
-    credentials: 'ACCA',
-    role: 'Finance & Career Mentor',
+    credentials: 'ACCA Member',
+    tier: 'tier2',
+    tierBadge: 'Tier 2: Experienced CAs & Managers',
+    tierColor: 'bg-blue-100 text-blue-700 border-blue-200',
+    role: 'Finance & Career Specialist',
+    firmExperience: 'Multinational FMCG • 8+ Years Experience',
     experience: '8+ Years Experience',
-    image: aliIqbal
+    image: aliIqbal,
+    focus: 'Industry vs Practice, Overseas Relocation, ACCA Route'
+  },
+  {
+    name: 'Hamza Sheikh',
+    credentials: 'CA Finalist (Articles Active)',
+    tier: 'tier1',
+    tierBadge: 'Tier 1: Trainee & Peer Mentors',
+    tierColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    role: 'Senior Audit Trainee at PwC',
+    firmExperience: 'CAF 8 in 1st Attempt • 3rd Year Trainee',
+    experience: 'CAF 8 in 1st Attempt',
+    image: mentorPortrait,
+    focus: 'CAF Exam Strategy, Induction Test Tips, Study Routines'
+  },
+  {
+    name: 'Zainab Farooq',
+    credentials: 'CA Finalist / CFAP',
+    tier: 'tier1',
+    tierBadge: 'Tier 1: Trainee & Peer Mentors',
+    tierColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    role: 'Advisory Trainee at EY',
+    firmExperience: 'Induction Top Scorer • 2nd Year Trainee',
+    experience: 'Induction Top Scorer',
+    image: mentorPortrait,
+    focus: 'Articleship Interview Rounds, Presentation Prep'
   }
 ];
 
@@ -175,6 +219,7 @@ const FAQS = [
 ];
 
 export default function Counseling() {
+  const [activeTier, setActiveTier] = useState('all');
   const [activeFaq, setActiveFaq] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('book'); // 'book' or 'ask'
@@ -538,26 +583,136 @@ export default function Counseling() {
         </div>
       </section>
 
-      {/* 5. Learn From Experienced Professionals Section */}
+      {/* 5. Lifelong Professional Mentorship: 3-Tier Industry Framework */}
       <section className="py-20 bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16 flex flex-col items-center">
-            <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">OUR MENTORS</span>
-            <h2 className="text-3xl font-extrabold text-navy tracking-tight pb-3 relative">
-              Learn From Experienced Professionals
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-brandGreen rounded-full" />
+          <div className="text-center max-w-3xl mx-auto mb-14 flex flex-col items-center">
+            <span className="text-brandGreen text-xs tracking-widest font-extrabold uppercase mb-2">LIFELONG PROFESSIONAL MENTORSHIP</span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-navy tracking-tight pb-3 relative">
+              3-Tier Industry Mentor Network
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-brandGreen rounded-full" />
             </h2>
+            <p className="text-sm text-gray-600 mt-4 leading-relaxed font-medium">
+              We connect aspiring professionals with industry mentors across 3 distinct career tiers — ensuring you receive targeted, relevant guidance at every stage from student entry to C-suite leadership.
+            </p>
+          </div>
+
+          {/* 3 Tier Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {/* Tier 1 Card */}
+            <div 
+              onClick={() => setActiveTier('tier1')}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer ${
+                activeTier === 'tier1'
+                  ? 'bg-white border-emerald-500 shadow-xl ring-2 ring-emerald-500/20'
+                  : 'bg-white/80 border-gray-200 hover:border-emerald-300 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[11px] font-extrabold rounded-full uppercase tracking-wider">
+                  Tier 1: Trainees & Peers
+                </span>
+                <span className="text-xs font-bold text-gray-400">Entry & Articleship</span>
+              </div>
+              <h3 className="font-extrabold text-navy text-lg">Trainee & Peer Mentors</h3>
+              <p className="text-xs text-gray-600 font-medium mt-2 leading-relaxed">
+                Active Big 4 and Top-10 articleship trainees and CAF toppers who have recently cracked the induction tests and know the current syllabus realities.
+              </p>
+              <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-emerald-600">
+                <span>CAF Strategy & Test Tips</span>
+                <span>{activeTier === 'tier1' ? '● Filter Active' : 'Filter by Tier →'}</span>
+              </div>
+            </div>
+
+            {/* Tier 2 Card */}
+            <div 
+              onClick={() => setActiveTier('tier2')}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer ${
+                activeTier === 'tier2'
+                  ? 'bg-white border-blue-500 shadow-xl ring-2 ring-blue-500/20'
+                  : 'bg-white/80 border-gray-200 hover:border-blue-300 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-[11px] font-extrabold rounded-full uppercase tracking-wider">
+                  Tier 2: Experienced CAs
+                </span>
+                <span className="text-xs font-bold text-gray-400">3–7 Yrs Experience</span>
+              </div>
+              <h3 className="font-extrabold text-navy text-lg">Audit & Tax Managers</h3>
+              <p className="text-xs text-gray-600 font-medium mt-2 leading-relaxed">
+                Qualified CAs, CFAs & ACCA members working as Managers in Assurance, Advisory, and Tax, sharing technical mastery and career mobility insights.
+              </p>
+              <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-blue-600">
+                <span>CFAP, Advisory & Industry</span>
+                <span>{activeTier === 'tier2' ? '● Filter Active' : 'Filter by Tier →'}</span>
+              </div>
+            </div>
+
+            {/* Tier 3 Card */}
+            <div 
+              onClick={() => setActiveTier('tier3')}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer ${
+                activeTier === 'tier3'
+                  ? 'bg-white border-purple-500 shadow-xl ring-2 ring-purple-500/20'
+                  : 'bg-white/80 border-gray-200 hover:border-purple-300 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-3 py-1 bg-purple-100 text-purple-700 text-[11px] font-extrabold rounded-full uppercase tracking-wider">
+                  Tier 3: Executive Leaders
+                </span>
+                <span className="text-xs font-bold text-gray-400">10+ Yrs & Partners</span>
+              </div>
+              <h3 className="font-extrabold text-navy text-lg">Partners & CFOs</h3>
+              <p className="text-xs text-gray-600 font-medium mt-2 leading-relaxed">
+                Industry leaders, audit partners, and CFOs offering lifelong executive mentoring, leadership coaching, and high-stakes partner interview strategy.
+              </p>
+              <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-600">
+                <span>Partner Rounds & C-Suite</span>
+                <span>{activeTier === 'tier3' ? '● Filter Active' : 'Filter by Tier →'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tier Filter Navigation Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 mb-10">
+            {[
+              { id: 'all', label: `All Mentors (${MENTORS.length})` },
+              { id: 'tier1', label: `Tier 1: Trainees & Peer Mentors (${MENTORS.filter(m => m.tier === 'tier1').length})` },
+              { id: 'tier2', label: `Tier 2: Managers & Experienced CAs (${MENTORS.filter(m => m.tier === 'tier2').length})` },
+              { id: 'tier3', label: `Tier 3: Partners & Leadership (${MENTORS.filter(m => m.tier === 'tier3').length})` }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTier(tab.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                  activeTier === tab.id
+                    ? 'bg-navy text-white ring-2 ring-brandGreen shadow-brandGreen/20'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-navy'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {/* Mentors Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {MENTORS.map((m, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {(activeTier === 'all' ? MENTORS : MENTORS.filter(m => m.tier === activeTier)).map((m, idx) => (
               <div
                 key={idx}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center p-6 text-center group"
+                className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col p-6 text-center group relative"
               >
+                {/* Tier Badge */}
+                <div className="mb-4">
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-extrabold border ${m.tierColor || 'bg-gray-100 text-gray-700'}`}>
+                    {m.tierBadge}
+                  </span>
+                </div>
+
                 {/* Photo container */}
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100 group-hover:border-brandGreen transition-colors duration-300 mb-5 shadow-inner bg-gray-50">
+                <div className="w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-gray-100 group-hover:border-brandGreen transition-colors duration-300 mb-4 shadow-inner bg-gray-50">
                   <img
                     src={m.image}
                     alt={m.name}
@@ -571,14 +726,34 @@ export default function Counseling() {
                 <span className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider block">
                   {m.credentials}
                 </span>
-                <p className="text-xs font-semibold text-gray-500 mt-2 leading-relaxed">
+                <p className="text-xs font-semibold text-gray-700 mt-2 leading-relaxed">
                   {m.role}
                 </p>
 
-                {/* Experience Badge */}
-                <div className="mt-4 pt-3 border-t border-gray-50 w-full flex items-center justify-center text-[10px] font-bold text-brandGreen">
-                  <Briefcase className="w-3.5 h-3.5 mr-1.5" />
-                  <span>{m.experience}</span>
+                {/* Firm & Experience Detail */}
+                <div className="mt-3 text-[11px] font-semibold text-gray-500 bg-gray-50 py-1.5 px-3 rounded-lg">
+                  {m.firmExperience}
+                </div>
+
+                {/* Focus Areas */}
+                {m.focus && (
+                  <p className="text-[11px] text-gray-500 italic mt-2.5">
+                    <span className="font-bold text-navy not-italic">Focus: </span>{m.focus}
+                  </p>
+                )}
+
+                {/* Book Session CTA */}
+                <div className="mt-5 pt-3 border-t border-gray-100 w-full flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-brandGreen flex items-center">
+                    <Briefcase className="w-3.5 h-3.5 mr-1" />
+                    100% Free
+                  </span>
+                  <button
+                    onClick={() => openModal('book', `1-on-1 Mentorship with ${m.name} (${m.tierBadge})`)}
+                    className="px-3 py-1.5 bg-navy hover:bg-brandGreen text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Book Session →
+                  </button>
                 </div>
               </div>
             ))}
@@ -596,7 +771,7 @@ export default function Counseling() {
               }}
               className="px-6 py-3 border border-brandGreen text-brandGreen hover:bg-brandGreen hover:text-white rounded-xl font-bold transition-colors cursor-pointer text-xs uppercase tracking-wider"
             >
-              View All Mentors →
+              View Full Team Profiles & Leadership →
             </button>
           </div>
         </div>

@@ -20,61 +20,113 @@ import communityHeroBg from '../../../assets/community_hero_bg.png';
 const INITIAL_COMMUNITIES = [
   {
     id: 'prc',
-    title: 'PRC Students',
-    badge: 'Beginner Level',
+    title: 'PRC Students Hub',
+    badge: 'CA Foundation (PRC)',
     badgeBg: 'bg-emerald-500/10 text-brandGreen border border-brandGreen/20',
-    desc: 'For students starting their journey with PRC.',
+    desc: 'For students starting their CA journey with PRC exams.',
     members: '4,250+ Members',
+    link: 'https://chat.whatsapp.com/example1',
     bullets: [
-      'Study Tips & Guidance',
-      'PRC Registration Help',
-      'Subject Discussion',
-      'Exam Preparation Support'
+      'PRC Registration & Eligibility Guide',
+      'Subject Wise MCQs & Formula Sheets',
+      'Peer Study Circles & Revision Plans',
+      'Beginner Onboarding Support'
     ],
     btnBg: 'bg-brandGreen hover:bg-brandGreen-dark text-white'
   },
   {
     id: 'caf',
-    title: 'CAF Students',
+    title: 'CAF / CA Inter Students',
     badge: 'Intermediate Level',
     badgeBg: 'bg-blue-500/10 text-blue-500 border border-blue-200',
     desc: 'For CA Foundation (CAF) students preparing for exams.',
     members: '5,800+ Members',
+    link: 'https://chat.whatsapp.com/example2',
     bullets: [
-      'Subject Discussions',
-      'Past Papers & MCQs',
-      'Important Resources',
-      'Motivation & Support'
+      'CAF 1 to 8 Subject-Wise Study Groups',
+      'Past Papers, Suggested Solutions & Notes',
+      'Examiner Comments & Attempt Analysis',
+      'Peer Problem Solving & Guidance'
     ],
     btnBg: 'bg-blue-600 hover:bg-blue-750 text-white'
   },
   {
-    id: 'cfap',
-    title: 'CFAP Students',
-    badge: 'Advanced Level',
-    badgeBg: 'bg-purple-500/10 text-purple-500 border border-purple-200',
-    desc: 'For CA Final (CFAP) students preparing for exams.',
-    members: '4,600+ Members',
+    id: 'induction',
+    title: 'Articleship & Induction Hub',
+    badge: 'Induction & Training',
+    badgeBg: 'bg-teal-500/10 text-teal-600 border border-teal-200',
+    desc: 'CV review, AI & expert mock interviews, and Big 4/Top 10 induction updates.',
+    members: '6,400+ Members',
+    link: 'https://chat.whatsapp.com/induction-prep',
     bullets: [
-      'Advanced Study Material',
-      'Audit & Case Discussions',
-      'Exam Strategies',
-      'Career Guidance'
+      'Free Professional CV & Resume Review',
+      'AI & Senior Mentor Mock Interviews',
+      'Real-Time Big 4 Induction Cycle Tracker',
+      'Firm Admission Test & GD Practice'
+    ],
+    btnBg: 'bg-teal-600 hover:bg-teal-700 text-white'
+  },
+  {
+    id: 'cfap',
+    title: 'CFAP / SCS & Finalists',
+    badge: 'Advanced Level (Finals)',
+    badgeBg: 'bg-purple-500/10 text-purple-500 border border-purple-200',
+    desc: 'For CA Final (CFAP) students and trainees preparing for exams.',
+    members: '4,600+ Members',
+    link: 'https://chat.whatsapp.com/example3',
+    bullets: [
+      'Advanced Study Material (Audit, Law, SPM)',
+      'Articleship & Study Routine Balance',
+      'CFAP Strategies & High-Pass Techniques',
+      'Manager Guidance & Career Mentorship'
     ],
     btnBg: 'bg-purple-600 hover:bg-purple-750 text-white'
   },
   {
+    id: 'regional',
+    title: 'Regional Jobs & Overseas Mobility',
+    badge: 'UK / Europe / KSA / UAE',
+    badgeBg: 'bg-indigo-500/10 text-indigo-600 border border-indigo-200',
+    desc: 'Regional job opportunities in UK/Europe, KSA, and UAE.',
+    members: '2,900+ Members',
+    link: 'https://chat.whatsapp.com/overseas-careers',
+    bullets: [
+      'UK & Europe Audit & Advisory Openings',
+      'Saudi Arabia (KSA) & UAE Job Postings',
+      'Visa Sponsorship & Relocation Guides',
+      'Regional Mobility Referral Network'
+    ],
+    btnBg: 'bg-indigo-600 hover:bg-indigo-700 text-white'
+  },
+  {
+    id: 'qualified',
+    title: 'Communities for Qualified CAs',
+    badge: 'FCA & ACA Network',
+    badgeBg: 'bg-rose-500/10 text-rose-600 border border-rose-200',
+    desc: 'Lifelong executive peer community for fully qualified Chartered Accountants.',
+    members: '1,800+ Members',
+    link: 'https://chat.whatsapp.com/qualified-cas',
+    bullets: [
+      'FCA & ACA Professional Peer Circles',
+      'CFO & Partner Roundtables & Industry Insights',
+      'Executive Leadership & Career Transitions',
+      'Lifelong 3-Tier Professional Mentorship'
+    ],
+    btnBg: 'bg-rose-600 hover:bg-rose-700 text-white'
+  },
+  {
     id: 'acca',
-    title: 'ACCA Students',
+    title: 'ACCA Global Community',
     badge: 'ACCA Community',
     badgeBg: 'bg-amber-500/10 text-amber-600 border border-amber-200',
     desc: 'For ACCA students at all levels (Applied to Strategic).',
     members: '3,250+ Members',
+    link: 'https://chat.whatsapp.com/example4',
     bullets: [
-      'ACCA Study Support',
-      'Global Resources',
-      'Exam Tips & Techniques',
-      'Career Opportunities'
+      'ACCA Study Support & Exam Preparation',
+      'Global Resources & CBE Practice',
+      'Exam Tips & Time Management',
+      'Trainee Placements & Member Career Paths'
     ],
     btnBg: 'bg-amber-600 hover:bg-amber-700 text-white'
   }
@@ -662,7 +714,11 @@ export default function Community({ initialCommunityId, onClearInitialCommunity 
                   onClick={() => {
                     if (!requireAuth('join official WhatsApp student groups')) return;
                     setIsJoinModalOpen(false);
-                    alert(`Redirecting to WhatsApp Group invite link for ${selectedCommunity.title}...`);
+                    if (selectedCommunity.link) {
+                      window.open(selectedCommunity.link, '_blank');
+                    } else {
+                      alert(`Redirecting to WhatsApp Group invite link for ${selectedCommunity.title}...`);
+                    }
                   }}
                   className="w-1/2 py-3 bg-brandGreen hover:bg-brandGreen-dark text-white font-extrabold rounded-xl text-xs transition-colors cursor-pointer shadow-md shadow-emerald-500/20"
                 >

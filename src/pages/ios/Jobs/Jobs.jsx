@@ -11,7 +11,13 @@ import {
   Mail,
   Send,
   Building2,
-  CheckCircle
+  CheckCircle,
+  Globe,
+  Briefcase,
+  GraduationCap,
+  Award,
+  Laptop,
+  Compass
 } from 'lucide-react';
 import hiringChair from '../../../assets/hiring_chair.png';
 import jobsHeroBg from '../../../assets/jobs_hero_bg.png';
@@ -39,25 +45,44 @@ export default function Jobs({
   savedJobs: propsSavedJobs,
   onToggleSaveJob
 }) {
-  const localCities = ['Lahore', 'Karachi', 'Islamabad', 'Multan', 'Peshawar'];
-  const overseasCities = ['Dubai, UAE', 'Riyadh, KSA', 'London, UK'];
+  const localCities = ['Lahore', 'Karachi', 'Islamabad', 'Multan', 'Peshawar', 'Faisalabad'];
+  const overseasCities = ['Dubai, UAE', 'Riyadh, KSA', 'London, UK', 'Doha, Qatar', 'Muscat, Oman'];
   const visibleCities = mode === 'overseas' ? overseasCities : localCities;
 
+  const overseasCountries = ['United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Oman', 'United Kingdom'];
+
   const localFirms = [
-    'PwC Pakistan',
+    'PwC Pakistan (A.F. Ferguson & Co.)',
     'Deloitte Pakistan',
     'EY Pakistan',
     'KPMG Pakistan',
     'BDO Pakistan',
     'Grant Thornton Pakistan',
-    'A.F. Ferguson & Co.'
+    'Crowe Pakistan'
   ];
-  const overseasFirms = ['PwC Middle East', 'EY Saudi Arabia', 'KPMG UK'];
+  const overseasFirms = [
+    'PwC Middle East',
+    'KPMG Saudi Arabia (Gulf Practice)',
+    'KPMG UK',
+    'EY Qatar',
+    'BDO Middle East (Oman)'
+  ];
   const visibleFirms = mode === 'overseas' ? overseasFirms : localFirms;
 
-  const visibleJobTypes = useMemo(() => {
-    return mode === 'inductions' ? ['Articleship', 'Internship'] : ['Full Time', 'Contract'];
-  }, [mode]);
+  const visibleJobTypes = ['Articleship', 'Internship', 'Full Time', 'Contract', 'Part Time'];
+
+  const allLevels = [
+    'PRC',
+    'CAF / CA Inter',
+    'ACCA Finalist',
+    'ACCA Affiliate',
+    'CA Finalist',
+    'CA Qualified',
+    'ACCA Member',
+    'Experienced'
+  ];
+
+  const allWorkModes = ['On-site', 'Virtual / Remote', 'Hybrid'];
 
   // Jobs state with fallback to INITIAL_JOBS
   const [jobsList, setJobsList] = useState(INITIAL_JOBS);
@@ -73,8 +98,12 @@ export default function Jobs({
             company: job.company,
             title: job.title,
             location: job.location,
-            level: job.level || 'CA / ACCA',
+            city: job.city || job.location,
+            country: job.country || (job.isOverseas ? (job.location?.includes('UAE') ? 'United Arab Emirates' : job.location?.includes('KSA') || job.location?.includes('Saudi') ? 'Saudi Arabia' : job.location?.includes('UK') ? 'United Kingdom' : job.location?.includes('Qatar') ? 'Qatar' : job.location?.includes('Oman') ? 'Oman' : 'Overseas') : 'Pakistan'),
+            level: job.level || job.qualification || 'CAF / CA Inter',
+            badge: job.level || job.qualification || 'CAF / CA Inter',
             jobType: (job.jobType || job.job_type) === 'Full-time' ? 'Full Time' : (job.jobType || job.job_type) === 'Part-time' ? 'Part Time' : (job.jobType || job.job_type || 'Articleship'),
+            workMode: job.workMode || (job.title?.toLowerCase().includes('remote') || job.location?.toLowerCase().includes('remote') ? 'Virtual / Remote' : job.title?.toLowerCase().includes('hybrid') ? 'Hybrid' : 'On-site'),
             isOverseas: !!(job.isOverseas || job.is_overseas),
             deadline: job.deadline || 'Open until filled',
             deadlineDate: job.deadline ? new Date(job.deadline) : null,
@@ -105,9 +134,15 @@ export default function Jobs({
   // Filters States
   const [searchQuery, setSearchQuery] = useState('');
   const [cityFilter, setCityFilter] = useState('All');
+  const [countryFilter, setCountryFilter] = useState('All');
   const [levelFilter, setLevelFilter] = useState('All');
   const [firmFilter, setFirmFilter] = useState('All');
+  const [workModeFilter, setWorkModeFilter] = useState('All');
   const [deadlineFilter, setDeadlineFilter] = useState('All');
+  const [quickTab, setQuickTab] = useState('All');
+  const [targetOverseasQual, setTargetOverseasQual] = useState('All');
+  const [regionFilter, setRegionFilter] = useState('All');
+
 
   // Sidebar Filter Checkboxes States
   const [sidebarCities, setSidebarCities] = useState({
@@ -116,37 +151,60 @@ export default function Jobs({
     Islamabad: false,
     Multan: false,
     Peshawar: false,
+    Faisalabad: false,
     'Dubai, UAE': false,
     'Riyadh, KSA': false,
-    'London, UK': false
+    'London, UK': false,
+    'Doha, Qatar': false,
+    'Muscat, Oman': false
+  });
+
+  const [sidebarCountries, setSidebarCountries] = useState({
+    'United Arab Emirates': false,
+    'Saudi Arabia': false,
+    'Qatar': false,
+    'Oman': false,
+    'United Kingdom': false
   });
 
   const [sidebarLevels, setSidebarLevels] = useState({
-    'PRC / Articleship': false,
-    'CA Inter / ACCA': false,
-    'CA Final / ACCA Final': false,
-    'Qualified (CAF / CFAP)': false,
+    'PRC': false,
+    'CAF / CA Inter': false,
+    'ACCA Finalist': false,
+    'ACCA Affiliate': false,
+    'CA Finalist': false,
+    'CA Qualified': false,
+    'ACCA Member': false,
     Experienced: false
   });
 
   const [sidebarFirms, setSidebarFirms] = useState({
-    'PwC Pakistan': false,
+    'PwC Pakistan (A.F. Ferguson & Co.)': false,
     'Deloitte Pakistan': false,
     'EY Pakistan': false,
     'KPMG Pakistan': false,
     'BDO Pakistan': false,
     'Grant Thornton Pakistan': false,
-    'A.F. Ferguson & Co.': false,
+    'Crowe Pakistan': false,
     'PwC Middle East': false,
-    'EY Saudi Arabia': false,
-    'KPMG UK': false
+    'KPMG Saudi Arabia (Gulf Practice)': false,
+    'KPMG UK': false,
+    'EY Qatar': false,
+    'BDO Middle East (Oman)': false
   });
 
   const [sidebarJobTypes, setSidebarJobTypes] = useState({
-    'Full Time': false,
-    Internship: false,
     Articleship: false,
-    Contract: false
+    Internship: false,
+    'Full Time': false,
+    Contract: false,
+    'Part Time': false
+  });
+
+  const [sidebarWorkModes, setSidebarWorkModes] = useState({
+    'On-site': false,
+    'Virtual / Remote': false,
+    'Hybrid': false
   });
 
   const [firmSearchQuery, setFirmSearchQuery] = useState('');
@@ -172,8 +230,6 @@ export default function Jobs({
     }
   }, [initialSelectedJobId, onClearInitialJob, jobsList]);
 
-
-
   // Newsletter state
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
@@ -197,10 +253,16 @@ export default function Jobs({
   // Clear all filters
   const handleClearFilters = () => {
     setCityFilter('All');
+    setCountryFilter('All');
     setLevelFilter('All');
     setFirmFilter('All');
+    setWorkModeFilter('All');
     setDeadlineFilter('All');
+    setQuickTab('All');
+    setTargetOverseasQual('All');
+    setRegionFilter('All');
     setSearchQuery('');
+
 
     setSidebarCities({
       Lahore: false,
@@ -208,34 +270,55 @@ export default function Jobs({
       Islamabad: false,
       Multan: false,
       Peshawar: false,
+      Faisalabad: false,
       'Dubai, UAE': false,
       'Riyadh, KSA': false,
-      'London, UK': false
+      'London, UK': false,
+      'Doha, Qatar': false,
+      'Muscat, Oman': false
+    });
+    setSidebarCountries({
+      'United Arab Emirates': false,
+      'Saudi Arabia': false,
+      'Qatar': false,
+      'Oman': false,
+      'United Kingdom': false
     });
     setSidebarLevels({
-      'PRC / Articleship': false,
-      'CA Inter / ACCA': false,
-      'CA Final / ACCA Final': false,
-      'Qualified (CAF / CFAP)': false,
+      'PRC': false,
+      'CAF / CA Inter': false,
+      'ACCA Finalist': false,
+      'ACCA Affiliate': false,
+      'CA Finalist': false,
+      'CA Qualified': false,
+      'ACCA Member': false,
       Experienced: false
     });
     setSidebarFirms({
-      'PwC Pakistan': false,
+      'PwC Pakistan (A.F. Ferguson & Co.)': false,
       'Deloitte Pakistan': false,
       'EY Pakistan': false,
       'KPMG Pakistan': false,
       'BDO Pakistan': false,
       'Grant Thornton Pakistan': false,
-      'A.F. Ferguson & Co.': false,
+      'Crowe Pakistan': false,
       'PwC Middle East': false,
-      'EY Saudi Arabia': false,
-      'KPMG UK': false
+      'KPMG Saudi Arabia (Gulf Practice)': false,
+      'KPMG UK': false,
+      'EY Qatar': false,
+      'BDO Middle East (Oman)': false
     });
     setSidebarJobTypes({
-      'Full Time': false,
-      Internship: false,
       Articleship: false,
-      Contract: false
+      Internship: false,
+      'Full Time': false,
+      Contract: false,
+      'Part Time': false
+    });
+    setSidebarWorkModes({
+      'On-site': false,
+      'Virtual / Remote': false,
+      'Hybrid': false
     });
     setCurrentPage(1);
   };
@@ -249,9 +332,17 @@ export default function Jobs({
     return visibleCities.some(city => sidebarCities[city] === true);
   }, [sidebarCities, visibleCities]);
 
+  const isAnyCountryCheckboxActive = useMemo(() => {
+    return overseasCountries.some(country => sidebarCountries[country] === true);
+  }, [sidebarCountries, overseasCountries]);
+
   const isAnyJobTypeCheckboxActive = useMemo(() => {
     return visibleJobTypes.some(type => sidebarJobTypes[type] === true);
   }, [sidebarJobTypes, visibleJobTypes]);
+
+  const isAnyWorkModeCheckboxActive = useMemo(() => {
+    return allWorkModes.some(modeItem => sidebarWorkModes[modeItem] === true);
+  }, [sidebarWorkModes, allWorkModes]);
 
   const isAnyFirmCheckboxActive = useMemo(() => {
     return visibleFirms.some(firm => sidebarFirms[firm] === true);
@@ -263,52 +354,103 @@ export default function Jobs({
       // 0. Filter by mode (jobs vs inductions vs overseas)
       if (mode === 'jobs') {
         if (job.isOverseas) return false;
-        if (job.jobType !== 'Full Time' && job.jobType !== 'Contract') return false;
       } else if (mode === 'inductions') {
         if (job.isOverseas) return false;
-        if (job.jobType !== 'Articleship' && job.jobType !== 'Internship') return false;
       } else if (mode === 'overseas') {
         if (!job.isOverseas) return false;
       }
 
-      // 1. Keyword search (company, title, level, description)
+      // Quick Category Tab Filter
+      if (quickTab === 'Articleship') {
+        if (job.jobType !== 'Articleship') return false;
+      } else if (quickTab === 'Internship') {
+        if (job.jobType !== 'Internship') return false;
+      } else if (quickTab === 'CA Finalist') {
+        if (job.level !== 'CA Finalist' && !job.title.toLowerCase().includes('finalist')) return false;
+      } else if (quickTab === 'CA Qualified') {
+        if (job.level !== 'CA Qualified' && !job.title.toLowerCase().includes('qualified')) return false;
+      } else if (quickTab === 'ACCA Stream') {
+        if (!['ACCA Finalist', 'ACCA Affiliate', 'ACCA Member'].includes(job.level) && !job.title.toLowerCase().includes('acca')) return false;
+      } else if (quickTab === 'Virtual / Remote') {
+        if (job.workMode !== 'Virtual / Remote') return false;
+      }
+
+      // Regional Filter (Pakistan, KSA & UAE, UK & Europe)
+      if (regionFilter === 'Pakistan') {
+        const isPak = (job.country === 'Pakistan' || !job.isOverseas || ['Lahore', 'Karachi', 'Islamabad', 'Multan', 'Peshawar', 'Faisalabad'].includes(job.city) || ['Lahore', 'Karachi', 'Islamabad', 'Multan', 'Peshawar', 'Faisalabad'].includes(job.location));
+        if (!isPak) return false;
+      } else if (regionFilter === 'KSA-UAE') {
+        const isGcc = ['United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Oman'].includes(job.country) ||
+          job.location?.includes('UAE') || job.location?.includes('Dubai') || job.location?.includes('KSA') || job.location?.includes('Riyadh') || job.location?.includes('Saudi');
+        if (!isGcc) return false;
+      } else if (regionFilter === 'UK-Europe') {
+        const isUkEurope = ['United Kingdom', 'UK', 'Ireland', 'Europe', 'Germany'].includes(job.country) ||
+          job.location?.includes('UK') || job.location?.includes('London') || job.location?.includes('Europe');
+        if (!isUkEurope) return false;
+      }
+
+
+      // Overseas specific target qualification
+      if (mode === 'overseas' && targetOverseasQual !== 'All') {
+        if (targetOverseasQual === 'CA Qualified' && job.level !== 'CA Qualified') return false;
+        if (targetOverseasQual === 'CA Finalist' && job.level !== 'CA Finalist') return false;
+        if (targetOverseasQual === 'ACCA' && !job.level.includes('ACCA')) return false;
+      }
+
+      // 1. Keyword search
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         const matchesQuery =
           job.company.toLowerCase().includes(query) ||
           job.title.toLowerCase().includes(query) ||
           job.level.toLowerCase().includes(query) ||
+          (job.country && job.country.toLowerCase().includes(query)) ||
+          (job.workMode && job.workMode.toLowerCase().includes(query)) ||
           job.description.toLowerCase().includes(query);
         if (!matchesQuery) return false;
       }
 
-      // 2. City Filter (Bar Select + Sidebar Checkboxes)
+      // 2. City Filter
       if (cityFilter !== 'All') {
-        if (job.location !== cityFilter) return false;
+        if (job.location !== cityFilter && job.city !== cityFilter) return false;
       } else if (isAnyCityCheckboxActive) {
-        if (!sidebarCities[job.location]) return false;
+        if (!sidebarCities[job.location] && !sidebarCities[job.city]) return false;
       }
 
-      // 3. Level Filter (Bar Select + Sidebar Checkboxes)
+      // 2.1 Country Filter
+      if (countryFilter !== 'All') {
+        if (job.country !== countryFilter) return false;
+      } else if (isAnyCountryCheckboxActive) {
+        if (!sidebarCountries[job.country]) return false;
+      }
+
+      // 3. Level Filter
       if (levelFilter !== 'All') {
         if (job.level !== levelFilter) return false;
       } else if (isAnyCheckboxActive(sidebarLevels)) {
         if (!sidebarLevels[job.level]) return false;
       }
 
-      // 4. Firm Filter (Bar Select + Sidebar Checkboxes)
+      // 4. Firm Filter
       if (firmFilter !== 'All') {
         if (job.company !== firmFilter) return false;
       } else if (isAnyFirmCheckboxActive) {
         if (!sidebarFirms[job.company]) return false;
       }
 
-      // 5. Job Type Filter (Sidebar Checkboxes)
+      // 5. Job Type Filter
       if (isAnyJobTypeCheckboxActive) {
         if (!sidebarJobTypes[job.jobType]) return false;
       }
 
-      // 6. Deadline Filter
+      // 6. Work Mode Filter
+      if (workModeFilter !== 'All') {
+        if (job.workMode !== workModeFilter) return false;
+      } else if (isAnyWorkModeCheckboxActive) {
+        if (!sidebarWorkModes[job.workMode]) return false;
+      }
+
+      // 7. Deadline Filter
       if (deadlineFilter !== 'All') {
         const today = new Date();
         const diffTime = Math.abs(job.deadlineDate - today);
@@ -319,7 +461,6 @@ export default function Jobs({
 
       return true;
     }).sort((a, b) => {
-      // Sort logic
       if (sortBy === 'Latest First') {
         return b.dateAdded - a.dateAdded;
       } else if (sortBy === 'Deadline Approaching') {
@@ -329,18 +470,27 @@ export default function Jobs({
     });
   }, [
     mode,
+    quickTab,
+    targetOverseasQual,
+    regionFilter,
     searchQuery,
     cityFilter,
+    countryFilter,
     levelFilter,
     firmFilter,
+    workModeFilter,
     deadlineFilter,
     sidebarCities,
+    sidebarCountries,
     sidebarLevels,
     sidebarFirms,
     sidebarJobTypes,
+    sidebarWorkModes,
     sortBy,
     isAnyCityCheckboxActive,
+    isAnyCountryCheckboxActive,
     isAnyJobTypeCheckboxActive,
+    isAnyWorkModeCheckboxActive,
     isAnyFirmCheckboxActive,
     jobsList
   ]);
@@ -466,41 +616,78 @@ export default function Jobs({
                     setCityFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
                 >
-                  <option value="All">Select City</option>
+                  <option value="All">All Cities</option>
                   {visibleCities.map((city) => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="md:col-span-2">
+              {mode === 'overseas' && (
+                <div className="md:col-span-2">
+                  <select
+                    value={countryFilter}
+                    onChange={(e) => {
+                      setCountryFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
+                  >
+                    <option value="All">All Countries</option>
+                    {overseasCountries.map((country) => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className={mode === 'overseas' ? "md:col-span-2" : "md:col-span-2"}>
                 <select
                   value={levelFilter}
                   onChange={(e) => {
                     setLevelFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
                 >
-                  <option value="All">Select Level</option>
-                  <option value="PRC / Articleship">PRC / Articleship</option>
-                  <option value="CA Inter / ACCA">CA Inter / ACCA</option>
-                  <option value="CA Final / ACCA Final">CA Final / ACCA Final</option>
-                  <option value="Qualified (CAF / CFAP)">Qualified (CAF / CFAP)</option>
+                  <option value="All">Target Level</option>
+                  <option value="PRC">PRC</option>
+                  <option value="CAF / CA Inter">CAF / CA Inter</option>
+                  <option value="ACCA Finalist">ACCA Finalist</option>
+                  <option value="ACCA Affiliate">ACCA Affiliate</option>
+                  <option value="CA Finalist">CA Finalist (Articles Done)</option>
+                  <option value="CA Qualified">CA Qualified</option>
+                  <option value="ACCA Member">ACCA Member</option>
                   <option value="Experienced">Experienced</option>
                 </select>
               </div>
 
               <div className="md:col-span-2">
                 <select
+                  value={workModeFilter}
+                  onChange={(e) => {
+                    setWorkModeFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
+                >
+                  <option value="All">All Work Modes</option>
+                  <option value="On-site">On-site</option>
+                  <option value="Virtual / Remote">Virtual / Remote</option>
+                  <option value="Hybrid">Hybrid</option>
+                </select>
+              </div>
+
+              <div className={mode === 'overseas' ? "md:col-span-2" : "md:col-span-2"}>
+                <select
                   value={firmFilter}
                   onChange={(e) => {
                     setFirmFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
                 >
                   <option value="All">Select Firm</option>
                   {visibleFirms.map((firm) => (
@@ -508,25 +695,124 @@ export default function Jobs({
                   ))}
                 </select>
               </div>
+            </div>
 
-              <div className="md:col-span-2">
-                <select
-                  value={deadlineFilter}
-                  onChange={(e) => {
-                    setDeadlineFilter(e.target.value);
+            {/* Regional Filter Pills */}
+            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center space-x-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar">
+              <span className="text-[11px] font-extrabold text-navy uppercase tracking-wider whitespace-nowrap mr-1 flex items-center shrink-0">
+                <Globe className="w-3.5 h-3.5 mr-1 text-brandGreen" />
+                Region:
+              </span>
+              {[
+                { id: 'All', label: 'All Regions' },
+                { id: 'Pakistan', label: '🇵🇰 Pakistan (Local Firms & Industry)' },
+                { id: 'KSA-UAE', label: '🇸🇦 🇦🇪 Middle East (KSA & UAE)' },
+                { id: 'UK-Europe', label: '🇬🇧 🇪🇺 UK & Europe' }
+              ].map((reg) => (
+                <button
+                  key={reg.id}
+                  onClick={() => {
+                    setRegionFilter(reg.id);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500 font-semibold focus:outline-none focus:border-brandGreen focus:bg-white transition-all cursor-pointer"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center cursor-pointer shadow-sm ${
+                    regionFilter === reg.id
+                      ? 'bg-brandGreen text-white ring-2 ring-brandGreen/30 shadow-brandGreen/20'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                  }`}
                 >
-                  <option value="All">Deadline</option>
-                  <option value="Under 7 Days">Under 7 Days</option>
-                  <option value="Under 15 Days">Under 15 Days</option>
-                </select>
+                  {reg.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Quick Sub-Category Filter Navigation Tabs */}
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center space-x-2 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar">
+
+                {[
+                  { id: 'All', label: 'All Opportunities', icon: <Briefcase className="w-3.5 h-3.5" /> },
+                  { id: 'Articleship', label: 'CA Articleship', icon: <Building2 className="w-3.5 h-3.5" /> },
+                  { id: 'Internship', label: 'Audit & Tax Internships', icon: <GraduationCap className="w-3.5 h-3.5" /> },
+                  { id: 'CA Finalist', label: 'CA Finalist (Articles Done)', icon: <Award className="w-3.5 h-3.5" /> },
+                  { id: 'CA Qualified', label: 'CA Qualified Positions', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+                  { id: 'ACCA Stream', label: 'ACCA Finalist & Affiliate', icon: <Compass className="w-3.5 h-3.5" /> },
+                  { id: 'Virtual / Remote', label: 'Virtual / Remote Roles', icon: <Globe className="w-3.5 h-3.5" /> }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setQuickTab(tab.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm ${
+                      quickTab === tab.id
+                        ? 'bg-navy text-white ring-2 ring-brandGreen shadow-brandGreen/20'
+                        : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-100 hover:text-navy'
+                    }`}
+                  >
+                    <span className={quickTab === tab.id ? 'text-brandGreen' : 'text-gray-400'}>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
+            {/* Overseas Specific Bifurcation Panel */}
+            {mode === 'overseas' && (
+              <div className="bg-gradient-to-r from-[#011126] to-navy p-3.5 sm:p-4 rounded-xl text-white space-y-3 shadow-md border border-white/10 mt-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                  <div className="flex items-center space-x-2 text-xs font-extrabold text-brandGreen uppercase tracking-wider">
+                    <Globe className="w-4 h-4" />
+                    <span>Overseas Country Bifurcation:</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span className="font-bold">Target Qualification:</span>
+                    {['All', 'CA Qualified', 'CA Finalist', 'ACCA'].map((tq) => (
+                      <button
+                        key={tq}
+                        onClick={() => {
+                          setTargetOverseasQual(tq);
+                          setCurrentPage(1);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          targetOverseasQual === tq
+                            ? 'bg-brandGreen text-white'
+                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        }`}
+                      >
+                        {tq === 'CA Finalist' ? 'CA Finalist (Articles Done)' : tq}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Country Pills */}
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {['All Countries', 'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Oman', 'United Kingdom'].map((c) => {
+                    const flag = c === 'United Arab Emirates' ? '🇦🇪 UAE' : c === 'Saudi Arabia' ? '🇸🇦 Saudi Arabia' : c === 'Qatar' ? '🇶🇦 Qatar' : c === 'Oman' ? '🇴🇲 Oman' : c === 'United Kingdom' ? '🇬🇧 UK' : '🌍 All Countries';
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          setCountryFilter(c === 'All Countries' ? 'All' : c);
+                          setCurrentPage(1);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                          (countryFilter === 'All' && c === 'All Countries') || countryFilter === c
+                            ? 'bg-brandGreen text-white shadow-md'
+                            : 'bg-white/10 hover:bg-white/20 text-gray-200 border border-white/5'
+                        }`}
+                      >
+                        <span>{flag}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Bottom Actions Row */}
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 pt-3 border-t border-gray-50 gap-3">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-gray-50 gap-3">
               <span className="text-xs text-gray-400 font-medium">
                 Tip: Combine filters for precise {mode === 'jobs' ? 'job' : mode === 'inductions' ? 'induction' : 'international job'} updates
               </span>
@@ -561,7 +847,7 @@ export default function Jobs({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
           {/* Left Sidebar Filters Panel */}
-          <aside className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 p-6 space-y-8 shadow-sm">
+          <aside className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 p-6 space-y-7 shadow-sm">
             <div className="flex items-center justify-between pb-4 border-b border-gray-100">
               <div className="flex items-center text-navy font-extrabold text-sm sm:text-base">
                 <SlidersHorizontal className="w-4 h-4 mr-2 text-navy" />
@@ -569,7 +855,7 @@ export default function Jobs({
               </div>
               <button
                 onClick={handleClearFilters}
-                className="text-xs text-gray-400 hover:text-brandGreen font-bold transition-colors"
+                className="text-xs text-gray-400 hover:text-brandGreen font-bold transition-colors cursor-pointer"
               >
                 Clear All
               </button>
@@ -613,29 +899,65 @@ export default function Jobs({
               </div>
             </div>
 
-            {/* Level Section */}
+            {/* Country Section (Overseas Mode) */}
+            {mode === 'overseas' && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-navy uppercase tracking-wider">Country</h3>
+                <div className="space-y-2.5">
+                  <label className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
+                    <input
+                      type="checkbox"
+                      checked={!isAnyCountryCheckboxActive}
+                      onChange={() => {
+                        const updated = { ...sidebarCountries };
+                        overseasCountries.forEach(c => { updated[c] = false; });
+                        setSidebarCountries(updated);
+                        setCurrentPage(1);
+                      }}
+                      className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
+                    />
+                    All Countries
+                  </label>
+                  {overseasCountries.map((c) => (
+                    <label key={c} className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
+                      <input
+                        type="checkbox"
+                        checked={sidebarCountries[c]}
+                        onChange={() => {
+                          setSidebarCountries({
+                            ...sidebarCountries,
+                            [c]: !sidebarCountries[c]
+                          });
+                          setCurrentPage(1);
+                        }}
+                        className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
+                      />
+                      {c}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Level / Qualification Section */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-navy uppercase tracking-wider">Level</h3>
+              <h3 className="text-xs font-bold text-navy uppercase tracking-wider">Target Level</h3>
               <div className="space-y-2.5">
                 <label className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
                   <input
                     type="checkbox"
                     checked={!isAnyCheckboxActive(sidebarLevels)}
                     onChange={() => {
-                      setSidebarLevels({
-                        'PRC / Articleship': false,
-                        'CA Inter / ACCA': false,
-                        'CA Final / ACCA Final': false,
-                        'Qualified (CAF / CFAP)': false,
-                        Experienced: false
-                      });
+                      const updated = { ...sidebarLevels };
+                      Object.keys(updated).forEach(k => { updated[k] = false; });
+                      setSidebarLevels(updated);
                       setCurrentPage(1);
                     }}
                     className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
                   />
                   All Levels
                 </label>
-                {Object.keys(sidebarLevels).map((lvl) => (
+                {allLevels.map((lvl) => (
                   <label key={lvl} className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
                     <input
                       type="checkbox"
@@ -650,6 +972,82 @@ export default function Jobs({
                       className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
                     />
                     {lvl}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Placement / Job Type Section */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-navy uppercase tracking-wider">Placement Type</h3>
+              <div className="space-y-2.5">
+                <label className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
+                  <input
+                    type="checkbox"
+                    checked={!isAnyJobTypeCheckboxActive}
+                    onChange={() => {
+                      const updatedTypes = { ...sidebarJobTypes };
+                      visibleJobTypes.forEach(type => { updatedTypes[type] = false; });
+                      setSidebarJobTypes(updatedTypes);
+                      setCurrentPage(1);
+                    }}
+                    className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
+                  />
+                  All Types
+                </label>
+                {visibleJobTypes.map((type) => (
+                  <label key={type} className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
+                    <input
+                      type="checkbox"
+                      checked={sidebarJobTypes[type]}
+                      onChange={() => {
+                        setSidebarJobTypes({
+                          ...sidebarJobTypes,
+                          [type]: !sidebarJobTypes[type]
+                        });
+                        setCurrentPage(1);
+                      }}
+                      className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
+                    />
+                    {type}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Work Mode Section */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-navy uppercase tracking-wider">Work Mode</h3>
+              <div className="space-y-2.5">
+                <label className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
+                  <input
+                    type="checkbox"
+                    checked={!isAnyWorkModeCheckboxActive}
+                    onChange={() => {
+                      const updated = { ...sidebarWorkModes };
+                      allWorkModes.forEach(m => { updated[m] = false; });
+                      setSidebarWorkModes(updated);
+                      setCurrentPage(1);
+                    }}
+                    className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
+                  />
+                  All Modes
+                </label>
+                {allWorkModes.map((wm) => (
+                  <label key={wm} className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
+                    <input
+                      type="checkbox"
+                      checked={sidebarWorkModes[wm]}
+                      onChange={() => {
+                        setSidebarWorkModes({
+                          ...sidebarWorkModes,
+                          [wm]: !sidebarWorkModes[wm]
+                        });
+                        setCurrentPage(1);
+                      }}
+                      className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
+                    />
+                    {wm}
                   </label>
                 ))}
               </div>
@@ -701,48 +1099,9 @@ export default function Jobs({
               </div>
             </div>
 
-            {/* Job Type Section */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-navy uppercase tracking-wider">Job Type</h3>
-              <div className="space-y-2.5">
-                <label className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
-                  <input
-                    type="checkbox"
-                    checked={!isAnyJobTypeCheckboxActive}
-                    onChange={() => {
-                      const updatedTypes = { ...sidebarJobTypes };
-                      visibleJobTypes.forEach(type => { updatedTypes[type] = false; });
-                      setSidebarJobTypes(updatedTypes);
-                      setCurrentPage(1);
-                    }}
-                    className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
-                  />
-                  All Types
-                </label>
-                {visibleJobTypes.map((type) => (
-                  <label key={type} className="flex items-center text-xs sm:text-sm text-gray-600 cursor-pointer font-medium hover:text-navy">
-                    <input
-                      type="checkbox"
-                      checked={sidebarJobTypes[type]}
-                      onChange={() => {
-                        setSidebarJobTypes({
-                          ...sidebarJobTypes,
-                          [type]: !sidebarJobTypes[type]
-                        });
-                        setCurrentPage(1);
-                      }}
-                      className="w-4 h-4 text-brandGreen border-gray-300 rounded focus:ring-brandGreen accent-brandGreen mr-2.5"
-                    />
-                    {type}
-                  </label>
-                ))}
-              </div>
-            </div>
-
             <button
               onClick={() => {
                 setCurrentPage(1);
-                alert('Filters applied!');
               }}
               className="w-full py-2.5 bg-navy hover:bg-brandGreen text-white font-bold rounded-xl text-xs transition-colors duration-200 cursor-pointer text-center"
             >
@@ -803,20 +1162,52 @@ export default function Jobs({
 
                           <div className="text-xs sm:text-sm font-semibold text-gray-500">
                             {job.company}
-                          </div>
-
-                          {/* Horizontal Tags */}
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            <span className="inline-flex px-2.5 py-1 bg-gray-50 text-gray-500 border border-gray-100 rounded text-xs font-semibold">
+                             {/* Horizontal Tags */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            {/* Level Badge with color distinction */}
+                            <span className={`inline-flex px-2.5 py-1 rounded text-xs font-bold ${
+                              job.level?.includes('Qualified') 
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : job.level?.includes('Finalist') && job.level?.includes('CA')
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : job.level?.includes('ACCA')
+                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                : job.level?.includes('CAF')
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-teal-50 text-teal-700 border border-teal-200'
+                            }`}>
                               {job.level}
                             </span>
-                            <span className="inline-flex px-2.5 py-1 bg-gray-50 text-gray-500 border border-gray-100 rounded text-xs font-semibold">
+
+                            {/* Job / Placement Type */}
+                            <span className="inline-flex px-2.5 py-1 bg-gray-50 text-gray-600 border border-gray-100 rounded text-xs font-semibold">
                               {job.jobType}
                             </span>
-                            <span className="inline-flex px-2.5 py-1 bg-gray-50 text-gray-500 border border-gray-100 rounded text-xs font-semibold items-center">
+
+                            {/* Work Mode Badge */}
+                            {job.workMode && (
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold ${
+                                job.workMode === 'Virtual / Remote'
+                                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                  : job.workMode === 'Hybrid'
+                                  ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                  : 'bg-gray-50 text-gray-600 border border-gray-100'
+                              }`}>
+                                {job.workMode === 'Virtual / Remote' ? '🌐 Virtual / Remote' : job.workMode === 'Hybrid' ? '🔄 Hybrid' : '🏢 On-site'}
+                              </span>
+                            )}
+
+                            {/* Country / Location */}
+                            <span className="inline-flex px-2.5 py-1 bg-gray-50 text-gray-600 border border-gray-100 rounded text-xs font-semibold items-center">
                               <MapPin className="w-3 h-3 mr-1 text-gray-400" />
                               {job.location}
+                              {job.country && job.country !== 'Pakistan' && (
+                                <span className="ml-1 text-[11px] font-bold text-navy">
+                                  ({job.country === 'UAE' ? '🇦🇪 UAE' : job.country === 'Saudi Arabia' ? '🇸🇦 KSA' : job.country === 'Qatar' ? '🇶🇦 Qatar' : job.country === 'Oman' ? '🇴🇲 Oman' : job.country === 'UK' ? '🇬🇧 UK' : job.country})
+                                </span>
+                              )}
                             </span>
+                          </div>
                           </div>
                         </div>
                       </div>
@@ -895,8 +1286,7 @@ export default function Jobs({
 
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="p-2 bg-white border border-gray-200 hover:border-brandGreen hover:text-brandGreen rounded-xl text-navy transition-colors disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-navy cursor-pointer"
+                      className="p-2 bg-white border border-gray-200 hover:border-brandGreen hover:text-brandGreen rounded-xl text-navy transition-colors disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-navy cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -975,18 +1365,27 @@ export default function Jobs({
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-left">
 
               {/* Job Stats Bar */}
-              <div className="grid grid-cols-3 gap-2 bg-gray-50 p-3.5 rounded-2xl text-center border border-gray-100">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-50 p-3.5 rounded-2xl text-center border border-gray-100">
                 <div className="flex flex-col">
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Location</span>
-                  <span className="text-xs font-extrabold text-navy mt-0.5">{selectedJob.location}</span>
+                  <span className="text-xs font-extrabold text-navy mt-0.5">
+                    {selectedJob.location}
+                    {selectedJob.country && selectedJob.country !== 'Pakistan' ? ` (${selectedJob.country})` : ''}
+                  </span>
                 </div>
-                <div className="flex flex-col border-x border-gray-200">
+                <div className="flex flex-col sm:border-l border-gray-200">
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Job Type</span>
                   <span className="text-xs font-extrabold text-navy mt-0.5">{selectedJob.jobType}</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Eligibility</span>
+                <div className="flex flex-col border-t sm:border-t-0 sm:border-l border-gray-200 pt-2 sm:pt-0">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Target Level</span>
                   <span className="text-xs font-extrabold text-navy mt-0.5">{selectedJob.level}</span>
+                </div>
+                <div className="flex flex-col border-t sm:border-t-0 sm:border-l border-gray-200 pt-2 sm:pt-0">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Work Mode</span>
+                  <span className="text-xs font-extrabold text-brandGreen mt-0.5">
+                    {selectedJob.workMode || 'On-site'}
+                  </span>
                 </div>
               </div>
 

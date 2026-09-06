@@ -12,6 +12,8 @@ export const getJobs = asyncHandler(async (req, res) => {
     q,
     search,
     city,
+    country,
+    workMode,
     qualification,
     level,
     jobType,
@@ -37,11 +39,15 @@ export const getJobs = asyncHandler(async (req, res) => {
           { title: { $regex: searchKeyword, $options: 'i' } },
           { company: { $regex: searchKeyword, $options: 'i' } },
           { description: { $regex: searchKeyword, $options: 'i' } },
-          { city: { $regex: searchKeyword, $options: 'i' } }
+          { city: { $regex: searchKeyword, $options: 'i' } },
+          { country: { $regex: searchKeyword, $options: 'i' } }
         ];
       }
 
       if (city && city !== 'All') filter.city = { $regex: city, $options: 'i' };
+      if (country && country !== 'All') filter.country = { $regex: country, $options: 'i' };
+      if (workMode && workMode !== 'All') filter.workMode = workMode;
+
       const targetCompany = firm || company;
       if (targetCompany && targetCompany !== 'All') filter.company = { $regex: targetCompany, $options: 'i' };
 
@@ -90,7 +96,9 @@ export const getJobs = asyncHandler(async (req, res) => {
 
   // Fallback in-memory response
   let filtered = [...SEED_JOBS].map((j, idx) => ({ ...j, _id: `job-${idx + 1}`, id: `job-${idx + 1}` }));
-  if (city && city !== 'All') filtered = filtered.filter((j) => j.city.toLowerCase().includes(city.toLowerCase()));
+  if (city && city !== 'All') filtered = filtered.filter((j) => (j.city || j.location || '').toLowerCase().includes(city.toLowerCase()));
+  if (country && country !== 'All') filtered = filtered.filter((j) => (j.country || '').toLowerCase().includes(country.toLowerCase()));
+  if (workMode && workMode !== 'All') filtered = filtered.filter((j) => j.workMode === workMode);
   if (jobType && jobType !== 'All') filtered = filtered.filter((j) => j.jobType === jobType);
   if (category && category !== 'All') filtered = filtered.filter((j) => j.category === category);
 
@@ -125,6 +133,8 @@ export const createJob = asyncHandler(async (req, res) => {
     requirements,
     location,
     city,
+    country,
+    workMode,
     jobType,
     job_type,
     category,
@@ -145,12 +155,14 @@ export const createJob = asyncHandler(async (req, res) => {
     requirements: Array.isArray(requirements) ? requirements : (requirements ? [requirements] : []),
     location: location || city || 'Pakistan',
     city: city || location || 'Lahore',
+    country: country || (Boolean(isOverseas || is_overseas) ? 'United Arab Emirates' : 'Pakistan'),
+    workMode: workMode || 'On-site',
     jobType: jobType || job_type || 'Articleship',
     category: category || 'Audit',
     salary: salary || 'Market Competitive',
     experienceLevel: experienceLevel || 'Entry Level / Trainee',
-    qualification: qualification || level || 'CAF',
-    level: level || qualification || 'CAF',
+    qualification: qualification || level || 'CAF / CA Inter',
+    level: level || qualification || 'CAF / CA Inter',
     deadline: deadline ? new Date(deadline) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     applicationUrl: applicationUrl || '',
     isOverseas: Boolean(isOverseas || is_overseas),
