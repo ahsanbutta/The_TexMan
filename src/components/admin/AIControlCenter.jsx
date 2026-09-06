@@ -554,7 +554,7 @@ export default function AIControlCenter({ session }) {
                 setAiSettings(updated);
                 await updateAISettings(updated);
               }}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 aiSettings.schedulerEnabled
                   ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
                   : 'bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/30'
@@ -565,20 +565,100 @@ export default function AIControlCenter({ session }) {
             <button
               onClick={handleTriggerCycleNow}
               disabled={triggeringCycle}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-brandGreen hover:bg-emerald-500 text-white border border-brandGreen text-xs font-bold transition-all cursor-pointer shadow-md"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-brandGreen hover:bg-emerald-500 text-white border border-brandGreen text-xs font-bold transition-all cursor-pointer shadow-md"
             >
               <Zap className={`w-3.5 h-3.5 ${triggeringCycle ? 'animate-spin' : ''}`} />
               <span>{triggeringCycle ? 'Running Cycle...' : 'Run Cycle Now'}</span>
             </button>
             <button
-              onClick={handleTestNotification}
-              disabled={testingNotification}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/30 text-xs font-bold transition-all cursor-pointer"
-              title="Dispatches live test alert to WhatsApp and Email"
+              onClick={() => setActiveTab('settings')}
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-xs font-bold transition-all cursor-pointer"
             >
-              <Send className="w-3.5 h-3.5" />
-              <span>{testingNotification ? 'Dispatching...' : 'Test WhatsApp & Email'}</span>
+              <Sliders className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Schedule Settings</span>
             </button>
+          </div>
+        </div>
+
+        {/* Quick Schedule & Execution Time Configurator */}
+        <div className="p-4 rounded-2xl bg-[#0C121D]/95 border border-emerald-500/30 space-y-3.5 shadow-lg backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Set Autonomous Cycle Schedule & Execution Time</h4>
+                <p className="text-[11px] text-gray-400">Select exact time for AI Manager to automatically run content cycles & dispatch notifications</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className="flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl bg-brandGreen hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition-all cursor-pointer flex-shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>{savingSettings ? 'Saving Schedule...' : 'Save & Apply Schedule'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Time of Day Input & Presets */}
+            <div className="md:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-300">Execution Time (24-Hour Format / Quick Pick)</label>
+                <span className="text-[11px] text-emerald-400 font-mono font-bold">Selected: {aiSettings.scheduledTime || '09:00'} ({aiSettings.timezone || 'Asia/Karachi'})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={aiSettings.scheduledTime || '09:00'}
+                  onChange={(e) => setAiSettings(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                  className="px-3 py-2 rounded-xl bg-black/60 border border-white/20 text-sm text-white font-mono focus:outline-none focus:border-brandGreen"
+                />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { label: '08:00 AM', val: '08:00' },
+                    { label: '09:00 AM', val: '09:00' },
+                    { label: '12:00 PM', val: '12:00' },
+                    { label: '03:00 PM', val: '15:00' },
+                    { label: '06:00 PM', val: '18:00' },
+                    { label: '09:00 PM', val: '21:00' },
+                    { label: '11:00 PM', val: '23:00' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setAiSettings(prev => ({ ...prev, scheduledTime: preset.val }))}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-mono transition-all cursor-pointer ${
+                        aiSettings.scheduledTime === preset.val
+                          ? 'bg-brandGreen text-white font-bold shadow'
+                          : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Frequency Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-300">Run Frequency</label>
+              <select
+                value={aiSettings.scheduleFrequency || 'daily'}
+                onChange={(e) => setAiSettings(prev => ({ ...prev, scheduleFrequency: e.target.value }))}
+                className="w-full px-3 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-brandGreen cursor-pointer font-sans"
+              >
+                <option value="daily">🔄 Daily (Every Day)</option>
+                <option value="weekdays">💼 Weekdays Only (Mon-Fri)</option>
+                <option value="custom_days">📅 Custom Days of Week</option>
+                <option value="specific_date">📆 Specific Calendar Date</option>
+              </select>
+            </div>
           </div>
         </div>
 
