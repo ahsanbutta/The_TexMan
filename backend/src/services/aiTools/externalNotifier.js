@@ -617,22 +617,92 @@ export async function processIncomingWhatsAppMessage({ from, text = '', message 
     }
   }
 
-  // 2. Command: "Approve latest" / "Approve the latest blog"
-  if (inputLower.includes('approve') && (inputLower.includes('latest') || inputLower.includes('blog') || inputLower.includes('recent'))) {
+  // 2. Direct Command: "Approve" / "Approve latest" / "Yes" / "Publish"
+  if (
+    inputLower === 'approve' ||
+    inputLower === 'approved' ||
+    inputLower === 'yes' ||
+    inputLower === 'publish' ||
+    (inputLower.includes('approve') && (inputLower.includes('latest') || inputLower.includes('blog') || inputLower.includes('recent') || inputLower.includes('it')))
+  ) {
     const latestPending = await AIApproval.findOne({ status: 'Pending' }).sort({ createdAt: -1 });
     if (!latestPending) {
-      const reply = `ℹ️ No pending approvals found in the queue right now.`;
+      const reply = `ℹ️ *No Pending Approvals:* Queue is currently empty. Everything has already been reviewed and published!`;
       await sendWhatsAppAlert({ to: cleanFrom, message: reply });
       return { action: 'no_pending', reply };
     }
 
     const result = await executeApprovalDecision(latestPending._id, 'Approved', `whatsapp:${cleanFrom}`);
-    const reply = `✅ *Latest Item Approved!* "${latestPending.title}" has been approved and published to the website.`;
+    const appUrl = process.env.CLIENT_URL || 'https://the-taxmans-capital.vercel.app';
+    const reply = `✅ *Approved & Published!*
+📌 *Title*: "${latestPending.title}"
+🏷️ *Type*: ${latestPending.type || 'Blog'}
+🌐 *Live Link*: ${appUrl}/resources
+
+The content is now live for students and users on The TaxMan's Capital portal.`;
     await sendWhatsAppAlert({ to: cleanFrom, message: reply });
     return { action: 'latest_approved', reply, result };
   }
 
-  // 3. Command: "Show me pending approvals" / "Pending approvals"
+  // 3. Direct Command: "Reject" / "Rejected" / "No" / "Discard"
+  if (
+    inputLower === 'reject' ||
+    inputLower === 'rejected' ||
+    inputLower === 'no' ||
+    inputLower === 'discard' ||
+    (inputLower.includes('reject') && (inputLower.includes('latest') || inputLower.includes('blog') || inputLower.includes('item')))
+  ) {
+    const latestPending = await AIApproval.findOne({ status: 'Pending' }).sort({ createdAt: -1 });
+    if (!latestPending) {
+      const reply = `ℹ️ No pending items found in queue to reject.`;
+      await sendWhatsAppAlert({ to: cleanFrom, message: reply });
+      return { action: 'no_pending_reject', reply };
+    }
+
+    const result = await executeApprovalDecision(latestPending._id, 'Rejected', `whatsapp:${cleanFrom}`);
+    const reply = `❌ *Rejected & Dismissed:*
+📌 *Title*: "${latestPending.title}"
+
+This item has been removed from the publishing pipeline and will not go live.`;
+    await sendWhatsAppAlert({ to: cleanFrom, message: reply });
+    return { action: 'latest_rejected', reply, result };
+  }
+
+  // 4. Direct Command: "Review" / "Details" / "Preview"
+  if (
+    inputLower === 'review' ||
+    inputLower === 'details' ||
+    inputLower === 'preview' ||
+    inputLower === 'read' ||
+    inputLower.includes('review latest')
+  ) {
+    const latestPending = await AIApproval.findOne({ status: 'Pending' }).sort({ createdAt: -1 });
+    if (!latestPending) {
+      const reply = `✅ *No Pending Items:* The AI Approval Queue is currently clear.`;
+      await sendWhatsAppAlert({ to: cleanFrom, message: reply });
+      return { action: 'no_pending_review', reply };
+    }
+
+    const serverBaseUrl = process.env.BACKEND_PUBLIC_URL || (process.env.NODE_ENV === 'production' ? 'https://the-taxmans-capital.vercel.app' : `http://localhost:${process.env.PORT || 5000}`);
+    const approveUrl = `${serverBaseUrl}/api/ai/quick-action?id=${latestPending._id}&action=Approved`;
+    const rejectUrl = `${serverBaseUrl}/api/ai/quick-action?id=${latestPending._id}&action=Rejected`;
+
+    const reply = `🔍 *Review Item Details*:
+📌 *Title*: ${latestPending.title}
+🏷️ *Format*: ${latestPending.type || 'Blog Article'}
+🤖 *Confidence*: ${latestPending.confidence || 95}%
+📝 *Summary*: ${latestPending.summary || 'Essential educational guidance'}
+
+⚡ *Quick Actions*:
+• Reply *APPROVE* to publish immediately
+• Reply *REJECT* to dismiss
+• Or 1-Click: ${approveUrl}`;
+
+    await sendWhatsAppAlert({ to: cleanFrom, message: reply });
+    return { action: 'review_details_sent', reply };
+  }
+
+  // 5. Command: "Show me pending approvals" / "Pending approvals" / "Queue"
   if (inputLower.includes('pending') || inputLower.includes('approvals') || inputLower.includes('queue')) {
     const pendingItems = await AIApproval.find({ status: 'Pending' }).sort({ createdAt: -1 }).limit(5).lean();
     if (pendingItems.length === 0) {
