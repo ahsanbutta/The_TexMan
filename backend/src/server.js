@@ -22,8 +22,14 @@ const server = app.listen(PORT, () => {
 ============================================================
   `);
 
-  // Connect to Database asynchronously
-  connectDB();
+  // Connect to Database asynchronously and start autonomous worker
+  connectDB().then(() => {
+    import('./services/scheduler/autonomousScheduler.js').then(({ initializeAutonomousScheduler }) => {
+      initializeAutonomousScheduler();
+    }).catch((err) => {
+      console.warn('⚠️ [Scheduler] Background worker start warning:', err.message);
+    });
+  });
 });
 
 server.on('error', (err) => {

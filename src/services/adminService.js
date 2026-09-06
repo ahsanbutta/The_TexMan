@@ -504,6 +504,26 @@ export const deleteAdminResource = async (id) => {
   }
 };
 
+export const approveAdminResource = async (id) => {
+  try {
+    const res = await api.post(`/resources/${id}/approve`, {});
+    return res?.data || res;
+  } catch (err) {
+    console.error('[AdminService] approveAdminResource error:', err);
+    throw err;
+  }
+};
+
+export const rejectAdminResource = async (id, reason = 'Rejected by Administrator') => {
+  try {
+    const res = await api.post(`/resources/${id}/reject`, { reason });
+    return res?.data || res;
+  } catch (err) {
+    console.error('[AdminService] rejectAdminResource error:', err);
+    throw err;
+  }
+};
+
 export const getAllAdminAnnouncements = async () => {
   try {
     const res = await api.get('/announcements');

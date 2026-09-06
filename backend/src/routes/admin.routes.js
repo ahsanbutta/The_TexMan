@@ -8,6 +8,10 @@ import {
   getReports,
   resolveReport
 } from '../controllers/admin.controller.js';
+import {
+  approveResource,
+  rejectResource
+} from '../controllers/resource.controller.js';
 import { authenticateUser, authorizeRoles } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -24,5 +28,9 @@ router.patch('/users/:id/status', updateUserRole);
 router.delete('/users/:id', deleteUser);
 router.get('/reports', getReports);
 router.put('/reports/:id', resolveReport);
+
+// Admin Resource Approval and Rejection Workflows
+router.post('/resources/:id/approve', approveResource);
+router.post('/resources/:id/reject', rejectResource);
 
 export default router;

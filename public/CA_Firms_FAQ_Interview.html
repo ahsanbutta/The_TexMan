@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Firms FAQ – Interview Prep</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f7f9fc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --teal: #0891b2;
+    --teal-light: #cffafe;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0891b2 100%);
+    color: white;
+    padding: 28px 32px 24px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.3);
+  }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .header-logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .header-sub { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+  .header-badge { margin-left: auto; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .zm-logo { width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    background: linear-gradient(135deg, #5FE3F0, #A996FF);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:900; color:#0C1B34;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    box-shadow: 0 0 14px rgba(169,150,255,0.55);
+  }
+  .zm-wrap{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .zm-wrap span.zm-name{ font-size:9.5px; font-weight:700; letter-spacing:0.4px; opacity:0.85; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* SEARCH */
+  .search-bar { max-width: 1200px; margin: 24px auto 0; padding: 0 24px; }
+  .search-input { width: 100%; padding: 12px 18px 12px 44px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--surface); transition: border-color 0.2s; font-family: inherit; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 14px center; background-size: 18px; }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  #search-results-count { font-size: 12px; color: var(--muted); margin-top: 6px; padding: 0 4px; }
+
+  /* TABS */
+  .tabs-wrapper { max-width: 1200px; margin: 20px auto 0; padding: 0 24px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab {
+    padding: 9px 16px; border-radius: 8px; border: 2px solid transparent;
+    cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s;
+    background: var(--surface); color: var(--muted); display: flex; align-items: center; gap: 6px;
+    box-shadow: var(--shadow);
+  }
+  .tab:hover { border-color: var(--border); color: var(--text); }
+  .tab.active { color: white; border-color: transparent; }
+  .tab .count { font-size: 11px; padding: 1px 7px; border-radius: 10px; background: rgba(255,255,255,0.25); font-weight: 600; }
+
+  .tab[data-module="behavioral"].active { background: var(--accent); }
+  .tab[data-module="aptitude"].active { background: var(--green); }
+  .tab[data-module="taxation"].active { background: var(--amber); }
+  .tab[data-module="companylaw"].active { background: var(--purple); }
+  .tab[data-module="audit"].active { background: var(--teal); }
+  .tab[data-module="far"].active { background: var(--red); }
+  .tab[data-module="all"] { font-weight: 600; }
+  .tab[data-module="all"].active { background: #334155; }
+
+  /* MAIN */
+  .main { max-width: 1200px; margin: 24px auto 48px; padding: 0 24px; }
+
+  /* MODULE HEADER */
+  .module-header { margin-bottom: 20px; }
+  .module-title { font-size: 20px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .module-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .module-desc { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* SECTION */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); padding: 8px 0 10px; border-bottom: 1px solid var(--border);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title span { font-size: 11px; padding: 1px 8px; border-radius: 10px; background: var(--border); color: var(--muted); font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 8px; overflow: hidden; transition: box-shadow 0.15s;
+  }
+  .q-card:hover { box-shadow: var(--shadow-md); }
+  .q-card.hidden { display: none; }
+
+  .q-header {
+    padding: 14px 18px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px;
+    user-select: none;
+  }
+  .q-number {
+    min-width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  }
+  .q-text { font-size: 14px; font-weight: 500; line-height: 1.5; flex: 1; color: var(--text); }
+  .q-toggle {
+    width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px; border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 2px;
+    color: var(--muted); font-size: 14px;
+  }
+  .q-card.open .q-toggle { background: var(--accent-light); border-color: var(--accent); color: var(--accent); transform: rotate(45deg); }
+
+  .q-answer {
+    display: none; padding: 0 18px 18px 56px; border-top: 1px solid var(--border);
+  }
+  .q-card.open .q-answer { display: block; }
+
+  .answer-body { padding-top: 14px; }
+  .answer-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .answer-text { font-size: 13.5px; line-height: 1.7; color: #374151; }
+  .answer-text strong { color: var(--text); font-weight: 600; }
+  .answer-text .def { background: var(--accent-light); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 13px; }
+  .answer-text .tip { background: var(--green-light); border-left: 3px solid var(--green); padding: 8px 12px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12.5px; color: #065f46; }
+  .answer-text .warn { background: var(--amber-light); border-left: 3px solid var(--amber); padding: 8px 12px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12.5px; color: #92400e; }
+  .answer-text ul { padding-left: 18px; margin: 8px 0; }
+  .answer-text li { margin-bottom: 4px; }
+  .answer-text .formula { font-family: 'JetBrains Mono', monospace; background: #f1f5f9; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin: 8px 0; display: block; color: #1e293b; }
+  .answer-text table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; }
+  .answer-text th { background: #f8fafc; padding: 7px 10px; text-align: left; font-weight: 600; border: 1px solid var(--border); color: var(--text); }
+  .answer-text td { padding: 6px 10px; border: 1px solid var(--border); color: #374151; vertical-align: top; }
+  .answer-text tr:nth-child(even) td { background: #fafafa; }
+
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+
+  /* COLOR SCHEME PER MODULE */
+  .mod-behavioral .q-number { background: var(--accent-light); color: var(--accent); }
+  .mod-aptitude .q-number { background: var(--green-light); color: var(--green); }
+  .mod-taxation .q-number { background: var(--amber-light); color: var(--amber); }
+  .mod-companylaw .q-number { background: var(--purple-light); color: var(--purple); }
+  .mod-audit .q-number { background: var(--teal-light); color: var(--teal); }
+  .mod-far .q-number { background: var(--red-light); color: var(--red); }
+
+  /* PROGRESS BAR */
+  .progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
+  .progress-label { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .progress-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; }
+  .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--teal)); transition: width 0.4s ease; }
+  .progress-count { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; }
+
+  /* EXPAND ALL */
+  .top-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .btn-sm { padding: 7px 14px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--surface); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all 0.15s; font-family: inherit; }
+  .btn-sm:hover { background: var(--bg); color: var(--text); border-color: #cbd5e1; }
+  .btn-sm.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-sm.primary:hover { background: #1d4ed8; }
+
+  /* NO RESULTS */
+  .no-results { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .no-results h3 { font-size: 16px; margin-bottom: 8px; }
+
+  /* SCROLL TO TOP */
+  #scrolltop { position: fixed; bottom: 24px; right: 24px; width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: white; border: none; cursor: pointer; font-size: 18px; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(37,99,235,0.4); z-index: 50; transition: opacity 0.2s; }
+  #scrolltop.visible { display: flex; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .header { padding: 18px 16px; }
+    .tabs-wrapper, .main, .search-bar { padding: 0 12px; }
+    .q-answer { padding-left: 18px; }
+    .q-number { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <div class="header-logo">📋 CA Firms – FAQ Interview Prep</div>
+      <div class="header-sub">All modules · Model answers · Pakistan CA/ACCA context</div>
+    </div>
+    <div class="header-badge">324 Questions Covered</div>
+    <div class="zm-wrap" title="Presented by Zain.M">
+      <span class="zm-logo">ZM</span>
+      <span class="zm-name">Zain.M</span>
+    </div>
+  </div>
+</div>
+
+<div class="search-bar">
+  <input class="search-input" type="text" id="searchInput" placeholder="Search any question or keyword across all modules…" oninput="handleSearch()">
+  <div id="search-results-count"></div>
+</div>
+
+<div class="tabs-wrapper">
+  <div class="tabs">
+    <div class="tab active" data-module="all" onclick="switchTab('all')">All Modules <span class="count">324</span></div>
+    <div class="tab" data-module="behavioral" onclick="switchTab('behavioral')">🤝 Behavioral <span class="count">43</span></div>
+    <div class="tab" data-module="aptitude" onclick="switchTab('aptitude')">🔢 Aptitude & GK <span class="count">97</span></div>
+    <div class="tab" data-module="taxation" onclick="switchTab('taxation')">📄 Taxation <span class="count">54</span></div>
+    <div class="tab" data-module="companylaw" onclick="switchTab('companylaw')">⚖️ Company Law <span class="count">37</span></div>
+    <div class="tab" data-module="audit" onclick="switchTab('audit')">🔍 Audit & Assurance <span class="count">38</span></div>
+    <div class="tab" data-module="far" onclick="switchTab('far')">📊 FAR / IFRS <span class="count">55</span></div>
+  </div>
+</div>
+
+<div class="main" id="mainContent">
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">Opened</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-count" id="progressCount">0 / 0</div>
+  </div>
+  <div class="top-actions">
+    <button class="btn-sm" onclick="expandAll()">Expand All</button>
+    <button class="btn-sm" onclick="collapseAll()">Collapse All</button>
+    <button class="btn-sm primary" onclick="markAllRead()">Mark All Read</button>
+  </div>
+  <div id="questionsContainer"></div>
+</div>
+
+<button id="scrolltop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ===================== DATA =====================
+
+const modules = {
+
+behavioral: {
+  label: "Behavioral Interview Questions",
+  color: "#2563eb",
+  bgLight: "#dbeafe",
+  sections: [
+    {
+      title: "Teamwork & Coworker Dynamics",
+      questions: [
+        {
+          q: "Have you ever worked in a team, and have you ever faced or handled a conflict within that team?",
+          a: `<div class="def"><strong>Approach:</strong> Use a real or academic example. Structure: Situation → Conflict → Action → Result.</div>
+Yes, while working on group assignments during CA studies, I often collaborated in teams. In one instance, a team member consistently missed deadlines, affecting everyone's work. I addressed it privately first — understood their workload issue — then we redistributed tasks fairly. The project was completed on time. Key: always address conflict directly, professionally, and without escalating prematurely. In a firm setting, I would follow the same approach while also keeping the supervisor informed if needed.
+<div class="tip"><strong>Tip:</strong> Firms want to see maturity, not conflict avoidance. Show you can handle it without drama.</div>`
+        },
+        {
+          q: "If there is a team member who is weak, works slower than required, or wants to work alone, what would you do?",
+          a: `First, assess <em>why</em> — is it a skill gap, personal issue, or attitude problem? Steps: <ul><li>Have a private, empathetic conversation</li><li>Offer to help or re-clarify expectations</li><li>Redistribute tasks based on strengths if needed</li><li>If no improvement, escalate to supervisor with factual observations (no personal complaints)</li></ul>
+<div class="tip">Never leave a weak team member isolated — document your efforts to help them.</div>`
+        },
+        {
+          q: "How would you handle a situation where a senior team member is underperforming, or if you needed to replace a team member?",
+          a: `A junior should not confront a senior directly on performance. Proper steps:<ul><li>Document specific instances of underperformance (dates, tasks, impact)</li><li>Seek guidance from the supervisor or manager</li><li>Focus on the impact on deliverables, not personal judgment</li><li>Replacement decisions are management-level — as a team member, focus on covering the gap and informing management</li></ul>`
+        },
+        {
+          q: "What would you do if an engagement team member (who is also your friend) is doing something wrong or unethical?",
+          a: `<div class="def">Professional responsibility overrides personal friendship.</div>
+Steps:<ul><li>First, speak to the friend privately — give them a chance to correct it</li><li>If they refuse or the matter is serious, escalate to the engagement partner or compliance officer</li><li>In audit: confidentiality cannot protect unethical actions within the firm</li></ul>
+<div class="warn">Staying silent makes you complicit. Firms test this — the right answer is always to report after trying to resolve internally.</div>`
+        },
+        {
+          q: "If a colleague or friend uses the client's printer for personal benefits, what will you do?",
+          a: `This is a breach of professional conduct and firm ethics. Action:<ul><li>Inform the colleague this is inappropriate — misuse of client resources</li><li>If repeated, report to the supervisor</li><li>In an audit firm, this can compromise independence and client trust</li></ul>`
+        },
+        {
+          q: "You are in a group of four with no team leader, and you hold a different opinion than your teammates; what will you do?",
+          a: `<ul><li>Present your view clearly with supporting reasoning or evidence</li><li>Listen actively to others' rationale</li><li>Seek consensus through discussion — not insistence</li><li>If still divided, escalate for a supervisor's input or go with majority while documenting your dissent</li></ul>
+<div class="tip">Firms value people who speak up respectfully, not those who either dominate or stay silent.</div>`
+        },
+        {
+          q: "You have a diverse team with language barrier problems and information silos; what measures would you take?",
+          a: `<ul><li>Use simple, clear written communication (emails, shared docs)</li><li>Hold brief daily standups to keep everyone aligned</li><li>Create a shared workspace (e.g., shared drive/folder)</li><li>Encourage team members to ask questions without embarrassment</li><li>Appoint a point-of-contact per language group if needed</li></ul>`
+        },
+        {
+          q: "If colleagues are gossiping about someone in a gathering, what will you do?",
+          a: `Politely disengage. Do not contribute to or amplify gossip. You can redirect: <em>"Let's not get into personal matters."</em> If the gossip involves professional misconduct, address it separately through proper channels.`
+        },
+        {
+          q: "How would you deal with complaints regarding giving leverage or favoritism to a female colleague?",
+          a: `If you're the one accused:<ul><li>Be transparent and objective — ensure all assignments are merit-based</li><li>Invite the complainant to discuss specific instances</li></ul>
+If witnessing it: report to HR or management factually. Never let gender become the basis of professional decisions — it violates equal treatment principles.`
+        },
+        {
+          q: "In a team of four, two persons have completed their job (including you), but the other two have not, and the deadline is tomorrow. How will you manage?",
+          a: `<ul><li>Proactively offer help to the two lagging — understand the blocker</li><li>Re-divide remaining tasks between all four for faster completion</li><li>Communicate deadline risk to manager early — never wait until it's too late</li><li>Work extra hours if needed to ensure the deadline is met</li></ul>`
+        },
+      ]
+    },
+    {
+      title: "Dealing with Seniors & Management",
+      questions: [
+        {
+          q: "If a senior misbehaves, shouts at you out of frustration, or uses harsh language, how will you react?",
+          a: `Stay calm. Do not react emotionally in the moment. After the situation settles, request a private conversation: <em>"I understand there's pressure, but I'd appreciate if we could communicate respectfully."</em> If it's a pattern, escalate to HR. Document incidents. You have the right to a respectful workplace.
+<div class="tip">Firms want composed professionals, not doormats or people who react aggressively.</div>`
+        },
+        {
+          q: "If a senior asks you to complete work that normally takes two days in just two hours, what would you do?",
+          a: `<ul><li>Clarify what's truly urgent — maybe not all of it is needed now</li><li>Prioritize the critical parts and deliver those first</li><li>Be transparent: <em>"I can complete sections X and Y in 2 hours — shall I proceed and deliver the rest by tonight?"</em></li><li>Do not simply say "yes" and deliver poor-quality work</li></ul>`
+        },
+        {
+          q: "Your manager gives you 3-4 tasks that are impossible to complete within the time limit. How do you handle this?",
+          a: `<ul><li>List all tasks with estimated times</li><li>Go back to manager: <em>"Here's what I have on my plate — which do you want prioritized?"</em></li><li>Don't attempt all and fail — communicate upfront</li><li>Offer to work overtime for critical ones</li></ul>
+<div class="def">Time management + upward communication is a core professional skill firms test.</div>`
+        },
+        {
+          q: "What would you do if your senior or partner asks you to ignore a material misstatement or do something unethical/illegal?",
+          a: `<div class="warn">This is a firm and clear ethical test. The answer is never to comply.</div>
+Steps:<ul><li>Politely but firmly decline — reference professional standards (IFRS, ISAs, ICAP Code of Ethics)</li><li>Document the instruction received</li><li>Escalate to the engagement quality reviewer, ethics partner, or firm leadership</li><li>If the firm itself is complicit — consider reporting to ICAP or SECP</li></ul>
+No client relationship or career benefit justifies compromising integrity.`
+        },
+        {
+          q: "If you find out that a senior manager applied the wrong accounting treatment and you are aware of it, how will you handle it?",
+          a: `<ul><li>First, double-check your own understanding — make sure you are correct (refer to the relevant IFRS/IAS)</li><li>Bring it up privately and professionally with the senior: <em>"I reviewed this under IAS X and I think there may be an issue — could we discuss it?"</em></li><li>If they dismiss it incorrectly, escalate to the engagement partner</li></ul>
+<div class="tip">Approach it as a question, not a confrontation. You may also be wrong.</div>`
+        },
+        {
+          q: "If your supervisor tells you to review something opposite to your own views, how would you handle it?",
+          a: `Follow the instruction — supervisors have authority and broader context. However:<ul><li>Complete the review objectively</li><li>If your professional judgment identifies a significant issue, note it formally in your working papers</li><li>Share your concern through proper channels — not by simply refusing</li></ul>`
+        },
+        {
+          q: "Your manager tells you to print and organize files before a meeting, but later says they do not like how you organized them because you lacked a criteria. What will you do?",
+          a: `<ul><li>Apologize for the confusion and ask for clarification on preferred criteria going forward</li><li>Reorganize promptly before the meeting</li><li>Going forward, always confirm formatting/organization criteria before starting such tasks</li></ul>
+<div class="tip">This tests whether you take feedback gracefully and adapt quickly.</div>`
+        },
+        {
+          q: "What will you do if a manager is biased and consistently assigns more work to you compared to others?",
+          a: `<ul><li>First, evaluate objectively — is it actually bias or are you being trusted more?</li><li>If biased: discuss privately with the manager, citing specific task allocation</li><li>If unresolved, raise it with HR or the firm's training principal</li><li>Document your workload</li></ul>`
+        },
+        {
+          q: "Your manager asks you to work late but it is already time for you to go home, and they have a habit of doing this frequently. What do you do?",
+          a: `<ul><li>For today: assess urgency. If genuinely critical, stay and complete it</li><li>For the pattern: have a proactive conversation about workload planning: <em>"I'm happy to stay late when needed, but can we plan ahead so I can manage my commitments?"</em></li><li>In articleship: some late sitting is expected, especially during busy season</li></ul>`
+        },
+        {
+          q: "What will you do if your senior asks you to sign unknown documents that you do not understand?",
+          a: `<div class="warn">Never sign documents you don't understand. This is a fundamental professional/legal principle.</div>
+Say clearly: <em>"I'd like to review and understand the document before signing."</em> If there is pressure, escalate to a higher authority. Signing blindly exposes you to legal and professional liability.`
+        },
+      ]
+    },
+    {
+      title: "Client Interactions & Ethical Dilemmas",
+      questions: [
+        {
+          q: "If a client refuses to make amendments to the financial statements or refuses to provide the required documents, what will you do?",
+          a: `<ul><li>Document all requests and refusals with dates</li><li>Communicate in writing (email trail)</li><li>Consult with the engagement partner — the response depends on materiality and nature</li><li>If amendments are material and refused: consider a modified audit opinion (qualified or adverse)</li><li>If documents are withheld: scope limitation → disclaimer or qualified opinion</li></ul>`
+        },
+        {
+          q: "How will you react if a person at the audit client hits you or gets highly offensive?",
+          a: `Remove yourself from the situation calmly. Do not retaliate. Report immediately to the engagement partner. Document the incident. The firm should decide whether to continue the engagement and escalate formally to client management or take legal action if needed.`
+        },
+        {
+          q: "What will you do if someone from the client approaches you after working hours?",
+          a: `Do not engage informally on work matters outside office hours unless the firm has approved it. If they attempt to share confidential information or influence your work — decline politely and report the contact to the engagement partner. Independence and objectivity must be maintained.`
+        },
+        {
+          q: "You have a conflict with a client that brings in 30% of the firm's revenue, and the partner tells you not to lose this client. What is your response?",
+          a: `<div class="def">Client revenue cannot override professional standards. This is a classic independence threat (intimidation/self-interest threat).</div>
+Steps:<ul><li>Acknowledge the business importance</li><li>Make clear that compromising professional standards would expose the firm to greater legal and reputational risk</li><li>Escalate to the firm's ethics partner or managing partner if pressure continues</li></ul>
+<div class="warn">A firm that pressures auditors to compromise for revenue is a major ethics red flag.</div>`
+        },
+        {
+          q: "You discover harmful substances in a baby food company's product during an audit. What would you do?",
+          a: `<ul><li>This is a public interest matter — goes beyond normal audit scope</li><li>Report immediately to senior management and the engagement partner</li><li>The firm has a duty to consider reporting to regulatory authorities if management does not act</li><li>ISA 250 (Laws and Regulations): auditor must consider implications when client is non-compliant with laws that affect public welfare</li></ul>`
+        },
+        {
+          q: "If your CA friends from other firms ask for confidential information about your clients, will you share it?",
+          a: `<strong>No.</strong> Confidentiality is a fundamental ICAP/IESBA ethical principle. Client information cannot be shared with anyone outside the engagement team without client consent, regardless of the requestor's profession.`
+        },
+        {
+          q: "If you are stuck on a technical issue during an audit, will you ask friends from other firms for help by sharing client info?",
+          a: `No — sharing client information externally is a breach of confidentiality. Correct approach:<ul><li>Consult internally with senior team members or the engagement partner</li><li>Refer to technical guidance (ICAP, IAASB, IFRS literature)</li><li>If the firm has a technical department, use it</li></ul>`
+        },
+        {
+          q: "A team member tries to bypass internal controls to finish a project on time (which would result in a promotion for you if successful). How will you respond?",
+          a: `Do not allow it. Internal controls exist for a reason — their bypass exposes the firm and client to risk. Inform the team member to follow proper procedures. If they proceed, report to the supervisor. A promotion built on compromised controls is not worth the professional and legal consequences.`
+        },
+        {
+          q: "You gave tax consultation to a client, but they incurred a loss because tax regulations changed 6 months later. How do you respond?",
+          a: `<ul><li>Your advice was accurate and professional at the time it was given — you are not responsible for subsequent legislative changes</li><li>Explain this clearly and empathetically to the client</li><li>Review whether your engagement letter included a disclaimer about regulatory changes (it should)</li><li>Offer to review the new regulations and advise on restructuring going forward</li></ul>`
+        },
+      ]
+    },
+    {
+      title: "Time Management, Pressure & Priorities",
+      questions: [
+        {
+          q: "Your teammate asks you to work 1 hour overtime to complete a project before a deadline, but you are a single parent and have to pick up your child. What should you do?",
+          a: `Explain the personal commitment honestly. Offer alternatives: can you complete critical parts in 30 minutes and deliver the rest remotely? Or can someone else cover? Be transparent — firms respect honesty. Arrange child pick-up through family/backup if possible for genuine emergencies. Document your contribution for the day.`
+        },
+        {
+          q: "How would you manage your studies alongside late-night sittings and extended office hours?",
+          a: `<ul><li>Study in short, focused bursts during commute, lunch, or early morning</li><li>Use weekends for heavier study blocks</li><li>Communicate with the training principal about upcoming exams — ICAP regulations give trainees study leave</li><li>Prioritize sleep — exhaustion reduces both work and study quality</li></ul>
+<div class="tip">Most firms expect this balance challenge — show you have a plan, not just complaints.</div>`
+        },
+        {
+          q: "If you get a call from a client for urgent work during your exam leaves, what will you do?",
+          a: `Politely explain you are on approved exam leave and direct them to your supervisor or another team contact. ICAP training regulations protect study leaves — firms cannot unreasonably require work during approved leaves. Ensure a handover plan exists before going on leave.`
+        },
+        {
+          q: "If an urgent work task comes up during your off-time and you already have a commitment with your family, how do you handle it?",
+          a: `Assess urgency: is it truly critical or can it wait? If critical, communicate with family, commit to a specific end-time, and then attend to the task. If not truly urgent, explain to the firm the next business day. Reasonable boundaries are professional; over-committing and underdelivering is worse.`
+        },
+        {
+          q: "You have two assignments: one is small but complicated, and the other is simple but less urgent. Which task would you do first?",
+          a: `<strong>Do the small but complicated task first.</strong> Reasoning:<ul><li>Complicated tasks need fresh mental energy</li><li>Simple tasks can be deferred and completed quickly when needed</li><li>This also clears uncertainty/risk earlier</li></ul>
+(If a deadline is attached to the simple one — re-evaluate based on deadlines first.)`
+        },
+        {
+          q: "A time-sensitive project has undecided tasks and dependencies. What is your course of action?",
+          a: `<ul><li>Map out all tasks, identify dependencies, and flag what's blocking progress</li><li>Escalate the blockers to decision-makers immediately — don't wait</li><li>Work on non-blocked tasks in parallel</li><li>Set a timeline for each decision needed and follow up proactively</li></ul>`
+        },
+        {
+          q: "Describe a situation where you faced intense time pressure or a major obstacle, and explain how you handled it.",
+          a: `<div class="def">Use the STAR method: Situation → Task → Action → Result</div>
+Example: During CAF exam preparation, I had to balance 4 subjects while the academy moved exam dates forward. I created a daily schedule, dropped non-essential activities, formed a study group for weak subjects, and managed to pass. Result: passed with satisfactory marks. Lesson: clarity on priorities and immediate action beats panic.`
+        },
+      ]
+    },
+    {
+      title: "General Workplace & Interpersonal Skills",
+      questions: [
+        {
+          q: "Suppose you are supervising a training session with new candidates. How would you break the ice in the first 5 minutes?",
+          a: `<ul><li>Introduce yourself briefly and warmly — share something relatable (not just your title)</li><li>Ask each person their name and one thing they're hoping to learn</li><li>A light relevant question: <em>"Has anyone had their first interaction with a client yet?"</em></li><li>Keep it structured but conversational — the goal is to reduce anxiety, not entertain</li></ul>`
+        },
+        {
+          q: "During a meeting, you step out for an important call and miss part of a presentation on new technology. How would you make up for the missed part?",
+          a: `<ul><li>Briefly apologize for the interruption when returning</li><li>After the meeting, review any slides/notes shared</li><li>Ask a colleague for a 2-minute summary of what was covered</li><li>If still unclear, follow up with the presenter directly</li></ul>`
+        },
+        {
+          q: "You are giving a presentation and it seems like the audience is confused. How would you continue?",
+          a: `Pause and acknowledge: <em>"Let me recap the key point before moving on."</em> Simplify language, use an example, and invite a question. Adjust pace accordingly. Reading the room and adapting is a core communication skill.`
+        },
+        {
+          q: "You are at a company event meant for socializing. How should you converse with your coworkers?",
+          a: `<ul><li>Keep topics light and inclusive — avoid politics, religion, sensitive personal topics</li><li>Ask open questions about interests, projects, learnings</li><li>Be present — put away your phone</li><li>Maintain professionalism even in informal settings</li></ul>`
+        },
+        {
+          q: "How do you respond to negative criticism, and how do you manage negativity or a toxic environment?",
+          a: `<strong>Criticism:</strong> Receive it calmly, reflect on whether it's valid, act on the constructive parts. <em>"Thank you — I'll work on that."</em>
+<strong>Toxic environment:</strong><ul><li>Minimize exposure where possible</li><li>Don't engage with negativity or escalate it</li><li>Focus on your own work quality</li><li>If it's systemic and affects mental health: escalate to HR or consider whether the environment is right for you</li></ul>`
+        },
+        {
+          q: "A meeting to decide the venue for a company outing was chaotic and unsuccessful. What should you have done differently?",
+          a: `<ul><li>Set a clear agenda before the meeting</li><li>Appoint a facilitator/chairperson upfront</li><li>Share 2-3 shortlisted options beforehand so people come prepared</li><li>Use a decision mechanism (vote, consensus within time limit)</li><li>Assign someone to document the outcome</li></ul>`
+        },
+        {
+          q: "You accidentally sent an email with the wrong file attached. What should you do next?",
+          a: `<ul><li>Send a follow-up email immediately with a clear apology and the correct attachment</li><li>If the wrong file contained sensitive/confidential data: inform your supervisor immediately — may need to inform the recipient to disregard/delete it</li><li>Learn from it: always double-check attachments before sending</li></ul>`
+        },
+      ]
+    }
+  ]
+},
+
+aptitude: {
+  label: "Aptitude, GK & English",
+  color: "#059669",
+  bgLight: "#d1fae5",
+  sections: [
+    {
+      title: "Aptitude – Numerical & Logical Reasoning",
+      questions: [
+        {
+          q: "A boat's speed is 8 miles/hr in still water and river speed is 3.2 miles/hr. The boat travelled to a certain place and came back, taking 20 hours; find total distance.",
+          a: `<span class="formula">Downstream speed = 8 + 3.2 = 11.2 mph | Upstream speed = 8 – 3.2 = 4.8 mph</span>
+Let one-way distance = d<br>
+d/11.2 + d/4.8 = 20 → d(1/11.2 + 1/4.8) = 20<br>
+→ d(0.0893 + 0.2083) = 20 → d × 0.2976 = 20 → d = 67.2 miles<br>
+<strong>Total distance = 2 × 67.2 = 134.4 miles</strong>`
+        },
+        {
+          q: "A train passes a platform in 75 seconds at 45 miles/hr; find the length of the platform. (Train length not given — question is incomplete as stated; assume train length = 0 or answer for distance covered.)",
+          a: `<span class="formula">Distance = Speed × Time = 45 miles/hr × (75/3600) hr = 0.9375 miles = ~1,650 yards ≈ 4,950 feet</span>
+If train length is given separately, subtract it to get platform length.`
+        },
+        {
+          q: "18 men can do a task in 20 days, 24 women in 22.5 days. Find ratio of capacity of a man to a woman.",
+          a: `<span class="formula">Man's 1-day work = 1/(18×20) = 1/360
+Woman's 1-day work = 1/(24×22.5) = 1/540
+Ratio = (1/360):(1/540) = 540:360 = 3:2</span>
+<strong>Man : Woman = 3 : 2</strong>`
+        },
+        {
+          q: "A boy takes 150 days and a girl takes 180 days; how many days will 5 boys and 3 girls take?",
+          a: `<span class="formula">5 boys per day = 5/150 = 1/30
+3 girls per day = 3/180 = 1/60
+Total per day = 1/30 + 1/60 = 3/60 = 1/20
+Days = 20</span>
+<strong>Answer: 20 days</strong>`
+        },
+        {
+          q: "Person A completes in 120 days, B in 168 days; working together for 28 days — % work done?",
+          a: `<span class="formula">Combined per day = 1/120 + 1/168 = 7/840 + 5/840 = 12/840 = 1/70
+Work in 28 days = 28/70 = 0.4 = 40%</span>
+<strong>Answer: 40%</strong>`
+        },
+        {
+          q: "A completes in 10 days, B in 15 days; working together?",
+          a: `<span class="formula">Together per day = 1/10 + 1/15 = 3/30 + 2/30 = 5/30 = 1/6
+Days = 6</span>
+<strong>Answer: 6 days</strong>`
+        },
+        {
+          q: "Car covers 120 km at 60 km/h, then 120 km at 40 km/h; find average speed.",
+          a: `<span class="formula">Time₁ = 120/60 = 2h | Time₂ = 120/40 = 3h
+Average speed = Total distance / Total time = 240/5 = 48 km/h</span>
+<strong>Answer: 48 km/h</strong> (Note: never average the speeds directly — use total distance/total time)`
+        },
+        {
+          q: "Maria runs at 14 miles/hr for 18 mins and a bus at 20 miles/hr. How much did the bus travel to reach Maria?",
+          a: `<span class="formula">Maria's distance = 14 × (18/60) = 4.2 miles
+If bus starts when Maria starts (same origin): Bus distance = 4.2 miles (catches up to same point)
+OR: Bus must cover extra distance if it starts late.</span>
+Most likely interpretation: bus starts at same time — bus also travels <strong>4.2 miles</strong> to reach Maria's position. Exact answer depends on starting point assumption.`
+        },
+        {
+          q: "Train travels 100 miles in 2 hours; how many miles in 5 hours?",
+          a: `<span class="formula">Speed = 50 mph | Distance in 5h = 50 × 5 = 250 miles</span>
+<strong>Answer: 250 miles</strong>`
+        },
+        {
+          q: "Find missing number: 3, 5, 11, 21, 43, ?",
+          a: `Pattern: each term ≈ 2× previous – 1<br>3×2-1=5, 5×2+1=11, 11×2-1=21, 21×2+1=43, 43×2-1=<strong>85</strong>
+<strong>Answer: 85</strong>`
+        },
+        {
+          q: "Find next number: 4, 16, 36, 64, ?",
+          a: `These are squares of even numbers: 2²=4, 4²=16, 6²=36, 8²=64, 10²=<strong>100</strong>
+<strong>Answer: 100</strong>`
+        },
+        {
+          q: "Find next number: 4, 9, 16, 25, …",
+          a: `Perfect squares: 2², 3², 4², 5², 6²=<strong>36</strong>
+<strong>Answer: 36</strong>`
+        },
+        {
+          q: "Find next number: 1, 2, 4, 8, 16, ?",
+          a: `Doubling series: each × 2. Next = <strong>32</strong>`
+        },
+        {
+          q: "Average weight of 15 men increased by 1.5 lbs when a man weighing 148 lbs was replaced. Find weight of new man.",
+          a: `<span class="formula">Increase in total weight = 15 × 1.5 = 22.5 lbs
+New man's weight = 148 + 22.5 = 170.5 lbs</span>
+<strong>Answer: 170.5 lbs</strong>`
+        },
+        {
+          q: "When daughter is 12, father is 4× her age. Now father is 52. Daughter's age today?",
+          a: `<span class="formula">When daughter = 12: father = 48
+Years passed since then = 52 – 48 = 4 years
+Daughter's current age = 12 + 4 = 16</span>
+<strong>Answer: 16 years</strong>`
+        },
+        {
+          q: "B and C earn 12% and 8% more than A respectively. Find ratio of their salaries.",
+          a: `Let A = 100. B = 112, C = 108.
+<strong>Ratio A:B:C = 100:112:108 = 25:28:27</strong>`
+        },
+        {
+          q: "If a seller sells 30 units at the selling price of 27 units, what is the profit %?",
+          a: `CP of 30 = SP of 27. Let SP per unit = 1. Total SP = 30. CP = 27.
+<span class="formula">Profit % = (30 – 27)/27 × 100 = 3/27 × 100 = 11.11%</span>
+<strong>Answer: 11.11%</strong>`
+        },
+        {
+          q: "Two persons have money in ratio 11:15; if 21 subtracted from each, ratio becomes 5:6 after square root. Find largest number.",
+          a: `Let amounts = 11x and 15x. After subtracting 21: (11x–21):(15x–21) = 25:36 (5²:6²)<br>
+36(11x–21) = 25(15x–21) → 396x–756 = 375x–525 → 21x = 231 → x = 11<br>
+Larger = 15×11 = <strong>165</strong>`
+        },
+        {
+          q: "A's income is 20% more than B's, B's is 20% less than C's, D's is 10% more than C's. A = 3840. Find D's income.",
+          a: `A = 1.2B → B = 3840/1.2 = 3200<br>B = 0.8C → C = 3200/0.8 = 4000<br>D = 1.1 × 4000 = <strong>4400</strong>`
+        },
+        {
+          q: "Find HCF of 2/3, 3/4, 4/5.",
+          a: `HCF of fractions = HCF of numerators / LCM of denominators<br>HCF(2,3,4)=1 | LCM(3,4,5)=60<br><strong>HCF = 1/60</strong>`
+        },
+        {
+          q: "What is the HCF of two prime numbers?",
+          a: `Two prime numbers are coprime (share no common factors except 1). <strong>HCF = 1</strong>`
+        },
+        {
+          q: "Sum of simple interest for 3 years is 3/5 of the principal. Find rate of interest.",
+          a: `<span class="formula">SI = P×R×T/100 → (3/5)P = P×R×3/100 → R = 100×3/(5×3) = 20%</span>
+<strong>Rate = 20%</strong>`
+        },
+        {
+          q: "How many years to get 3 times the principal using simple interest (at what rate? — standard question assumes rate such that SI = 2P)?",
+          a: `SI needed = 2P (to make total = 3P). If rate = 20%: T = 200/20 = 10 years.<br>
+<span class="formula">General: T = (Multiplier–1)×100/R</span>
+At 20% rate: <strong>10 years</strong>`
+        },
+        {
+          q: "LCM of 2 numbers = 936, HCF = 4, one number = 72. Find other number.",
+          a: `<span class="formula">Product of numbers = LCM × HCF = 936 × 4 = 3744
+Other number = 3744 / 72 = 52</span>
+<strong>Answer: 52</strong>`
+        },
+        {
+          q: "Find X: 4(X–2) + 3 = 2X + 9",
+          a: `4X – 8 + 3 = 2X + 9 → 4X – 5 = 2X + 9 → 2X = 14 → <strong>X = 7</strong>`
+        },
+        {
+          q: "Solve: 2(x – 4) + 3 = 9",
+          a: `2x – 8 + 3 = 9 → 2x – 5 = 9 → 2x = 14 → <strong>x = 7</strong>`
+        },
+        {
+          q: "Sum of three consecutive odd integers is 20 more than the smallest. Find the middle number.",
+          a: `Let smallest = n (odd). Three: n, n+2, n+4.<br>n + n+2 + n+4 = n + 20 → 3n + 6 = n + 20 → 2n = 14 → n = 7<br>Middle = 9. <strong>Answer: 9</strong>`
+        },
+        {
+          q: "Sum of two numbers is 10, product is 16. Find the larger number.",
+          a: `x + y = 10, xy = 16. By quadratic: x² – 10x + 16 = 0 → x = (10±√(100–64))/2 = (10±6)/2<br>x = 8 or 2. <strong>Larger = 8</strong>`
+        },
+        {
+          q: "How many different words from 'SPECIAL' if S is at start and L at end?",
+          a: `Fix S and L. Remaining 5 letters: P, E, C, I, A — all distinct. Arrangements = 5! = <strong>120</strong>`
+        },
+        {
+          q: "Probability that all 3 Class A buses (out of 5 total) are travelling at the same time?",
+          a: `<span class="formula">P = C(3,3)/C(5,3) = 1/10 = 0.10 = 10%</span>
+<strong>Answer: 1/10 or 10%</strong>`
+        },
+        {
+          q: "60 people: 35 like tea, 30 coffee, 15 both. How many like neither?",
+          a: `n(tea or coffee) = 35 + 30 – 15 = 50. Neither = 60 – 50 = <strong>10</strong>`
+        },
+        {
+          q: "Bag: 5 red, 3 green, 2 blue. Probability of drawing a non-red ball?",
+          a: `Total = 10. Non-red = 3 + 2 = 5. P = 5/10 = <strong>1/2</strong>`
+        },
+        {
+          q: "If today is Thursday, what day after 45 days?",
+          a: `45 ÷ 7 = 6 weeks + 3 days. Thursday + 3 = <strong>Sunday</strong>`
+        },
+        {
+          q: "Angle between hour and minute hand at 3:15?",
+          a: `Hour hand at 3:15: 3×30 + 15×0.5 = 90 + 7.5 = 97.5°. Minute hand at 15 min = 90°. Angle = 97.5 – 90 = <strong>7.5°</strong>`
+        },
+        {
+          q: "All artists are creative; some programmers are artists. Which logically follows?",
+          a: `<strong>Some programmers are creative.</strong> (Since some programmers are artists, and all artists are creative, those programmer-artists are also creative.)`
+        },
+        {
+          q: "A tree has 8 birds; a hunter shoots one. How many are left?",
+          a: `<strong>0.</strong> The sound of the shot scares the remaining 7 birds away. Trick question — answer is 0 (or just the dead one: 1).`
+        },
+        {
+          q: "How many numbers between 1–100 contain the digit 4?",
+          a: `4, 14, 24, 34, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 54, 64, 74, 84, 94 = <strong>19 numbers</strong>
+(44 contains 4 twice but counts once as a number)`
+        },
+        {
+          q: "If + means ÷, ÷ means ×, × means –, – means +. Value of 96+8–23÷7?",
+          a: `Replace: 96÷8+23×7 = 12 + 161 = <strong>173</strong>`
+        },
+        {
+          q: "Find area of triangle with base 5 and height 12.",
+          a: `<span class="formula">Area = ½ × base × height = ½ × 5 × 12 = 30</span>
+<strong>Answer: 30 sq units</strong>`
+        },
+        {
+          q: "A triangle with 3 sides of different lengths is called what?",
+          a: `<strong>Scalene triangle</strong>`
+        },
+      ]
+    },
+    {
+      title: "General Knowledge",
+      questions: [
+        { q: "Who wrote 'The Wealth of Nations'?", a: "<strong>Adam Smith</strong> (1776)" },
+        { q: "Who introduced the theory of the 'Invisible Hand'?", a: "<strong>Adam Smith</strong> — in 'The Wealth of Nations'" },
+        { q: "Who wrote 'The Republic'?", a: "<strong>Plato</strong>" },
+        { q: "The assassination of Archduke Franz Ferdinand triggered which war?", a: "<strong>World War I</strong> (1914)" },
+        { q: "Who is the author of 'Das Kapital' and founder of modern socialism?", a: "<strong>Karl Marx</strong>" },
+        { q: "Who introduced the concept of utilitarianism?", a: "<strong>Jeremy Bentham</strong> (later expanded by John Stuart Mill)" },
+        { q: "Which country first granted women the right to vote?", a: "<strong>New Zealand</strong> (1893)" },
+        { q: "Who presented the heliocentric model of the solar system?", a: "<strong>Nicolaus Copernicus</strong>" },
+        { q: "Who invented the World Wide Web?", a: "<strong>Tim Berners-Lee</strong> (1989)" },
+        { q: "Who led the Soviet Union during World War II?", a: "<strong>Joseph Stalin</strong>" },
+        { q: "Who is known as the 'Father of Philosophy'?", a: "<strong>Socrates</strong>" },
+        { q: "Who wrote 'War and Peace'?", a: "<strong>Leo Tolstoy</strong>" },
+        { q: "What is the name of Shah Jahan's eldest son?", a: "<strong>Dara Shikoh</strong>" },
+        { q: "In what year did the Kargil war start?", a: "<strong>1999</strong>" },
+        { q: "Who discovered the circulation of blood?", a: "<strong>William Harvey</strong> (1628)" },
+        { q: "What is the colored part of the eye called?", a: "<strong>Iris</strong>" },
+        { q: "What was Constantinople named after the Ottoman conquest?", a: "<strong>Istanbul</strong> (1453)" },
+        { q: "Babur came to India from which country?", a: "<strong>Fergana (present-day Uzbekistan)</strong>" },
+        { q: "Which country is called the 'mistress of the sea'?", a: "<strong>England / Britain</strong>" },
+        { q: "Who was the Prime Minister of Britain at the start of World War II?", a: "<strong>Neville Chamberlain</strong> (then Churchill from May 1940)" },
+        { q: "Britain declared war on Germany in 1939 because Germany attacked which country?", a: "<strong>Poland</strong>" },
+        { q: "What is the 2nd largest planet in the solar system?", a: "<strong>Saturn</strong>" },
+        { q: "How many rings in the Olympic flag, and where were the 2020 Olympics held?", a: "<strong>5 rings</strong>. 2020 Olympics were held in <strong>Tokyo, Japan</strong> (held in 2021 due to COVID)" },
+        { q: "Currency of Russia, China, Turkey, Maldives, Qatar, UAE?", a: "Russia: <strong>Ruble</strong> | China: <strong>Yuan/Renminbi</strong> | Turkey: <strong>Lira</strong> | Maldives: <strong>Rufiyaa</strong> | Qatar: <strong>Riyal</strong> | UAE: <strong>Dirham</strong>" },
+        { q: "Where is Stonehenge located?", a: "<strong>Wiltshire, England</strong>" },
+        { q: "Which civilization invented the wheel?", a: "<strong>Sumerians</strong> (ancient Mesopotamia, ~3500 BC)" },
+        { q: "What is the coldest desert in Pakistan?", a: "<strong>Kharan Desert</strong> (Balochistan). Note: some sources cite the cold high-altitude deserts of Gilgit-Baltistan as colder." },
+        { q: "How many bones are in the human body?", a: "<strong>206</strong> (in adults)" },
+        { q: "Which Surah is considered the Heart of the Quran?", a: "<strong>Surah Ya-Seen (36)</strong>" },
+        { q: "Who compiled the Mus'haf for the first time?", a: "<strong>Hazrat Abu Bakr Siddiq (R.A.)</strong> — compiled the Quran during his caliphate. Standardized by Hazrat Uthman (R.A.)." },
+        { q: "Treaty of Hudaybiyyah and Battle of Uhud — Hijri years?", a: "Battle of Uhud: <strong>3 AH</strong>. Treaty of Hudaybiyyah: <strong>6 AH</strong>" },
+        { q: "Which country will be the largest economy by 2030?", a: "<strong>China</strong> is projected to surpass the US as the largest economy (various IMF/World Bank forecasts)" },
+        { q: "Largest importer in the world, and highest inflation rate country?", a: "Largest importer: <strong>USA</strong>. Highest inflation: varies by year — historically Zimbabwe, Venezuela, Lebanon have had extreme rates. Check current data for updated answer." },
+        { q: "Name 8 intellectuals who impacted Geopolitical and Religious issues in South Asia.", a: "<ul><li>Allama Iqbal (poet-philosopher)</li><li>Sir Syed Ahmad Khan (modernist reformer)</li><li>Shah Waliullah Dehlawi (religious reformer)</li><li>Maulana Maududi (Islamic politics)</li><li>Mahatma Gandhi (non-violence, independence)</li><li>Jawaharlal Nehru (secular nationalism)</li><li>Rabindranath Tagore (cultural thought)</li><li>Muhammad Ali Jinnah (constitutionalism, Pakistan)</li></ul>" }
+      ]
+    },
+    {
+      title: "English – Verbal Reasoning & Grammar",
+      questions: [
+        { q: "Odd one out: Hindi, Urdu, Gujarati, Sindhi?", a: "<strong>Gujarati</strong> — it is an Indo-Aryan language of the Gujarati script, while Hindi, Urdu, and Sindhi share closer cultural and linguistic overlap in the Pakistani/North Indian context. (Accept Urdu as the only national language too — context-dependent.)" },
+        { q: "Odd one out: Telephone, Telescope, Transistor, Tape recorder?", a: "<strong>Telescope</strong> — the others are electrical/communication devices. Telescope is an optical instrument." },
+        { q: "Odd one out: Tiger, Lion, Jackal, Dog?", a: "<strong>Dog</strong> — it is domesticated; the others are wild animals." },
+        { q: "Odd one out: Physics, Chemistry, Geography, Zoology?", a: "<strong>Geography</strong> — it is a social science; the others are natural sciences." },
+        { q: "Odd one out: Blanket, Sheet, Pillow, Cot?", a: "<strong>Cot</strong> — it's a piece of furniture; the others are bedding/linen." },
+        { q: "Odd one out: Parrot, Owl, Eagle, Hawk?", a: "<strong>Parrot</strong> — the others are birds of prey (raptors); parrot is not." },
+        { q: "Odd one out: Exhausted, Wearied, Peppy?", a: "<strong>Peppy</strong> — it means energetic/lively; exhausted and wearied both mean tired." },
+        { q: "Synonym for 'gruesome'?", a: "<strong>Grisly, ghastly, horrifying, macabre</strong>" },
+        { q: "Synonym for 'ephemeral'?", a: "<strong>Transient, fleeting, short-lived, temporary</strong> (NOT 'emphermel' — a common misspelling)" },
+        { q: "Antonym of 'fragile'?", a: "<strong>Sturdy, robust, durable, strong</strong>" },
+        { q: "Fill in analogy: Happiness is to joy what melancholy is to ___?", a: "<strong>Sadness / sorrow</strong>" },
+        { q: "Fill in analogy: Generous is to Benevolent as Miserly is to ___?", a: "<strong>Parsimonious / stingy / avaricious</strong>" },
+        { q: "Fill in analogy: Pen is to education, so fork is to ___?", a: "<strong>Food / eating / nourishment</strong>" },
+        { q: "Fill in blank: 'If your vacation dates are flexible, you can ___ a much better deal…'", a: "<strong>negotiate</strong>" },
+        { q: "Grammatical error: 'Lily was thinking about utilization of her time since her retirement…'", a: "Error: 'since her retirement' implies action ongoing from retirement, but 'watched television all day' is a completed action. Correct: <strong>'After her retirement'</strong>" },
+        { q: "Correct phrase: 'Mr John's dog was surprised… it never saw any human being ___.'", a: "<strong>Much smaller than itself</strong> (correct comparative form)" },
+        { q: "Assemble: P: because it was cold, Q: in the microwave, R: I heated, S: my coffee.", a: "<strong>R-S-Q-P</strong> → 'I heated my coffee in the microwave because it was cold.'" },
+        { q: "Correct: 'Mr Nick does not have many friends because he treated them harshly.'", a: "Tense mismatch: 'does not have' is present, 'treated' is past. Correct: <strong>'did not have many friends because he treated them harshly'</strong>" },
+        { q: "Meaning of 'Anomaly'?", a: "<strong>Something that deviates from the norm; an irregularity or inconsistency</strong>" },
+        { q: "Meaning of 'Paradigmatic'?", a: "<strong>Serving as a typical example or model; representative of a paradigm</strong>" },
+        { q: "Synonyms of 'Ubiquitous' and 'Malicious'?", a: "Ubiquitous: <strong>omnipresent, everywhere, pervasive</strong><br>Malicious: <strong>spiteful, vindictive, malevolent, wicked</strong>" },
+        { q: "Fill blank: 'Due to the timid nature of the supervisor, New Boss has difficulty in ___ authority over employees.'", a: "<strong>Asserting</strong>" },
+        { q: "Best word: 'She noticed slithering snakes that moved ___ while passing from the edge of the field.'", a: "<strong>Cautiously</strong>" },
+      ]
+    }
+  ]
+},
+
+taxation: {
+  label: "Taxation Principles",
+  color: "#d97706",
+  bgLight: "#fef3c7",
+  sections: [
+    {
+      title: "Core Tax Concepts",
+      questions: [
+        {
+          q: "What are direct and indirect taxes, and their differences and examples?",
+          a: `<table><tr><th>Feature</th><th>Direct Tax</th><th>Indirect Tax</th></tr>
+<tr><td>Borne by</td><td>Person paying it</td><td>Shifted to consumer</td></tr>
+<tr><td>Examples (Pakistan)</td><td>Income Tax, Super Tax</td><td>Sales Tax (GST), FED, Customs</td></tr>
+<tr><td>Governed by</td><td>Income Tax Ordinance 2001</td><td>Sales Tax Act 1990, FED Act</td></tr>
+<tr><td>Collection</td><td>FBR (direct)</td><td>Collected at each stage</td></tr></table>`
+        },
+        {
+          q: "What are the five heads of income under tax laws?",
+          a: `Under Income Tax Ordinance 2001 (ITO 2001):<ol style="padding-left:18px;margin:8px 0">
+<li>Salary (Section 12)</li><li>Income from Property (Section 15)</li>
+<li>Income from Business (Section 18)</li><li>Capital Gains (Section 37/37A)</li>
+<li>Income from Other Sources (Section 39)</li></ol>`
+        },
+        {
+          q: "Difference between Normal Tax Regime (NTR), Final Tax Regime (FTR), and Minimum Tax Regime (MTR)?",
+          a: `<table><tr><th>Regime</th><th>Key Feature</th><th>Example</th></tr>
+<tr><td>NTR</td><td>Tax on net income after deductions; standard regime</td><td>Company business income</td></tr>
+<tr><td>FTR</td><td>Tax withheld at source is final; no further tax; no deductions/losses allowed</td><td>Dividends, contracts payments to non-filers</td></tr>
+<tr><td>MTR</td><td>Minimum tax applies even if no taxable income; based on turnover</td><td>Companies with low/no taxable profit</td></tr></table>`
+        },
+        {
+          q: "What is the corporate tax rate, and rates for small companies and banking sectors?",
+          a: `<ul><li><strong>Standard corporate tax rate:</strong> 29% (FY 2024–25)</li>
+<li><strong>Small company rate:</strong> 20% (conditions: registered capital ≤ Rs.25M, paid-up capital ≤ Rs.25M, annual turnover ≤ Rs.250M, not a subsidiary/associate of a public company)</li>
+<li><strong>Banking sector:</strong> 44% (Finance Act 2023 onwards — higher due to super tax)</li></ul>
+<div class="warn">Rates update every Finance Act — confirm current year from FBR website.</div>`
+        },
+        {
+          q: "What is Super Tax, and what are its rates?",
+          a: `<div class="def">Super Tax is an additional levy on high-income persons and companies over a threshold income, introduced via Finance Act 2022 and amended in 2023.</div>
+<ul><li>Applies on income exceeding Rs.150 million</li><li>Rate for banking companies: 10%</li><li>For others: ranges from 1% to 10% based on income slabs</li><li>Calculated on accounting income before super tax</li></ul>
+<div class="warn">Confirm exact slabs from Finance Act 2024–25 — rates change frequently.</div>`
+        },
+        {
+          q: "What is Alternate Corporate Tax (ACT)?",
+          a: `<div class="def">ACT is the higher of: (a) normal corporate tax, or (b) 17% of accounting income (profit before tax per accounts).</div>
+Purpose: Ensures companies with large accounting profits but low taxable income still pay a meaningful tax. If ACT > normal tax, the excess is payable as ACT. ACT paid in excess of normal tax can be carried forward and adjusted against future normal tax liabilities.`
+        },
+        {
+          q: "What is Minimum Tax, and what is its application?",
+          a: `<div class="def">Minimum Tax = 1.25% of the person's turnover for the year.</div>
+Applies when:<ul><li>The company/person has no taxable income or tax liability is less than 1.25% of turnover</li><li>Also applies to certain services sectors</li></ul>
+Excess minimum tax paid can be carried forward for 3 years to offset against future normal tax.`
+        },
+        {
+          q: "What is Turnover Tax, and what is its rate?",
+          a: `Turnover Tax = 1.25% of gross turnover. It is similar to Minimum Tax and ensures a floor-level tax on businesses with large revenues but minimal declared profits. Governed under Section 113 of ITO 2001.`
+        },
+        {
+          q: "Who is a 'resident person' and what are the tax implications for resident vs. non-resident?",
+          a: `<strong>Individual Resident:</strong> Present in Pakistan for ≥ 183 days in a tax year, OR Government employee posted abroad.<br>
+<strong>Company Resident:</strong> Incorporated in Pakistan, or management/control is exercised in Pakistan.<br><br>
+<table><tr><th>Aspect</th><th>Resident</th><th>Non-Resident</th></tr>
+<tr><td>Taxable income</td><td>Worldwide income</td><td>Pakistan-source income only</td></tr>
+<tr><td>Tax treatment</td><td>Full normal/FTR rules</td><td>Withholding or flat rates</td></tr></table>`
+        },
+        {
+          q: "What is withholding tax, and what is the journal entry for it?",
+          a: `<div class="def">Withholding Tax (WHT): tax deducted at source by the payer before remitting income to the recipient.</div>
+<strong>Journal entry when customer deducts WHT:</strong><br>
+<span class="formula">Dr. Cash / Bank    (net amount received)
+Dr. WHT Recoverable / Advance Tax    (tax deducted)
+  Cr. Revenue / Debtors    (gross amount)</span>
+<strong>At year-end, before filing:</strong><br>
+<span class="formula">Dr. Tax Expense
+  Cr. Advance Tax (WHT recoverable) [adjust WHT against tax liability]
+  Cr. Tax Payable (if tax > WHT)</span>`
+        },
+        {
+          q: "What is the tax rate on dividends, and under which regime?",
+          a: `<ul><li>Dividends are taxed under <strong>FTR (Final Tax Regime)</strong></li><li>Tax is withheld by the company paying dividends</li><li>Rate: <strong>15%</strong> for filers; <strong>30%</strong> for non-filers (as per recent Finance Acts)</li><li>Head of income: Income from Other Sources — but treated as final discharge of tax liability</li></ul>`
+        },
+        {
+          q: "How is interest income (profit on debt) taxed?",
+          a: `<ul><li>Taxable under "Income from Other Sources" (Section 39) — unless subject to FTR</li><li>Profit on debt received by a company: NTR — added to business income</li><li>For individuals receiving from banks/NBFIs: may be taxed under FTR at applicable withholding rates</li><li>WHT rate on profit on debt for companies: 15%</li></ul>`
+        },
+        {
+          q: "What is 'Income from Property', and allowable/inadmissible deductions?",
+          a: `<div class="def">Section 15 ITO: Gross rent received/receivable minus allowable deductions.</div>
+<strong>Allowable:</strong> 1/5 of gross rent (for repair/maintenance), mark-up on loan for property, local rates & taxes.<br>
+<strong>NOT allowed:</strong> General repair costs exceeding 1/5 threshold, depreciation, personal expenses.`
+        },
+        {
+          q: "What is capital gain, rates, and what can capital loss be adjusted against?",
+          a: `<div class="def">Capital Gain: profit on disposal of a capital asset.</div>
+<strong>Section 37:</strong> Immovable property — taxed under FTR based on holding period (0–5 years: various rates; >5 years: 0%).<br>
+<strong>Section 37A:</strong> Listed securities — separate FTR rates.<br>
+<strong>Capital loss:</strong> Can only be adjusted against capital gains — not against other heads of income.`
+        },
+        {
+          q: "How many years can a business loss or capital loss be carried forward?",
+          a: `<ul><li><strong>Business loss:</strong> 6 years (Section 56)</li><li><strong>Capital loss:</strong> 6 years (only against capital gains)</li><li><strong>Speculation business loss:</strong> can only offset speculation business profits; carry forward 6 years</li></ul>`
+        },
+        {
+          q: "What deductions are allowed under 'Income from Salary', and is it taxed on receipt or accrual basis?",
+          a: `<strong>Taxed on receipt basis</strong> (Section 12 — cash basis).<br>
+<strong>Deductions allowed:</strong> Workers' Welfare Fund (WWF) contributions, approved pension fund contributions, zakat paid under Zakat Ordinance, certain EOBI contributions.`
+        },
+        {
+          q: "Tax treatment for medical allowance, conveyance, and rent-free accommodation?",
+          a: `<ul><li><strong>Medical:</strong> Up to 10% of basic salary — exempt if hospitalization policy/bills certified by employer</li><li><strong>Conveyance:</strong> Provided as vehicle — 5% of vehicle cost included in salary; allowance for official use only — exempt; personal use — taxable</li><li><strong>Rent-free accommodation:</strong> Market rent or 45% of basic salary (whichever is higher) added to taxable salary</li></ul>`
+        },
+        {
+          q: "Threshold for 'salaried person' classification, and which head is excluded?",
+          a: `A person is classified as a <strong>salaried person</strong> if 75% or more of their taxable income is from salary. The salaried person tax slabs (lower rates) apply. <strong>Capital gains (Section 37/37A)</strong> are excluded from this calculation.`
+        },
+        {
+          q: "What are inadmissible deductions for business income?",
+          a: `Under Section 21 ITO:<ul><li>Personal or domestic expenses</li><li>Capital expenditure (to be depreciated, not expensed)</li><li>Income tax paid</li><li>Entertainment expenses exceeding prescribed limits</li><li>Payments to associated persons exceeding arm's length</li><li>Amortization of goodwill</li><li>Penalties/fines for violation of law</li><li>Donations exceeding prescribed limits</li></ul>`
+        },
+        {
+          q: "Difference between initial allowance and depreciation? For which assets is IA not admissible?",
+          a: `<table><tr><th>Aspect</th><th>Initial Allowance</th><th>Depreciation</th></tr>
+<tr><td>Rate</td><td>25% in first year (industrial assets)</td><td>Based on asset class rates (5%–50%)</td></tr>
+<tr><td>When</td><td>Year of acquisition only</td><td>Every year on reducing balance</td></tr></table>
+<strong>IA NOT admissible for:</strong> assets not put to use in tax year, leased assets, immovable property.`
+        },
+        {
+          q: "What is Sales Tax, and current federal/provincial GST rate?",
+          a: `<div class="def">Sales Tax is an indirect tax on supply of goods and services.</div>
+<ul><li><strong>Federal GST (Sales Tax Act 1990):</strong> 18% standard rate (Finance Act 2023–24)</li><li><strong>Provincial GST on services:</strong> varies — Punjab: 16%, Sindh: 13%, KPK: 15%, Balochistan: 15%</li></ul>
+<div class="warn">Rates change each Finance Act — verify from FBR/KPRA/SRB for current year.</div>`
+        },
+        {
+          q: "Difference between input tax and output tax?",
+          a: `<table><tr><th></th><th>Input Tax</th><th>Output Tax</th></tr>
+<tr><td>Meaning</td><td>GST paid on purchases</td><td>GST charged on sales</td></tr>
+<tr><td>Treatment</td><td>Claimable as credit</td><td>Payable to FBR</td></tr>
+<tr><td>Net payable</td><td colspan="2">Output Tax – Input Tax = Tax payable</td></tr></table>`
+        },
+        {
+          q: "Under what circumstances is input tax not allowed?",
+          a: `Input tax not claimable when:<ul><li>Not registered for sales tax</li><li>Input not related to taxable supplies (used for exempt supplies)</li><li>Not claimed within 6 months from the date of invoice</li><li>Invoice doesn't meet prescribed conditions (Section 73)</li><li>Payment not made through banking channel (for amounts > Rs.50,000)</li></ul>`
+        },
+        {
+          q: "Difference between zero-rated goods and exempt goods?",
+          a: `<table><tr><th>Feature</th><th>Zero-Rated</th><th>Exempt</th></tr>
+<tr><td>Rate</td><td>0%</td><td>N/A</td></tr>
+<tr><td>Input tax</td><td>Refundable / claimable</td><td>NOT claimable</td></tr>
+<tr><td>Taxable supply?</td><td>Yes (technically taxable at 0%)</td><td>No (outside sales tax scope)</td></tr>
+<tr><td>Schedule</td><td>5th Schedule</td><td>6th Schedule</td></tr></table>`
+        },
+        {
+          q: "What is the sales tax rate on services, and which law governs it?",
+          a: `Services GST is a <strong>provincial subject</strong> governed by provincial laws:<ul><li>Punjab Revenue Authority (PRA) — Punjab</li><li>Sindh Revenue Board (SRB) — Sindh</li><li>KPRA — KPK</li><li>BRA — Balochistan</li></ul>
+Federal government levies sales tax on services provided by specified sectors under the ICT zone (Islamabad).`
+        },
+        {
+          q: "What is a tax year, and difference between Normal, Special, and Transitional tax year?",
+          a: `<table><tr><th>Type</th><th>Definition</th></tr>
+<tr><td>Normal</td><td>July 1 to June 30 (standard)</td></tr>
+<tr><td>Special</td><td>12 months other than July–June, approved by Commissioner</td></tr>
+<tr><td>Transitional</td><td>Period less than 12 months when changing from one year-end to another</td></tr></table>`
+        },
+        {
+          q: "Last dates for filing income tax returns?",
+          a: `<ul><li><strong>Individuals & AOPs:</strong> September 30 (for tax year ending June 30)</li><li><strong>Companies (year-end June 30):</strong> December 31</li><li><strong>Companies (year-end Dec 31):</strong> June 30 of following year</li></ul>
+FBR may grant extensions via notification.`
+        },
+        {
+          q: "Monthly date for filing sales tax return and payment?",
+          a: `<strong>18th of the following month</strong> is the due date for both filing the sales tax return and payment to FBR.`
+        },
+        {
+          q: "Difference between tax evasion and tax avoidance?",
+          a: `<table><tr><th>Tax Evasion</th><th>Tax Avoidance</th></tr>
+<tr><td>Illegal — concealing income or falsifying records</td><td>Legal — using lawful methods to reduce tax</td></tr>
+<tr><td>Punishable by law</td><td>Not punishable; may be challenged under GAAR</td></tr>
+<tr><td>Example: hiding cash income</td><td>Example: investing in tax-exempt bonds</td></tr></table>`
+        },
+        {
+          q: "What are the canons of taxation?",
+          a: `Proposed by <strong>Adam Smith</strong>:<ul><li><strong>Canon of Equality:</strong> tax proportional to income/ability to pay</li><li><strong>Canon of Certainty:</strong> tax should be certain, not arbitrary</li><li><strong>Canon of Convenience:</strong> tax collected in convenient manner</li><li><strong>Canon of Economy:</strong> cost of collection should be minimal</li></ul>
+Modern additions: Simplicity, Flexibility, Neutrality, Productivity.`
+        },
+        {
+          q: "How do you convert accounting profit into taxable profit?",
+          a: `<span class="formula">Taxable Profit = Accounting Profit
++ Inadmissible expenses (added back)
+– Admissible deductions not in accounts (e.g., initial allowance)
+– Exempt income
+± Timing differences (accounting depreciation vs. tax depreciation)
+= Taxable Income</span>`
+        },
+        {
+          q: "What is VAT (Value Added Tax)?",
+          a: `<div class="def">VAT is a multi-stage consumption tax levied on the value added at each stage of production/distribution. Pakistan's Sales Tax is VAT-based in mechanism (input-output credit system).</div>
+Key: each stage pays tax only on the value it adds, not the full price. This avoids cascading taxation.`
+        },
+        {
+          q: "What is progressive vs. regressive tax?",
+          a: `<table><tr><th>Progressive</th><th>Regressive</th></tr>
+<tr><td>Rate increases with income</td><td>Rate decreases as income rises</td></tr>
+<tr><td>Burdens high-income more</td><td>Burdens low-income more (proportionally)</td></tr>
+<tr><td>Pakistan income tax — salaried</td><td>Sales tax (same rate for all)</td></tr></table>
+In Pakistan: Income tax = progressive; Sales tax = regressive (affects poor more proportionally).`
+        },
+        {
+          q: "What is the difference between advance tax and withholding tax?",
+          a: `<table><tr><th>Advance Tax</th><th>Withholding Tax</th></tr>
+<tr><td>Paid by taxpayer themselves in quarterly installments</td><td>Deducted by payer before making payment to recipient</td></tr>
+<tr><td>Based on last assessed year liability</td><td>Deducted at prescribed rates on specific payments</td></tr>
+<tr><td>Section 147 ITO 2001</td><td>Sections 149–156B ITO 2001</td></tr></table>
+Both credited against final tax liability at year-end.`
+        },
+        {
+          q: "What is the Active Taxpayer List (ATL) and implications of not being on it?",
+          a: `<div class="def">ATL: FBR's published list of persons who filed their income tax return for the latest tax year.</div>
+<strong>Non-filer implications:</strong><ul>
+<li>Double WHT rates on most payments</li>
+<li>Cannot purchase immovable property above Rs.5M</li>
+<li>Cannot purchase vehicle above 1300cc</li>
+<li>Higher rates on bank profit, dividends, contracts</li></ul>`
+        },
+        {
+          q: "What are individual income tax slabs for salaried persons (FY 2024–25)?",
+          a: `<div class="warn">Verify from FBR — indicative slabs below:</div>
+<table><tr><th>Annual Income (Rs.)</th><th>Rate</th></tr>
+<tr><td>Up to 600,000</td><td>0%</td></tr>
+<tr><td>600,001 – 1,200,000</td><td>5% of excess over 600,000</td></tr>
+<tr><td>1,200,001 – 2,200,000</td><td>Rs.30,000 + 15% excess over 1,200,000</td></tr>
+<tr><td>2,200,001 – 3,200,000</td><td>Rs.180,000 + 25% excess over 2,200,000</td></tr>
+<tr><td>3,200,001 – 4,100,000</td><td>Rs.430,000 + 30% excess over 3,200,000</td></tr>
+<tr><td>Above 4,100,000</td><td>Rs.700,000 + 35% excess over 4,100,000</td></tr></table>`
+        },
+        {
+          q: "What is the Presumptive Tax Regime (PTR)?",
+          a: `<div class="def">PTR: Tax charged on gross receipts at a fixed rate without deduction of expenses. WHT deducted at source is the final tax liability.</div>
+Applied to: importers, exporters, contractors, suppliers to government. Example: contractor receives Rs.10M — 7% WHT deducted = Rs.700,000 as final tax. No further return required for that income.`
+        },
+        {
+          q: "Tax treatment of bonus shares and right shares?",
+          a: `<ul>
+<li><strong>Bonus shares:</strong> Taxable as dividend at face value. WHT at dividend rate (15% filer). Company cannot deduct as expense.</li>
+<li><strong>Right shares:</strong> Not immediately taxable — capital transaction. Gain on subsequent sale taxed as capital gain.</li></ul>`
+        },
+        {
+          q: "Difference between tax credit and tax deduction?",
+          a: `<table><tr><th>Tax Credit</th><th>Tax Deduction</th></tr>
+<tr><td>Directly reduces tax payable (rupee for rupee)</td><td>Reduces taxable income</td></tr>
+<tr><td>More valuable</td><td>Saves tax at marginal rate only</td></tr>
+<tr><td>Section 61 (donations), 62 (new shares), 64 (pension fund)</td><td>Zakat, approved pension contributions</td></tr></table>`
+        },
+        {
+          q: "What is Federal Excise Duty (FED)?",
+          a: `<div class="def">FED: Indirect tax on specific manufactured/imported goods and services under Federal Excise Act 2005.</div>
+Applied on: tobacco, cement, beverages, natural gas, banking services, insurance, air travel. Can be specific (per unit) or ad valorem (% of value). Administered by FBR.`
+        },
+        {
+          q: "What is Customs Duty and how is it calculated?",
+          a: `<div class="def">Tax on goods imported/exported under Customs Act 1969.</div>
+Calculated on: customs value (transaction value per WTO agreement) × tariff rate from Pakistan Customs Tariff.<br>
+Additional levies at import stage: GST, FED, and WHT on imports (advance tax).`
+        },
+        {
+          q: "What is Section 111 — unexplained income?",
+          a: `<div class="def">Section 111: If a person cannot explain the source of income, asset or expenditure — FBR adds it to taxable income and taxes it.</div>
+Prevents money laundering. Burden of proof on taxpayer. FBR can issue notice if lifestyle is inconsistent with declared income.`
+        },
+        {
+          q: "What is General Anti-Avoidance Rule (GAAR)?",
+          a: `<div class="def">GAAR (Section 109): FBR can recharacterize transactions that have no commercial substance and exist only to reduce tax.</div>
+Targets aggressive tax planning. Even legal tax avoidance can be challenged under GAAR if the scheme lacks genuine commercial purpose. Tax evasion = illegal; Tax avoidance = legal but challengeable under GAAR.`
+        },
+        {
+          q: "Appeals hierarchy under ITO 2001?",
+          a: `<ol style="padding-left:18px;margin:8px 0">
+<li><strong>Commissioner IR (Appeals)</strong> — 1st appeal within 30 days</li>
+<li><strong>Appellate Tribunal IR (ATIR)</strong> — 2nd appeal</li>
+<li><strong>High Court</strong> — on question of law only</li>
+<li><strong>Supreme Court</strong> — final</li></ol>`
+        },
+        {
+          q: "Time limit for amended assessment and what triggers it?",
+          a: `<ul>
+<li>Normal: within <strong>5 years</strong> of original assessment (Section 122)</li>
+<li>Fraud: within <strong>10 years</strong></li>
+<li>Trigger: definite information of under-assessment</li>
+<li>Requires prior approval of Commissioner IR</li></ul>`
+        },
+        {
+          q: "Tax implications of a partnership / AOP?",
+          a: `<ul>
+<li>AOP taxed as a separate entity at progressive individual rates</li>
+<li>Partner's share of AOP profit: <strong>exempt</strong> in partner's hands (no double tax)</li>
+<li>AOP must file its own return</li>
+<li>AOP losses carried forward by AOP itself (6 years), not by individual partners</li></ul>`
+        },
+        {
+          q: "How long must tax records be maintained?",
+          a: `<strong>6 years</strong> after the end of the tax year to which they relate (Section 174 ITO 2001). Records include books of accounts, vouchers, invoices, bank statements, and supporting documents.`
+        },
+        {
+          q: "What is transfer pricing?",
+          a: `<div class="def">Transfer pricing: prices charged in transactions between associated/related parties must be at arm's length — same as unrelated parties would charge.</div>
+Pakistan follows OECD guidelines (Section 108 ITO). FBR adjusts income if prices are not arm's length. Critical for multinationals moving profits between jurisdictions.`
+        },
+        {
+          q: "What is the penalty for late filing of income tax return?",
+          a: `Section 182 ITO:<ul>
+<li>0.1% of tax payable per day of default, OR Rs.40,000 — whichever is higher</li>
+<li>If nil tax: minimum Rs.40,000 penalty</li>
+<li>ATL status lost → higher WHT rates apply as non-filer</li></ul>`
+        },
+        {
+          q: "What is tax year and when does it end for most entities in Pakistan?",
+          a: `<strong>Normal tax year:</strong> 1 July to 30 June (year is named after the year it ends — Tax Year 2025 = July 2024 to June 2025).<br>
+<strong>Special year-end (e.g., Dec 31):</strong> requires Commissioner's approval and is labeled by year of ending.<br>
+Return due dates: Individuals/AOPs = 30 Sept; Companies (June year-end) = 31 Dec.`
+        },
+        {
+          q: "What is the concept of 'taxable income' vs 'accounting income'?",
+          a: `<span class="formula">Taxable Income = Accounting Profit
++ Inadmissible expenses (added back)
++ Accounting depreciation (added back)
+– Tax depreciation (initial allowance + tax dep.)
+– Exempt income
+– Allowable deductions not in accounts
+= Taxable Income</span>`
+        },
+        {
+          q: "What is the difference between withholding tax rates for filers vs non-filers?",
+          a: `Non-filers pay generally <strong>double</strong> the rate applicable to filers on most WHT categories (contracts, property, vehicles, banking). This incentivizes filing. Example: dividend WHT for filer = 15%; non-filer = 30%.`
+        },
+        {
+          q: "What is Sales Tax registration threshold?",
+          a: `A person is required to register for Sales Tax if their annual taxable turnover exceeds <strong>Rs.10 million</strong> (or lower as may be specified by FBR). Voluntary registration is also allowed below the threshold. Registration is with FBR for goods; with provincial authority (PRA/SRB/KPRA) for services.`
+        },
+        {
+          q: "Input tax adjustment — can excess input tax be carried forward or refunded?",
+          a: `<ul>
+<li><strong>Excess input tax (input > output):</strong> Can be carried forward to next tax period</li>
+<li><strong>Refund:</strong> Exporters (zero-rated) can claim refund of excess input tax from FBR</li>
+<li>Refund claim must be filed within <strong>2 years</strong> of the end of the relevant tax period</li></ul>`
+        },
+      ]
+    }
+  ]
+},
+
+companylaw: {
+  label: "Business & Company Law",
+  color: "#7c3aed",
+  bgLight: "#ede9fe",
+  sections: [
+    {
+      title: "Meetings, Directors & Corporate Structure",
+      questions: [
+        {
+          q: "What is an AGM, its purpose, agenda, and notice period?",
+          a: `<div class="def">Annual General Meeting (AGM): mandatory yearly meeting of shareholders to transact ordinary business.</div>
+<strong>Purpose/Agenda:</strong> Approval of annual accounts, declaration of dividend, appointment/re-appointment of auditors, election of directors, fixing of auditor remuneration.<br>
+<strong>Notice period:</strong> <ul><li>Listed company: 21 days advance notice</li><li>Unlisted/private: 14 days</li></ul>`
+        },
+        {
+          q: "When is the first AGM held, and rules for subsequent AGMs?",
+          a: `<ul><li><strong>First AGM:</strong> within 16 months of incorporation</li><li><strong>Subsequent AGMs:</strong> once every calendar year</li><li><strong>Maximum gap:</strong> not more than 15 months between two consecutive AGMs</li><li>Extension possible with SECP permission (for listed companies)</li></ul>`
+        },
+        {
+          q: "What is a statutory meeting and its timing post-incorporation?",
+          a: `<div class="def">Statutory meeting: held once, between 3 months and 6 months after commencement of business. Only for public companies.</div>
+Agenda: discuss the Statutory Report covering allotment of shares, receipts, directors, preliminary contracts.`
+        },
+        {
+          q: "What is an EOGM and who has authority to call it?",
+          a: `<div class="def">Extraordinary General Meeting (EOGM): meeting called outside of the AGM schedule for urgent business.</div>
+<strong>Called by:</strong><ul><li>Board of Directors on their own</li><li>Directors on requisition by members holding ≥10% of paid-up voting capital</li><li>Members themselves if directors don't call within 21 days of requisition</li><li>Court order</li></ul>`
+        },
+        {
+          q: "If a listed company needs extension for its meeting — days and permission required?",
+          a: `<ul><li>Extension for AGM: up to <strong>30 days</strong> with SECP permission</li><li>Permission required from: <strong>Securities & Exchange Commission of Pakistan (SECP)</strong></li></ul>`
+        },
+        {
+          q: "Quorum for AGM?",
+          a: `<table><tr><th>Company Type</th><th>Quorum</th></tr>
+<tr><td>Listed company (more members)</td><td>10 members / 25% of total members (whichever less)</td></tr>
+<tr><td>Public unlisted company</td><td>2 members</td></tr>
+<tr><td>Private company</td><td>2 members</td></tr></table>`
+        },
+        {
+          q: "Number of Board of Directors (BOD) meetings required per year?",
+          a: `<ul><li><strong>Minimum:</strong> 4 meetings per year</li><li><strong>Gap:</strong> not more than 3 months between two consecutive BOD meetings</li><li>Listed companies also follow SECP's Code of Corporate Governance</li></ul>`
+        },
+        {
+          q: "Minimum number of directors in listed, public unlisted, and private companies?",
+          a: `<table><tr><th>Type</th><th>Minimum Directors</th></tr>
+<tr><td>Listed company</td><td>7 (including independent directors)</td></tr>
+<tr><td>Public unlisted</td><td>3</td></tr>
+<tr><td>Private company</td><td>2</td></tr>
+<tr><td>Single Member Company</td><td>1</td></tr></table>`
+        },
+        {
+          q: "Term/tenure of first and subsequent directors?",
+          a: `<ul><li><strong>First directors:</strong> appointed at incorporation; serve until first AGM</li><li><strong>Subsequent directors:</strong> 3 years term (listed companies)</li><li><strong>Appointed by:</strong> Shareholders at AGM through election</li><li>A director can be re-elected</li></ul>`
+        },
+        {
+          q: "What are the ineligibilities/disqualifications for a director?",
+          a: `Under Companies Act 2017, a person CANNOT be a director if:<ul><li>Minor (under 18)</li><li>Of unsound mind (adjudged by court)</li><li>Insolvent/bankrupt</li><li>Convicted of fraud, breach of trust, or money laundering</li><li>Not an NTN holder (tax non-filer disqualification)</li><li>Removed from directorship of any company in last 5 years by SECP/court</li></ul>`
+        },
+        {
+          q: "Who fills a casual vacancy for a director?",
+          a: `<ul><li>A <strong>casual vacancy</strong> (director dies, resigns mid-term) is filled by the <strong>Board of Directors</strong> at the next board meeting</li><li>The new director serves only for the remainder of the original term</li><li>If BOD fails to fill it within 90 days: <strong>SECP can appoint</strong> the director</li></ul>`
+        },
+        {
+          q: "Do directors, CEOs, or Chairmen have to be shareholders?",
+          a: `<strong>No</strong> — under Companies Act 2017, directors are not required to hold shares (share qualification abolished). Exception: some specific class of companies or articles may require it.`
+        },
+        {
+          q: "Are directors of Section 42 companies (NGOs) allowed remuneration?",
+          a: `<strong>No</strong> — Section 42 companies (not-for-profit, licensed by SECP) are prohibited from paying remuneration to directors. Any income must be used for stated charitable/non-profit objectives only.`
+        },
+        {
+          q: "Can a proxy attend meetings and vote? Must proxy be a member?",
+          a: `<ul><li><strong>Yes</strong> — a member can appoint a proxy to attend and vote on their behalf</li><li>A proxy need <strong>not</strong> be a member of the company</li><li>Proxy form must be submitted 48 hours before the meeting</li><li><strong>Voting methods:</strong> Show of hands (default) or poll (on demand)</li><li>Poll can be demanded by: Chairman, 5 members, members with ≥10% voting rights</li></ul>`
+        },
+        {
+          q: "If 2 directors pass a resolution in the absence of 5 other directors, is it valid?",
+          a: `Only if quorum is met. If the 7 total directors require quorum of at least 2 (private) or a specified majority: check AOA. Generally, BOD resolutions require majority of <em>present and voting</em> directors at a meeting with quorum. If quorum was not present, the resolution is <strong>invalid</strong>.`
+        },
+        {
+          q: "Difference between private and public company?",
+          a: `<table><tr><th>Feature</th><th>Private Company</th><th>Public Company</th></tr>
+<tr><td>Members</td><td>2–50</td><td>3+ (unlimited)</td></tr>
+<tr><td>Share transfer</td><td>Restricted</td><td>Freely transferable</td></tr>
+<tr><td>Public offering</td><td>Not allowed</td><td>Allowed (via prospectus)</td></tr>
+<tr><td>Minimum directors</td><td>2</td><td>3</td></tr>
+<tr><td>Name suffix</td><td>(Pvt.) Ltd.</td><td>Ltd.</td></tr></table>`
+        },
+        {
+          q: "Definition of associated company, holding company, and subsidiary?",
+          a: `<ul><li><strong>Associated company:</strong> ≥20% shareholding or common director/officer</li><li><strong>Holding company:</strong> owns >50% of subsidiary's shares or controls its BOD composition</li><li><strong>Subsidiary:</strong> controlled by the holding company</li></ul>`
+        },
+        {
+          q: "What is a Section 42 company?",
+          a: `<div class="def">A company licensed under Section 42 of Companies Act 2017 to operate as an association not-for-profit (charity, education, religion, commerce, arts, science, sports).</div>
+<ul><li>Exempt from the word "Limited" in its name</li><li>Cannot distribute profits to members</li><li>Licensed by SECP</li></ul>`
+        },
+        {
+          q: "Difference between MOA and AOA?",
+          a: `<table><tr><th>MOA</th><th>AOA</th></tr>
+<tr><td>Memorandum of Association</td><td>Articles of Association</td></tr>
+<tr><td>External charter — relationship with outside world</td><td>Internal constitution — how company is run</td></tr>
+<tr><td>5 clauses: Name, Registered Office, Objects, Liability, Capital</td><td>Rules on meetings, directors, voting, dividends, etc.</td></tr></table>`
+        },
+        {
+          q: "What is a prospectus?",
+          a: `<div class="def">A legal document inviting the public to subscribe to shares or debentures of a company.</div>
+Must contain: company background, financial statements, risk factors, details of issue, purpose of proceeds. Filed with SECP. Governed by Companies Act 2017 and SECP Regulations.`
+        },
+        {
+          q: "Difference between authorized and paid-up share capital?",
+          a: `<table><tr><th>Authorized</th><th>Paid-up</th></tr>
+<tr><td>Maximum capital company can raise (per MOA)</td><td>Capital actually received from shareholders</td></tr>
+<tr><td>Not all must be issued</td><td>Issued shares × amount paid per share</td></tr></table>`
+        },
+        {
+          q: "What is limited liability?",
+          a: `<div class="def">Liability of shareholders is limited to the amount unpaid on their shares.</div>
+Applies to <strong>shareholders</strong> — not to the company itself (which is liable for all its debts). Directors are personally liable only if they breach fiduciary duties or sign personal guarantees.`
+        },
+        {
+          q: "Ordinary vs. special resolution?",
+          a: `<table><tr><th>Ordinary Resolution</th><th>Special Resolution</th></tr>
+<tr><td>Simple majority >50%</td><td>75% majority</td></tr>
+<tr><td>Standard business</td><td>Significant changes (MOA change, winding up, etc.)</td></tr>
+<tr><td>14 days notice (min)</td><td>21 days notice (listed), filed with SECP within 15 days</td></tr></table>`
+        },
+        {
+          q: "What is insider trading?",
+          a: `<div class="def">Buying or selling listed securities based on material non-public information about the company.</div>
+Illegal under Securities Act 2015 and punishable by SECP. Example: an employee trades shares before a public profit announcement using their inside knowledge.`
+        },
+        {
+          q: "What happens if members/directors exceed 50 in a private company?",
+          a: `A private company must have a maximum of 50 members. If this is exceeded, the company <strong>loses its private company status</strong> and must re-register as a public company or reduce membership accordingly.`
+        },
+        {
+          q: "What is the doctrine of ultra vires in company law?",
+          a: `<div class="def">Ultra vires: An act done by a company that is beyond the powers granted to it by its Memorandum of Association.</div>
+Such acts are void and cannot be ratified by shareholders. Protects creditors and shareholders from management exceeding company's stated objects. Companies Act 2017 has relaxed this — companies can now have broad objects clauses.`
+        },
+        {
+          q: "What is the doctrine of Indoor Management (Turquand's Rule)?",
+          a: `<div class="def">A person dealing with a company in good faith is entitled to assume that internal procedures have been complied with, even if they have not.</div>
+Protects outsiders (third parties) who deal with the company. Example: a bank can assume a board resolution authorizing a loan was properly passed, without verifying internal minutes.`
+        },
+        {
+          q: "What is the difference between debentures and shares?",
+          a: `<table><tr><th>Shares</th><th>Debentures</th></tr>
+<tr><td>Ownership interest (equity)</td><td>Debt instrument (borrowing)</td></tr>
+<tr><td>Dividend — not guaranteed</td><td>Interest — fixed and compulsory</td></tr>
+<tr><td>Shareholders are owners</td><td>Debenture holders are creditors</td></tr>
+<tr><td>No repayment obligation</td><td>Repaid on maturity</td></tr>
+<tr><td>Last in liquidation priority</td><td>Priority over shareholders</td></tr></table>`
+        },
+        {
+          q: "What is a charge on company assets, and types of charges?",
+          a: `<div class="def">A charge is a security interest created over company assets in favor of a creditor.</div>
+<strong>Fixed charge:</strong> Over specific identifiable assets (e.g., land, building) — asset cannot be disposed of without creditor consent.<br>
+<strong>Floating charge:</strong> Over a class of changing assets (e.g., inventory, receivables) — crystallizes into fixed charge on default.<br>
+Must be registered with SECP within 30 days of creation.`
+        },
+        {
+          q: "Liquidation — types and priority of payment?",
+          a: `<strong>Types:</strong><ul>
+<li>Voluntary winding up (members' or creditors')</li>
+<li>Compulsory winding up (by court order)</li></ul>
+<strong>Priority of payment:</strong><ol style="padding-left:18px;margin:8px 0">
+<li>Costs of winding up (liquidator fees)</li>
+<li>Secured creditors (fixed charge)</li>
+<li>Preferential creditors (employee wages, taxes)</li>
+<li>Floating charge holders</li>
+<li>Unsecured creditors</li>
+<li>Preference shareholders</li>
+<li>Ordinary shareholders (last)</li></ol>`
+        },
+        {
+          q: "What is a statutory report and statutory meeting?",
+          a: `<div class="def">Required once, for public companies, within 3–6 months of commencement of business.</div>
+<strong>Statutory Report must contain:</strong> total shares allotted, cash received on shares, receipts and payments, names of directors, preliminary contracts, material contracts.<br>
+Filed with SECP and sent to members at least 14 days before the statutory meeting.`
+        },
+        {
+          q: "What is the role of Company Secretary?",
+          a: `<ul>
+<li>Ensures compliance with Companies Act 2017 and SECP regulations</li>
+<li>Maintains statutory registers (members, directors, charges)</li>
+<li>Organizes and minutes BOD and general meetings</li>
+<li>Files annual returns, forms, and resolutions with SECP</li>
+<li>Acts as officer of the company — liable for non-compliance</li></ul>
+<strong>Mandatory for:</strong> listed companies and public companies (above a certain size).`
+        },
+        {
+          q: "What are the powers of SECP?",
+          a: `Securities & Exchange Commission of Pakistan (SECP):<ul>
+<li>Regulate capital markets (PSX) and listed companies</li>
+<li>Register and regulate NBFCs, insurance, modarabas</li>
+<li>Enforce Companies Act 2017 and Securities Act 2015</li>
+<li>Investigate insider trading, market manipulation, corporate fraud</li>
+<li>Issue regulations, circulars, and no-objection certificates</li>
+<li>Impose penalties and suspend/revoke licenses</li></ul>`
+        },
+        {
+          q: "Difference between preference shares and ordinary shares?",
+          a: `<table><tr><th>Preference Shares</th><th>Ordinary Shares</th></tr>
+<tr><td>Fixed dividend (priority)</td><td>Variable dividend (residual)</td></tr>
+<tr><td>Priority in winding up</td><td>Last in winding up</td></tr>
+<tr><td>Usually no voting rights</td><td>Voting rights</td></tr>
+<tr><td>Can be cumulative (unpaid dividend accumulates)</td><td>Non-cumulative</td></tr></table>`
+        },
+        {
+          q: "What is the difference between merger and acquisition?",
+          a: `<table><tr><th>Merger</th><th>Acquisition</th></tr>
+<tr><td>Two companies combine to form one new entity</td><td>One company takes over another</td></tr>
+<tr><td>Both entities dissolve; new one formed</td><td>Target may continue as subsidiary</td></tr>
+<tr><td>Equal footing (theoretically)</td><td>Acquirer dominates</td></tr></table>
+Regulated by SECP and Competition Commission of Pakistan (CCP).`
+        },
+        {
+          q: "What registers must a company maintain?",
+          a: `Mandatory statutory registers under Companies Act 2017:<ul>
+<li>Register of Members</li>
+<li>Register of Directors and Officers</li>
+<li>Register of Charges</li>
+<li>Register of Debenture Holders</li>
+<li>Register of Contracts with directors (related party)</li>
+<li>Minutes Book (BOD and general meetings)</li></ul>
+Must be kept at registered office and open to inspection.`
+        },
+        {
+          q: "What is a dividend, and what are the types?",
+          a: `<div class="def">Dividend: Distribution of company profits to shareholders.</div>
+<strong>Types:</strong><ul>
+<li><strong>Cash dividend:</strong> Cash paid per share</li>
+<li><strong>Bonus shares (stock dividend):</strong> Additional shares issued instead of cash</li>
+<li><strong>Interim dividend:</strong> Declared before year-end during the year</li>
+<li><strong>Final dividend:</strong> Declared at AGM after year-end</li></ul>
+<div class="tip">Final dividend declared after reporting date = non-adjusting event under IAS 10.</div>`
+        },
+      ]
+    }
+  ]
+},
+
+audit: {
+  label: "Audit & Assurance",
+  color: "#0891b2",
+  bgLight: "#cffafe",
+  sections: [
+    {
+      title: "Core Audit Concepts",
+      questions: [
+        {
+          q: "What is auditing, and its core objectives?",
+          a: `<div class="def">Auditing is an independent examination of financial statements to express an opinion on whether they present a true and fair view in accordance with the applicable financial reporting framework.</div>
+<strong>Core objectives (ISA 200):</strong><ul><li>Obtain reasonable assurance that financial statements are free from material misstatement (whether due to fraud or error)</li><li>Report on the financial statements</li></ul>`
+        },
+        {
+          q: "Difference between internal audit and external audit?",
+          a: `<table><tr><th>Feature</th><th>Internal Audit</th><th>External Audit</th></tr>
+<tr><td>Appointed by</td><td>Management/BOD</td><td>Shareholders</td></tr>
+<tr><td>Objective</td><td>Add value, improve operations</td><td>Express opinion on financial statements</td></tr>
+<tr><td>Independence</td><td>Functionally independent</td><td>Fully independent</td></tr>
+<tr><td>Report to</td><td>Audit Committee/Management</td><td>Shareholders (in audit report)</td></tr>
+<tr><td>Mandatory</td><td>Depends on company</td><td>Legally required for most entities</td></tr></table>`
+        },
+        {
+          q: "Difference between reasonable assurance and limited assurance?",
+          a: `<table><tr><th>Reasonable Assurance</th><th>Limited Assurance</th></tr>
+<tr><td>High level — audit (ISA)</td><td>Moderate level — review engagement (ISRE 2400)</td></tr>
+<tr><td>Positive conclusion: "…presents fairly"</td><td>Negative conclusion: "Nothing came to attention…"</td></tr>
+<tr><td>Extensive procedures</td><td>Limited procedures (mainly inquiry, analytics)</td></tr></table>`
+        },
+        {
+          q: "What is materiality and how is it defined?",
+          a: `<div class="def">Information is material if its omission, misstatement, or non-disclosure could influence the decisions of users of financial statements.</div>
+<strong>Common benchmarks:</strong><ul><li>0.5%–1% of revenue (for profit-oriented entities)</li><li>1%–2% of total assets</li><li>5%–10% of PBT (when profit is stable)</li></ul>
+Qualitative materiality also applies: e.g., disclosure of related party transaction even if small.`
+        },
+        {
+          q: "Difference between planning materiality and performance materiality?",
+          a: `<table><tr><th>Planning Materiality</th><th>Performance Materiality</th></tr>
+<tr><td>Threshold for overall FS misstatement</td><td>Lower threshold — set below planning materiality</td></tr>
+<tr><td>Used to plan scope of audit</td><td>Used to design audit procedures for specific areas</td></tr>
+<tr><td>E.g., Rs.1M</td><td>E.g., Rs.700K (70% of planning materiality)</td></tr></table>`
+        },
+        {
+          q: "What is audit risk and its components?",
+          a: `<div class="def">Audit Risk = the risk that the auditor expresses an inappropriate opinion when financial statements are materially misstated.</div>
+<span class="formula">Audit Risk = Inherent Risk × Control Risk × Detection Risk</span>
+<ul><li><strong>Inherent Risk:</strong> susceptibility of an assertion to misstatement before controls</li><li><strong>Control Risk:</strong> risk that internal controls fail to prevent/detect misstatement</li><li><strong>Detection Risk:</strong> risk that auditor's procedures fail to detect misstatement</li></ul>
+Auditor can only control Detection Risk — by designing more/better procedures.`
+        },
+        {
+          q: "What is audit sampling, types, and how to overcome sampling risks?",
+          a: `<div class="def">Audit sampling: applying audit procedures to less than 100% of items in a population to draw conclusions about the whole.</div>
+<strong>Types:</strong><ul><li>Statistical sampling (random, systematic, MUS)</li><li>Non-statistical sampling (judgmental, haphazard)</li></ul>
+<strong>Risks:</strong><ul><li>Sampling risk: wrong conclusion from the sample</li><li>Non-sampling risk: error in design or execution</li></ul>
+<strong>Mitigation:</strong> increase sample size, stratify population, use statistical methods.`
+        },
+        {
+          q: "What are financial statement assertions?",
+          a: `<strong>Balance Sheet (CAVE):</strong><ul><li><strong>C</strong>ompleteness — all assets/liabilities recorded</li><li><strong>A</strong>ccuracy/Valuation — correctly valued</li><li><strong>V</strong>aluation and allocation</li><li><strong>E</strong>xistence — assets/liabilities actually exist</li><li>Rights & Obligations — company has rights to assets, owes liabilities</li><li>Classification & Presentation</li></ul>
+<strong>P&L (COCA):</strong> Completeness, Occurrence/Existence, Cut-off, Accuracy`
+        },
+        {
+          q: "What are substantive procedures and how applied to PPE, sales, payrolls?",
+          a: `<div class="def">Substantive procedures: audit procedures designed to detect material misstatements at the assertion level.</div>
+<strong>PPE:</strong> Physical inspection, recompute depreciation, verify additions to invoices, check disposals to gain/loss<br>
+<strong>Sales:</strong> Agree invoices to delivery notes, check cut-off, trace to bank receipts, analytical procedures (revenue vs. prior year)<br>
+<strong>Payrolls:</strong> Agree headcount to HR records, recompute net pay, check bank transfers, verify deductions (EOBI, income tax)`
+        },
+        {
+          q: "Difference between vouching and tracing?",
+          a: `<table><tr><th>Vouching</th><th>Tracing</th></tr>
+<tr><td>From records to source documents</td><td>From source documents to records</td></tr>
+<tr><td>Tests for <strong>occurrence/validity</strong></td><td>Tests for <strong>completeness</strong></td></tr>
+<tr><td>E.g., journal entry → invoice</td><td>E.g., invoice → journal entry</td></tr></table>`
+        },
+        {
+          q: "Difference between test of controls and test of details?",
+          a: `<table><tr><th>Test of Controls</th><th>Test of Details (Substantive)</th></tr>
+<tr><td>Tests effectiveness of internal controls</td><td>Tests actual transactions/balances</td></tr>
+<tr><td>Reduces assessed control risk</td><td>Directly detects misstatements</td></tr>
+<tr><td>E.g., check if authorization is obtained</td><td>E.g., verify individual invoices</td></tr></table>`
+        },
+        {
+          q: "What are analytical procedures?",
+          a: `<div class="def">Analytical procedures: evaluation of financial information through analysis of plausible relationships among financial and non-financial data.</div>
+Used at: planning (risk assessment) and completion stages.<br>
+<strong>Key ratios interpretations:</strong><ul><li>Receivable turnover increased → collecting faster (good) or aggressive revenue recognition (risk)</li><li>Acid test decreased → liquidity concerns</li><li>Interest coverage decreased → risk of going concern</li></ul>`
+        },
+        {
+          q: "What are types of audit opinions?",
+          a: `<table><tr><th>Opinion</th><th>When Issued</th></tr>
+<tr><td>Unmodified (Clean)</td><td>FS present fairly, no issues</td></tr>
+<tr><td>Qualified</td><td>Material but not pervasive misstatement OR scope limitation</td></tr>
+<tr><td>Adverse</td><td>Material AND pervasive misstatement</td></tr>
+<tr><td>Disclaimer</td><td>Material AND pervasive scope limitation (unable to obtain evidence)</td></tr></table>`
+        },
+        {
+          q: "Difference between modified opinion and modified report?",
+          a: `<ul><li><strong>Modified opinion:</strong> Qualified, Adverse, or Disclaimer — opinion itself is changed</li><li><strong>Modified report:</strong> includes EOM or OM paragraph — opinion remains unmodified but additional communication is made</li></ul>`
+        },
+        {
+          q: "What is a Key Audit Matter (KAM)?",
+          a: `<div class="def">KAM (ISA 701): matters that in the auditor's professional judgment were most significant in the audit of the current period financial statements.</div>
+<ul><li><strong>Required for:</strong> listed entities</li><li><strong>Not required for:</strong> non-listed private companies</li><li>Selected from: matters communicated to those charged with governance</li></ul>`
+        },
+        {
+          q: "EOM vs. OM paragraph — and do they modify the opinion?",
+          a: `<table><tr><th>EOM</th><th>OM</th></tr>
+<tr><td>Emphasis of Matter — draws attention to a matter <em>in</em> the financial statements that is properly presented but so fundamental that users need to be aware</td><td>Other Matter — draws attention to a matter <em>not</em> in the financial statements</td></tr>
+<tr><td>E.g., significant uncertainty, going concern disclosed by management</td><td>E.g., restriction on distribution of audit report</td></tr></table>
+<strong>Neither modifies the audit opinion.</strong>`
+        },
+        {
+          q: "Going concern assumption — how evaluated, implications?",
+          a: `<ul><li>Auditor assesses management's assessment of going concern (ISA 570)</li><li>Indicators of concern: net liabilities, loan defaults, inability to pay debts, loss of key customers</li></ul>
+<strong>Implications:</strong><ul><li>Going concern appropriate → unmodified opinion (possibly EOM if significant uncertainty)</li><li>Not appropriate but management uses it → adverse opinion</li><li>Going concern appropriate but management won't disclose significant uncertainty → qualified/adverse</li></ul>`
+        },
+        {
+          q: "How do you deal with situations involving fraud (ISA 240)?",
+          a: `<div class="def">Auditor's responsibility: design procedures to detect material misstatements due to fraud.</div>
+<strong>Fraud risk factors:</strong> pressure (incentive), opportunity (weak controls), rationalization.<br>
+<strong>Auditor's response:</strong><ul><li>More unpredictable procedures</li><li>Report to management / those charged with governance</li><li>If management involved: report to regulatory/legal authorities</li><li>Cannot guarantee detection of all fraud</li></ul>`
+        },
+        {
+          q: "Fundamental principles of ethics for an auditor?",
+          a: `From IESBA/ICAP Code of Ethics:<ul><li><strong>Integrity:</strong> straightforward and honest</li><li><strong>Objectivity:</strong> not compromised by bias or conflict of interest</li><li><strong>Professional Competence and Due Care</strong></li><li><strong>Confidentiality:</strong> not disclose client info without authority</li><li><strong>Professional Behaviour:</strong> comply with laws and avoid discrediting the profession</li></ul>
+<strong>Threats to independence:</strong> Self-interest, Self-review, Advocacy, Familiarity, Intimidation`
+        },
+        {
+          q: "What is professional skepticism and why is it important?",
+          a: `<div class="def">Professional skepticism: A questioning mind and critical assessment of evidence, without assuming management is dishonest or honest (ISA 200).</div>
+Important for: identifying fraud risks, unusual transactions, and not over-relying on management representations. Critical during estimates, related party transactions, and revenue recognition.`
+        },
+        {
+          q: "What is audit evidence — sufficient and appropriate (ISA 500)?",
+          a: `<div class="def">All information used by the auditor to draw conclusions on which the audit opinion is based.</div>
+<strong>Sufficient:</strong> Quantity — more for high-risk areas<br>
+<strong>Appropriate:</strong> Quality — relevance and reliability<br>
+<strong>Reliability hierarchy:</strong> External confirmation > Auditor-generated > Client-generated external > Internal client documents`
+        },
+        {
+          q: "What is the audit committee and its role?",
+          a: `<div class="def">Sub-committee of the Board overseeing financial reporting, internal controls, and audit.</div>
+<strong>Roles:</strong><ul>
+<li>Recommend appointment/removal of external auditor</li>
+<li>Review financial statements before BOD approval</li>
+<li>Oversee internal audit</li>
+<li>Review related party transactions</li></ul>
+Required for all listed companies under SECP Code of Corporate Governance.`
+        },
+        {
+          q: "What is a management representation letter (ISA 580)?",
+          a: `<div class="def">Written letter from management confirming representations made during the audit and acknowledging responsibility for the financial statements.</div>
+Must be obtained before audit report is signed. Contains: FS prepared per IFRS, all information provided, no undisclosed liabilities, subsequent events disclosed.
+<div class="warn">It supplements other audit evidence — it is NOT a substitute for it.</div>`
+        },
+        {
+          q: "What is an engagement letter (ISA 210)?",
+          a: `<div class="def">Written agreement documenting the terms of the audit engagement before work begins.</div>
+<strong>Contents:</strong> Objective and scope, responsibilities of both parties, financial reporting framework, expected form of report, fee arrangement, access to records.`
+        },
+        {
+          q: "What is an agreed-upon procedures (AUP) engagement (ISRS 4400)?",
+          a: `<div class="def">Auditor performs specific procedures agreed with the engaging party and reports factual findings — no opinion or conclusion expressed.</div>
+User draws their own conclusions. Report distributed only to agreed parties. Example: verify specific debtor balances for a bank's loan review.`
+        },
+        {
+          q: "What is the auditor's responsibility for subsequent events (ISA 560)?",
+          a: `<ul>
+<li><strong>Between year-end and audit report date:</strong> Auditor actively performs procedures — must respond to all events found</li>
+<li><strong>After report date but before FS issued:</strong> Discuss with management — may need to amend FS and re-issue report</li>
+<li><strong>After FS issued:</strong> No ongoing obligation, but if a fact becomes known — take appropriate action</li></ul>`
+        },
+        {
+          q: "What is internal control and its 5 COSO components?",
+          a: `<div class="def">Internal control: Process providing reasonable assurance about achieving objectives in operations, reporting, and compliance.</div>
+<strong>COSO 5 components:</strong><ul>
+<li><strong>C</strong>ontrol Environment (tone at top)</li>
+<li><strong>R</strong>isk Assessment</li>
+<li><strong>C</strong>ontrol Activities (authorizations, segregation of duties)</li>
+<li><strong>I</strong>nformation & Communication</li>
+<li><strong>M</strong>onitoring</li></ul>`
+        },
+        {
+          q: "What is segregation of duties?",
+          a: `<div class="def">No single person controls all phases of a transaction — authorization, recording, custody, and reconciliation must be separate.</div>
+Prevents fraud and errors. Example: person who approves a payment should not also record it and reconcile the bank statement. Critical for cash, payroll, and procurement.`
+        },
+        {
+          q: "Difference between walk-through test and test of controls?",
+          a: `<table><tr><th>Walk-through Test</th><th>Test of Controls</th></tr>
+<tr><td>Traces ONE transaction end-to-end</td><td>Tests a sample to assess if controls work effectively</td></tr>
+<tr><td>Done during planning/risk assessment</td><td>Done during fieldwork</td></tr>
+<tr><td>Documents understanding of system</td><td>Provides evidence controls operate</td></tr></table>`
+        },
+        {
+          q: "What is external confirmation (ISA 505)?",
+          a: `<div class="def">Audit evidence from a direct written response from a third party.</div>
+<strong>Positive confirmation:</strong> Respondent replies whether they agree or disagree.<br>
+<strong>Negative confirmation:</strong> Respondent replies only if they disagree.<br>
+<strong>Used for:</strong> bank balances, receivables, legal contingencies (lawyer letters).<br>
+Highly reliable — external, direct evidence.`
+        },
+        {
+          q: "What must be communicated to TCWG vs. management (ISA 260/265)?",
+          a: `<strong>To TCWG:</strong> Auditor responsibilities, planned scope, significant findings, independence confirmation, going concern, KAMs (listed entities).<br>
+<strong>To Management (ISA 265):</strong> Significant deficiencies in internal controls identified during audit. Day-to-day findings and information requests.`
+        },
+        {
+          q: "What is the purpose and retention of audit working papers (ISA 230)?",
+          a: `<strong>Purpose:</strong> Document basis for auditor's conclusions, evidence audit was performed per ISAs, support quality control, assist future audits.<br>
+<strong>Retention:</strong> Minimum <strong>7 years</strong> from audit report date.<br>
+Working papers are the property of the auditor — not the client.`
+        },
+        {
+          q: "What is quality control in an audit firm (ISQM 1)?",
+          a: `<div class="def">ISQM 1: International Standard on Quality Management — requires firms to design and implement a system of quality management over audit engagements.</div>
+<strong>Key elements:</strong><ul>
+<li>Leadership responsibilities for quality</li>
+<li>Independence and ethical requirements</li>
+<li>Engagement acceptance and continuance</li>
+<li>Human resources / competence</li>
+<li>Engagement performance standards</li>
+<li>Monitoring and remediation</li></ul>`
+        },
+        {
+          q: "What is Engagement Quality Review (EQR)?",
+          a: `<div class="def">An objective evaluation of significant judgments made by the engagement team before the audit report is issued — for listed entities and high-risk engagements.</div>
+Performed by a separate, senior reviewer not involved in the engagement. Provides additional quality check on audit opinions on complex or material matters.`
+        },
+        {
+          q: "What is the difference between detection risk and control risk?",
+          a: `<table><tr><th>Control Risk</th><th>Detection Risk</th></tr>
+<tr><td>Risk that internal controls fail to prevent/detect misstatement</td><td>Risk that auditor's procedures fail to detect misstatement</td></tr>
+<tr><td>Assessed — auditor cannot control it</td><td>Controlled — auditor adjusts procedures to manage it</td></tr>
+<tr><td>High CR → auditor increases substantive testing</td><td>Lower detection risk = more substantive work</td></tr></table>`
+        },
+        {
+          q: "Audit procedures for receivables?",
+          a: `<ul>
+<li>Send positive confirmation letters to a sample of debtors</li>
+<li>Review subsequent cash receipts (payments after year-end)</li>
+<li>Assess adequacy of bad debt provision (review aging analysis)</li>
+<li>Agree balance to sales invoices and delivery notes</li>
+<li>Check cut-off — sales near year-end genuinely earned</li>
+<li>Analytical procedures — receivables days vs. prior year</li></ul>`
+        },
+        {
+          q: "Audit procedures for cash and bank balances?",
+          a: `<ul>
+<li>Obtain bank confirmation letters directly from banks</li>
+<li>Prepare/review bank reconciliation statement</li>
+<li>Physically count petty cash</li>
+<li>Agree cash book to bank statements</li>
+<li>Review unusual transactions near year-end</li>
+<li>Verify cut-off on deposits and payments</li></ul>`
+        },
+        {
+          q: "What is ISA 315 — understanding the entity and its environment?",
+          a: `<div class="def">ISA 315: Requires the auditor to obtain understanding of the entity and its environment (including internal controls) to identify and assess risks of material misstatement.</div>
+<strong>Key areas to understand:</strong><ul>
+<li>Industry, regulatory, and external environment</li>
+<li>Nature of the entity (operations, ownership, governance)</li>
+<li>Entity's objectives, strategies, and business risks</li>
+<li>Financial performance measurement</li>
+<li>Internal controls relevant to financial reporting</li></ul>`
+        },
+      ]
+    }
+  ]
+},
+
+far: {
+  label: "Financial Accounting & Reporting (IFRS)",
+  color: "#dc2626",
+  bgLight: "#fee2e2",
+  sections: [
+    {
+      title: "Core Concepts & Standards",
+      questions: [
+        {
+          q: "Difference between IRR and NPV?",
+          a: `<table><tr><th>NPV</th><th>IRR</th></tr>
+<tr><td>Net Present Value: PV of inflows minus initial investment</td><td>Internal Rate of Return: discount rate at which NPV = 0</td></tr>
+<tr><td>Absolute value (Rs.)</td><td>Percentage (%)</td></tr>
+<tr><td>Accept if NPV > 0</td><td>Accept if IRR > cost of capital</td></tr></table>
+<span class="formula">NPV = Σ [CFt / (1+r)^t] – Initial Investment</span>`
+        },
+        {
+          q: "If the NPV of a company is $50,000, what does this mean?",
+          a: `It means the project creates <strong>$50,000 of value</strong> above and beyond the required return. The investment is worthwhile — the present value of future cash flows exceeds the cost of investment by $50,000.`
+        },
+        {
+          q: "Effect on retained earnings of increase in revenue and expenses?",
+          a: `<ul><li>Revenue increases → Net profit increases → Retained earnings increase</li><li>Expenses increase → Net profit decreases → Retained earnings decrease</li></ul>
+<span class="formula">Retained Earnings (closing) = Retained Earnings (opening) + Net Profit – Dividends</span>`
+        },
+        {
+          q: "Journal entry for prepaid rent?",
+          a: `<strong>When rent is paid in advance:</strong><br>
+<span class="formula">Dr. Prepaid Rent (Asset)
+  Cr. Cash / Bank</span>
+<strong>When period expires (monthly):</strong><br>
+<span class="formula">Dr. Rent Expense
+  Cr. Prepaid Rent</span>`
+        },
+        {
+          q: "How do you calculate depreciation? Straight-line vs. reducing balance?",
+          a: `<span class="formula">SLM: (Cost – Residual Value) / Useful Life = Annual Depreciation
+RBM: Written Down Value × Rate% = Annual Depreciation</span>
+<table><tr><th>SLM</th><th>Reducing Balance (DBM)</th></tr>
+<tr><td>Equal charge each year</td><td>Higher charge early years</td></tr>
+<tr><td>Simple, stable P&L impact</td><td>Matches economic use of fast-depreciating assets</td></tr></table>`
+        },
+        {
+          q: "FIFO vs AVCO (Weighted Average)?",
+          a: `<table><tr><th>FIFO</th><th>AVCO</th></tr>
+<tr><td>First In First Out: oldest stock issued first</td><td>Weighted average cost of all stock used</td></tr>
+<tr><td>Closing stock valued at recent prices</td><td>Smoother cost over time</td></tr>
+<tr><td>Higher profit in rising prices</td><td>Moderate profit</td></tr></table>
+IAS 2 allows both. LIFO is <strong>prohibited</strong> under IFRS.`
+        },
+        {
+          q: "What are the objectives of IAS 36 (Impairment) and indicators of impairment?",
+          a: `<div class="def">IAS 36: Ensure assets are not carried at more than their recoverable amount.</div>
+<strong>External indicators:</strong> market value decline, significant changes in technology/market/legal environment, increase in interest rates<br>
+<strong>Internal indicators:</strong> asset obsolescence, physical damage, worse economic performance than expected`
+        },
+        {
+          q: "Recoverable amount and Value in Use (VIU)?",
+          a: `<span class="formula">Recoverable Amount = Higher of: (a) Fair Value Less Costs to Sell (FVLCTS), OR (b) Value in Use (VIU)</span>
+<strong>VIU:</strong> Present value of future cash flows expected from continuing use and ultimate disposal of the asset.
+<span class="formula">VIU = Σ [Expected Cash Flows / (1+discount rate)^t]</span>`
+        },
+        {
+          q: "Five-step model for revenue recognition under IFRS 15?",
+          a: `<ol style="padding-left:18px;margin:8px 0">
+<li><strong>Identify</strong> the contract with a customer</li>
+<li><strong>Identify</strong> performance obligations in the contract</li>
+<li><strong>Determine</strong> the transaction price</li>
+<li><strong>Allocate</strong> transaction price to performance obligations</li>
+<li><strong>Recognize</strong> revenue when/as each performance obligation is satisfied</li></ol>`
+        },
+        {
+          q: "Revenue recognized over time vs. at a point in time (IFRS 15)?",
+          a: `<strong>Over time</strong> (any one condition):<ul><li>Customer simultaneously receives and consumes benefits</li><li>Entity's performance creates/enhances an asset controlled by customer</li><li>No alternative use, and entity has right to payment for work done to date</li></ul>
+<strong>At a point in time:</strong> when control of the asset transfers to the customer.`
+        },
+        {
+          q: "How are financial assets classified under IFRS 9?",
+          a: `<strong>Debt instruments:</strong><ul><li>Amortized Cost — business model: hold to collect; SPPI test passed</li><li>FVOCI (Fair Value through Other Comprehensive Income)</li><li>FVTPL (Fair Value through Profit or Loss) — default</li></ul>
+<strong>Equity instruments:</strong> FVTPL (default) or FVOCI (irrevocable election, no recycling to P&L)`
+        },
+        {
+          q: "What is a qualifying asset under IAS 23?",
+          a: `<div class="def">A qualifying asset is one that necessarily takes a substantial period of time to get ready for its intended use or sale.</div>
+<strong>Examples:</strong> manufacturing plants, power generation facilities, investment property under construction, intangible assets in development.<br>
+<strong>Start capitalizing borrowing costs:</strong> when expenditure is being incurred, borrowing costs are being incurred, and activities to prepare asset are in progress.<br>
+<strong>Stop:</strong> when asset is ready for intended use or sale.`
+        },
+        {
+          q: "Deductible temporary difference — deferred tax asset or liability?",
+          a: `<table><tr><th>Type of Difference</th><th>Creates</th></tr>
+<tr><td>Deductible temporary difference (e.g., asset carrying value < tax base)</td><td>Deferred Tax Asset (DTA)</td></tr>
+<tr><td>Taxable temporary difference (e.g., asset carrying value > tax base)</td><td>Deferred Tax Liability (DTL)</td></tr></table>`
+        },
+        {
+          q: "Revaluation model vs. cost model under IAS 16?",
+          a: `<table><tr><th>Cost Model</th><th>Revaluation Model</th></tr>
+<tr><td>Carry at cost less accumulated depreciation and impairment</td><td>Carry at fair value less subsequent depreciation and impairment</td></tr>
+<tr><td>Simpler, more widely used</td><td>Requires regular fair value assessments</td></tr>
+<tr><td>No revaluation surplus</td><td>Surplus in OCI (revaluation reserve)</td></tr></table>`
+        },
+        {
+          q: "Is a change in depreciation method a change in policy or estimate?",
+          a: `<strong>Change in accounting estimate</strong> (IAS 8). Applied <strong>prospectively</strong> — no restatement of prior periods. Example: changing from SLM to Reducing Balance.`
+        },
+        {
+          q: "How do you treat prior period errors (IAS 8)?",
+          a: `<strong>Retrospective restatement:</strong><ul><li>Restate comparative amounts in prior period presented</li><li>If error occurred before earliest prior period presented: restate opening balances</li><li>Adjust retained earnings in SOCIE</li><li>Disclose nature, amount, and impact in notes</li></ul>`
+        },
+        {
+          q: "Difference between operating lease and finance lease (IFRS 16)?",
+          a: `<strong>Under IFRS 16 (lessee):</strong> all leases >12 months and of material value are recognized on balance sheet as ROU asset + lease liability.<br>
+<strong>Finance lease (old GAAP):</strong> substantially all risks and rewards transferred to lessee.<br>
+<strong>Operating lease (old GAAP / short-term exemption):</strong> risks remain with lessor; expense through P&L.`
+        },
+        {
+          q: "What is the Right of Use (ROU) asset under IFRS 16?",
+          a: `<div class="def">The lessee's right to use a leased asset over the lease term.</div>
+<strong>Initial measurement includes:</strong><ul><li>Present value of lease payments</li><li>Initial direct costs</li><li>Lease payments made at/before commencement</li><li>Estimated dismantling/restoration costs</li></ul>
+Depreciated over shorter of lease term or useful life.`
+        },
+        {
+          q: "What is the difference between IAS 16 (PPE) and IAS 40 (Investment Property)?",
+          a: `<table><tr><th>IAS 16 — PPE</th><th>IAS 40 — Investment Property</th></tr>
+<tr><td>Used in operations / admin</td><td>Held to earn rent or capital appreciation</td></tr>
+<tr><td>Cost or Revaluation model</td><td>Cost model or Fair Value model</td></tr>
+<tr><td>Depreciation always charged</td><td>No depreciation under Fair Value model</td></tr>
+<tr><td>Revaluation gains → OCI</td><td>Fair value gains → Profit or Loss</td></tr></table>`
+        },
+        {
+          q: "Adjusting vs. non-adjusting event after reporting period (IAS 10)?",
+          a: `<table><tr><th>Adjusting Events</th><th>Non-Adjusting Events</th></tr>
+<tr><td>Confirm conditions that existed at period-end</td><td>Arise after the reporting period (new conditions)</td></tr>
+<tr><td>Adjust financial statements</td><td>Disclose only (if material)</td></tr>
+<tr><td>E.g., customer bankruptcy after year-end (debt existed)</td><td>E.g., major acquisition, natural disaster post year-end</td></tr></table>
+<strong>Final dividend declared after year-end:</strong> Non-adjusting event (disclose only).`
+        },
+        {
+          q: "Difference between provision, accrual, and contingent liability (IAS 37)?",
+          a: `<table><tr><th>Provision</th><th>Accrual</th><th>Contingent Liability</th></tr>
+<tr><td>Uncertain timing/amount</td><td>Known liability, timing/amount less certain</td><td>Possible obligation — not probable or not reliably measurable</td></tr>
+<tr><td>Recognized in FS</td><td>Recognized in FS</td><td>Disclosed only (not recognized)</td></tr>
+<tr><td>E.g., warranty obligation</td><td>E.g., year-end electricity bill unpaid</td><td>E.g., pending litigation — outcome uncertain</td></tr></table>`
+        },
+        {
+          q: "NRV formula and inventory write-downs?",
+          a: `<span class="formula">NRV = Estimated Selling Price – Estimated costs to complete – Estimated selling costs
+Inventory valued at lower of Cost OR NRV (IAS 2)</span>
+<strong>Write-down:</strong> If NRV < Cost: write down to NRV<br>
+<span class="formula">Dr. Cost of Sales (loss on write-down)
+  Cr. Inventory</span>`
+        },
+        {
+          q: "Difference between matching concept, prudence concept, substance over form?",
+          a: `<ul><li><strong>Matching:</strong> Expenses recognized in same period as related revenue (accruals basis)</li><li><strong>Prudence:</strong> Recognize losses when probable; recognize gains only when certain. Prevents overstatement of assets/income</li><li><strong>Substance over form:</strong> Transactions reported based on economic reality, not just legal form. E.g., finance leases recognize assets not legally owned</li></ul>`
+        },
+        {
+          q: "Normal EPS vs. Diluted EPS?",
+          a: `<span class="formula">Basic EPS = Profit attributable to ordinary shareholders / Weighted avg number of ordinary shares
+Diluted EPS = Adjusted profit / (Weighted avg shares + Potential dilutive shares from options, convertibles)</span>
+Diluted EPS is always ≤ Basic EPS.`
+        },
+        {
+          q: "How is a finance lease recorded by lessee vs. lessor?",
+          a: `<strong>Lessee (IFRS 16):</strong><br>
+<span class="formula">Dr. Right of Use Asset
+  Cr. Lease Liability (PV of lease payments)</span>
+<strong>Lessor (IAS 17 still applies for lessors):</strong><br>
+Finance lessor: derecognize asset, recognize finance lease receivable. Unearned income allocated over lease term.`
+        },
+        {
+          q: "When can an internally generated intangible asset be capitalized (IAS 38)?",
+          a: `Only costs incurred in the <strong>development phase</strong> can be capitalized (if all 6 criteria met — PIRATE):<ul>
+<li><strong>P</strong>robable future economic benefits</li><li><strong>I</strong>ntention to complete</li><li><strong>R</strong>esources available</li><li><strong>A</strong>bility to use/sell</li><li><strong>T</strong>echnical feasibility</li><li><strong>E</strong>xpenditure measurable</li></ul>
+Research phase costs: always expensed.`
+        },
+        {
+          q: "What is WACC?",
+          a: `<div class="def">Weighted Average Cost of Capital: the blended cost of all capital sources.</div>
+<span class="formula">WACC = [E/(E+D) × Cost of Equity] + [D/(E+D) × Cost of Debt × (1 – tax rate)]
+where E = market value of equity, D = market value of debt</span>`
+        },
+        {
+          q: "Break-even analysis — break-even point and P/V ratio?",
+          a: `<span class="formula">Break-even point (units) = Fixed Costs / Contribution per unit
+Break-even point (revenue) = Fixed Costs / P/V Ratio
+P/V Ratio (Contribution Margin Ratio) = Contribution / Sales = (Sales – Variable Costs) / Sales</span>`
+        },
+        {
+          q: "How do you deal with un-presented cheques in Bank Reconciliation (BRS)?",
+          a: `<strong>Cheques issued but not yet presented at bank:</strong> In BRS → <em>deduct from bank balance</em> (or add back to cashbook if error).<br>
+<span class="formula">Bank Balance (per bank statement)
+  Less: Outstanding/un-presented cheques issued
+  Add: Deposits in transit
+  = Cash Book Balance (adjusted)</span>
+Investigate stale cheques (over 6 months old) — may need reversal.`
+        },
+        {
+          q: "What is the difference between cash basis and accrual basis?",
+          a: `<table><tr><th>Cash Basis</th><th>Accrual Basis</th></tr>
+<tr><td>Revenue/expense recorded when cash received/paid</td><td>Recorded when earned/incurred regardless of cash</td></tr>
+<tr><td>Simpler; used for tax (salary head in Pakistan)</td><td>Required under IFRS for financial reporting</td></tr></table>`
+        },
+        {
+          q: "Elements and components of financial statements (IFRS framework)?",
+          a: `<strong>Elements:</strong> Assets, Liabilities, Equity, Income, Expenses<br>
+<strong>Components (IAS 1):</strong><ul><li>Statement of Financial Position (Balance Sheet)</li><li>Statement of Profit or Loss and OCI</li><li>Statement of Changes in Equity</li><li>Statement of Cash Flows</li><li>Notes to Financial Statements</li></ul>`
+        },
+        {
+          q: "What is the difference between capital expenditure and revenue expenditure?",
+          a: `<table><tr><th>Capital Expenditure</th><th>Revenue Expenditure</th></tr>
+<tr><td>Benefit over more than one period → capitalize as asset</td><td>Benefit in current period only → expense immediately</td></tr>
+<tr><td>Example: machinery, building extension</td><td>Example: repairs, maintenance, salaries</td></tr></table>`
+        },
+        {
+          q: "What are the components of cost of PPE under IAS 16?",
+          a: `<strong>Included:</strong> Purchase price (net of discounts), import duties, non-refundable taxes, site preparation, delivery, installation, testing, estimated dismantling cost (IAS 37 provision).<br>
+<strong>Excluded:</strong> General overheads, abnormal waste, training, finance costs (unless IAS 23 qualifying asset).`
+        },
+        {
+          q: "Difference between functional currency and presentation currency (IAS 21)?",
+          a: `<div class="def">Functional currency: Currency of the primary economic environment the entity operates in. Presentation currency: Currency in which FS are presented.</div>
+<ul><li>Monetary items at year-end: retranslate at closing rate → differences to P&L</li>
+<li>Non-monetary at historical cost: stay at transaction date rate</li>
+<li>Translation differences on consolidation → OCI (translation reserve)</li></ul>`
+        },
+        {
+          q: "What is goodwill and how is it tested for impairment (IFRS 3 / IAS 36)?",
+          a: `<span class="formula">Goodwill = Consideration paid + NCI + FV of previously held interest – FV of net identifiable assets</span>
+Under IFRS: NOT amortized. Tested for impairment annually at CGU level.<br>
+Impairment loss allocated: first to goodwill, then pro-rata to other assets.<br>
+<div class="warn">Goodwill impairment CANNOT be reversed.</div>`
+        },
+        {
+          q: "Equity method vs. full consolidation?",
+          a: `<table><tr><th>Equity Method (IAS 28)</th><th>Full Consolidation (IFRS 10)</th></tr>
+<tr><td>Associates/JVs (20–50%)</td><td>Subsidiaries (>50% control)</td></tr>
+<tr><td>Single line: Investment in Associate in BS</td><td>Line-by-line combination of all assets/liabilities</td></tr>
+<tr><td>Share of profit in P&L</td><td>100% revenue/expenses + NCI</td></tr></table>`
+        },
+        {
+          q: "What is Non-Controlling Interest (NCI)?",
+          a: `<div class="def">NCI: Equity in a subsidiary not owned by the parent. Shown in equity section of consolidated balance sheet.</div>
+<strong>Two measurement methods (IFRS 3):</strong><ul>
+<li>Fair value method (full goodwill): NCI at FV</li>
+<li>Proportionate share method (partial goodwill): NCI = NCI% × FV of net identifiable assets</li></ul>`
+        },
+        {
+          q: "What is IFRS 5 — Non-current assets held for sale?",
+          a: `<strong>Classification criteria:</strong> Available for immediate sale + management committed + sale highly probable within 12 months.<br>
+<strong>Measurement:</strong> Lower of carrying amount or FV less costs to sell.<br>
+Stop depreciating. Present separately on balance sheet under current assets.`
+        },
+        {
+          q: "What is the fair value hierarchy under IFRS 13?",
+          a: `<ul>
+<li><strong>Level 1:</strong> Quoted prices in active markets for identical assets/liabilities (most reliable)</li>
+<li><strong>Level 2:</strong> Observable inputs other than Level 1 (similar assets, market-corroborated)</li>
+<li><strong>Level 3:</strong> Unobservable inputs — entity's own assumptions (least reliable)</li></ul>
+Use highest level available.`
+        },
+        {
+          q: "Difference between defined benefit and defined contribution pension plans (IAS 19)?",
+          a: `<table><tr><th>Defined Contribution</th><th>Defined Benefit</th></tr>
+<tr><td>Fixed contributions — no further obligation</td><td>Employer guarantees final benefit amount</td></tr>
+<tr><td>Actuarial risk on employee</td><td>Actuarial risk on employer</td></tr>
+<tr><td>Simple: Dr Expense Cr Cash</td><td>Complex: actuarial valuation, PBO, plan assets, remeasurements to OCI</td></tr></table>`
+        },
+        {
+          q: "How are share-based payments accounted for (IFRS 2)?",
+          a: `<strong>Equity-settled:</strong> Measure at FV at grant date; expense over vesting period.<br>
+<span class="formula">Dr. Employee Expense (P&L)
+  Cr. Share-based Payment Reserve (Equity)</span>
+<strong>Cash-settled:</strong> Measure at FV of liability at each reporting date; remeasure through P&L.`
+        },
+        {
+          q: "What are the three sections of Statement of Cash Flows (IAS 7)?",
+          a: `<ul>
+<li><strong>Operating:</strong> Cash from core business (direct or indirect method)</li>
+<li><strong>Investing:</strong> Purchase/disposal of PPE, investments, loans given</li>
+<li><strong>Financing:</strong> Share issues, borrowings raised/repaid, dividends paid, lease repayments</li></ul>
+<strong>Indirect method adjustments:</strong> Start with net profit → add back depreciation/amortization → adjust working capital changes → deduct tax paid → deduct interest paid (if financing).`
+        },
+        {
+          q: "What is contract asset vs. contract liability under IFRS 15?",
+          a: `<table><tr><th>Contract Asset</th><th>Contract Liability</th></tr>
+<tr><td>Entity performed but no unconditional right to payment yet</td><td>Entity received payment before performing</td></tr>
+<tr><td>e.g., partially completed milestone</td><td>e.g., customer advance / deferred revenue</td></tr></table>`
+        },
+        {
+          q: "How are government grants accounted for (IAS 20)?",
+          a: `<strong>For assets:</strong> Deduct from asset cost OR recognize as deferred income and release over useful life.<br>
+<strong>For income:</strong> Recognize in P&L when related expenditure is incurred.<br>
+<div class="tip">Only recognize grant when reasonable assurance exists that conditions will be met and grant will be received.</div>`
+        },
+        {
+          q: "What are the qualitative characteristics of financial information (IASB Conceptual Framework)?",
+          a: `<strong>Fundamental:</strong><ul>
+<li><strong>Relevance</strong> (materiality is an aspect)</li>
+<li><strong>Faithful Representation</strong> — complete, neutral, free from error</li></ul>
+<strong>Enhancing:</strong> Comparability, Verifiability, Timeliness, Understandability`
+        },
+        {
+          q: "What is the going concern basis of accounting?",
+          a: `<div class="def">Assumption that the entity will continue operations for the foreseeable future (minimum 12 months from reporting date).</div>
+If NOT appropriate: prepare FS on break-up basis (assets at liquidation values, all liabilities current, additional provisions). Management's responsibility (IAS 1). Auditor evaluates (ISA 570).`
+        },
+        {
+          q: "Difference between IAS 16 revaluation model and cost model?",
+          a: `<table><tr><th>Cost Model</th><th>Revaluation Model</th></tr>
+<tr><td>Cost – Accumulated depreciation – Impairment</td><td>Fair value at revaluation date – subsequent depreciation – impairment</td></tr>
+<tr><td>No revaluation surplus</td><td>Surplus in OCI / revaluation reserve</td></tr>
+<tr><td>Simpler; more common</td><td>Requires regular FV assessments; depreciates on revalued amount</td></tr></table>`
+        },
+        {
+          q: "What is a lease incentive and how does it affect the ROU asset?",
+          a: `<div class="def">Lease incentive: Payments or rent-free periods given by the lessor to the lessee to enter into the lease.</div>
+Under IFRS 16: Lease incentives receivable at commencement date <strong>reduce</strong> the initial measurement of the ROU asset. Rent-free periods reduce the lease liability (lower lease payments reflected in present value).`
+        },
+        {
+          q: "How is a sale-and-leaseback transaction accounted for under IFRS 16?",
+          a: `<strong>If the transfer is a sale (IFRS 15 conditions met):</strong><ul>
+<li>Seller-lessee: Derecognize asset, recognize ROU asset for retained interest, recognize gain/loss only for rights transferred to buyer-lessor</li></ul>
+<strong>If NOT a sale:</strong> Treat as a secured borrowing — asset stays on books, proceeds as financial liability. No sale recognized.`
+        },
+        {
+          q: "What is the difference between current and deferred tax?",
+          a: `<table><tr><th>Current Tax</th><th>Deferred Tax</th></tr>
+<tr><td>Tax payable/recoverable for current period</td><td>Tax arising from temporary differences</td></tr>
+<tr><td>Based on taxable income × current tax rate</td><td>Temporary difference × enacted future tax rate</td></tr>
+<tr><td>Liability (or asset) on balance sheet</td><td>DTL or DTA on balance sheet</td></tr></table>`
+        },
+        {
+          q: "What is a contingent asset and when is it recognized?",
+          a: `<div class="def">Contingent asset: A possible asset arising from past events whose existence depends on uncertain future events (IAS 37).</div>
+<strong>NEVER recognized</strong> — only disclosed when inflow is probable.<br>
+Recognized as an asset only when the inflow is <strong>virtually certain</strong> (at that point it's no longer contingent).`
+        },
+        {
+          q: "What is the difference between gross profit margin and net profit margin?",
+          a: `<span class="formula">Gross Profit Margin = (Revenue – COGS) / Revenue × 100
+Net Profit Margin = Net Profit After Tax / Revenue × 100</span>
+GPM measures production/trading efficiency. NPM measures overall profitability after all costs including admin, finance, and tax. A high GPM but low NPM suggests high operating/finance costs.`
+        },
+        {
+          q: "How do you account for the disposal of a PPE asset?",
+          a: `<span class="formula">1. Remove asset: Dr. Accumulated Depreciation + Dr. Loss on disposal (if any)
+                             Cr. PPE (cost) + Cr. Gain on disposal (if any)
+2. Record proceeds: Dr. Cash/Receivable
+                    Cr. PPE Disposal Account
+
+Gain/Loss = Proceeds – Net book value (carrying amount)</span>`
+        },
+        {
+          q: "What is the purpose of a statement of changes in equity (SOCIE)?",
+          a: `SOCIE reconciles the opening and closing equity balances, showing:<ul>
+<li>Opening balances of each equity component</li>
+<li>Profit or loss for the year</li>
+<li>OCI items</li>
+<li>Dividends paid</li>
+<li>Share issues / buybacks</li>
+<li>Transfers between reserves</li>
+<li>Closing balances</li></ul>`
+        },
+        {
+          q: "What is the difference between financial statements prepared on accrual basis vs. cash basis?",
+          a: `<table><tr><th>Accrual Basis (IFRS)</th><th>Cash Basis</th></tr>
+<tr><td>Revenue/expense recognized when earned/incurred</td><td>Recorded when cash received/paid</td></tr>
+<tr><td>Receivables, payables, accruals in FS</td><td>No debtors/creditors</td></tr>
+<tr><td>Required for all IFRS financial statements</td><td>Used for certain tax purposes (salary income in Pakistan)</td></tr></table>`
+        },
+      ]
+    }
+  ]
+}
+
+};
+
+// ===================== RENDER =====================
+
+let opened = new Set();
+let currentTab = 'all';
+
+function getAllQuestions() {
+  const all = [];
+  for (const [modKey, mod] of Object.entries(modules)) {
+    for (const section of mod.sections) {
+      for (const q of section.questions) {
+        all.push({ modKey, mod, section: section.title, ...q });
+      }
+    }
+  }
+  return all;
+}
+
+function renderModule(modKey, mod) {
+  let html = `<div class="module-header">
+    <div class="module-title">
+      <span class="module-dot" style="background:${mod.color}"></span>
+      ${mod.label}
+    </div>
+    <div class="module-desc">Click any question to reveal the model answer.</div>
+  </div>`;
+
+  for (const section of mod.sections) {
+    html += `<div class="section">
+      <div class="section-title">${section.title} <span>${section.questions.length} questions</span></div>`;
+    section.questions.forEach((item, idx) => {
+      const id = `q-${modKey}-${section.title.replace(/\s+/g,'-')}-${idx}`;
+      html += buildCard(id, item, modKey, idx+1);
+    });
+    html += `</div>`;
+  }
+  return html;
+}
+
+function buildCard(id, item, modKey, num) {
+  return `<div class="q-card mod-${modKey}" id="${id}" data-module="${modKey}" data-text="${item.q.toLowerCase()}">
+    <div class="q-header" onclick="toggleCard('${id}')">
+      <div class="q-number">${num}</div>
+      <div class="q-text">${item.q}</div>
+      <div class="q-toggle">+</div>
+    </div>
+    <div class="q-answer">
+      <div class="answer-body">
+        <div class="answer-label">Model Answer</div>
+        <div class="answer-text">${item.a}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAll() {
+  let html = '';
+  for (const [modKey, mod] of Object.entries(modules)) {
+    html += renderModule(modKey, mod);
+  }
+  document.getElementById('questionsContainer').innerHTML = html;
+  updateProgress();
+}
+
+function renderSingle(modKey) {
+  const mod = modules[modKey];
+  document.getElementById('questionsContainer').innerHTML = renderModule(modKey, mod);
+  updateProgress();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-module="${tab}"]`).classList.add('active');
+  document.getElementById('searchInput').value = '';
+  document.getElementById('search-results-count').textContent = '';
+  if (tab === 'all') renderAll();
+  else renderSingle(tab);
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const wasOpen = card.classList.contains('open');
+  card.classList.toggle('open');
+  if (!wasOpen) opened.add(id);
+  else opened.delete(id);
+  updateProgress();
+}
+
+function expandAll() {
+  document.querySelectorAll('.q-card:not(.hidden)').forEach(c => {
+    c.classList.add('open');
+    opened.add(c.id);
+  });
+  updateProgress();
+}
+
+function collapseAll() {
+  document.querySelectorAll('.q-card').forEach(c => c.classList.remove('open'));
+  opened.clear();
+  updateProgress();
+}
+
+function markAllRead() {
+  expandAll();
+}
+
+function updateProgress() {
+  const total = document.querySelectorAll('.q-card:not(.hidden)').length;
+  const openCount = document.querySelectorAll('.q-card.open:not(.hidden)').length;
+  const pct = total > 0 ? (openCount / total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = `${openCount} / ${total}`;
+}
+
+function handleSearch() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  let count = 0;
+  document.querySelectorAll('.q-card').forEach(card => {
+    if (!query) {
+      card.classList.remove('hidden');
+      count++;
+    } else {
+      const text = card.getAttribute('data-text') || '';
+      const answer = card.querySelector('.answer-text')?.textContent.toLowerCase() || '';
+      if (text.includes(query) || answer.includes(query)) {
+        card.classList.remove('hidden');
+        count++;
+      } else {
+        card.classList.add('hidden');
+        card.classList.remove('open');
+      }
+    }
+  });
+  document.getElementById('search-results-count').textContent = query ? `${count} result${count !== 1 ? 's' : ''} found` : '';
+  updateProgress();
+}
+
+// Scroll to top
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scrolltop');
+  if (window.scrollY > 400) btn.classList.add('visible');
+  else btn.classList.remove('visible');
+});
+
+// Init
+renderAll();
+</script>
+</body>
+</html>

@@ -36,8 +36,11 @@ import {
   Ban,
   CheckCircle,
   LayoutList,
-  LayoutGrid
+  LayoutGrid,
+  Sparkles,
+  Brain
 } from 'lucide-react';
+import AIControlCenter from '../../../components/admin/AIControlCenter';
 import logoImg from '../../../assets/logo.png';
 import AdminPagination from '../../../components/common/AdminPagination';
 import {
@@ -54,6 +57,8 @@ import {
   createAdminResource,
   updateAdminResource,
   deleteAdminResource,
+  approveAdminResource,
+  rejectAdminResource,
   getAllAdminResources,
   createAdminAnnouncement,
   updateAdminAnnouncement,
@@ -944,11 +949,12 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
     try {
       if (selectedResource) {
         await updateAdminResource(selectedResource._id || selectedResource.id, resourceForm);
+        alert("Resource updated in database!");
       } else {
         await createAdminResource(resourceForm);
+        alert("Resource submitted for AI review.");
       }
 
-      alert(selectedResource ? "Resource updated in database!" : "Resource added successfully!");
       setIsResourceModalOpen(false);
       setSelectedResource(null);
       setResourceForm({
@@ -959,6 +965,28 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
       await loadData();
     } catch (err) {
       alert(`Error saving resource: ${err.message}`);
+    }
+  };
+
+  const handleApproveResourceDirect = async (resId) => {
+    try {
+      await approveAdminResource(resId);
+      alert("Resource approved and published!");
+      await loadData();
+    } catch (err) {
+      alert(`Error approving resource: ${err.message}`);
+    }
+  };
+
+  const handleRejectResourceDirect = async (resId) => {
+    const reason = prompt("Enter rejection reason:", "Does not meet quality standards");
+    if (!reason) return;
+    try {
+      await rejectAdminResource(resId, reason);
+      alert("Resource rejected.");
+      await loadData();
+    } catch (err) {
+      alert(`Error rejecting resource: ${err.message}`);
     }
   };
 
@@ -1323,6 +1351,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
         <nav className="flex-1 min-h-0 px-4 pt-4 pb-2 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-white/10">
           {[
             { id: 'Dashboard', label: 'Dashboard', icon: <Globe className="w-4.5 h-4.5" /> },
+            { id: 'AI Control Center', label: 'AI Agent Hub', icon: <Sparkles className="w-4.5 h-4.5 text-emerald-400" /> },
             { id: 'Pakistan Jobs', label: 'Pakistan Jobs', icon: <Briefcase className="w-4.5 h-4.5" /> },
             { id: 'Inductions', label: 'Inductions', icon: <Clock className="w-4.5 h-4.5" /> },
             { id: 'Overseas Jobs', label: 'Overseas Jobs', icon: <Globe className="w-4.5 h-4.5" /> },
@@ -1579,6 +1608,11 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
             <div className="flex items-center justify-center py-10">
               <div className="w-8 h-8 border-4 border-brandGreen border-t-transparent rounded-full animate-spin"></div>
             </div>
+          )}
+
+          {/* VIEW: AI CONTROL CENTER */}
+          {activeSubTab === 'AI Control Center' && (
+            <AIControlCenter session={session} />
           )}
 
           {/* VIEW: OVERVIEW / DASHBOARD */}
@@ -3299,14 +3333,18 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                               <tr className="bg-[#F8F9FB] text-gray-400 font-bold text-xs uppercase border-b border-gray-100">
                                 <th className="p-4 pl-6">Title</th>
                                 <th className="p-4">Category</th>
+                                <th className="p-4">Status</th>
                                 <th className="p-4">Type</th>
                                 <th className="p-4">Downloads</th>
                                 <th className="p-4 pr-6 text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-xs font-semibold text-gray-600">
-                              {paginatedResources.map(res => (
-                                <tr key={res.id} className="hover:bg-[#F8F9FB]/50 transition-colors">
+                              {paginatedResources.map(res => {
+                                const resStatus = res.status || (res.published ? 'published' : 'pending_review');
+                                const resId = res._id || res.id;
+                                return (
+                                <tr key={resId} className="hover:bg-[#F8F9FB]/50 transition-colors">
                                   <td className="p-4 pl-6">
                                     <div className="font-black text-[#090C11]">{res.title}</div>
                                     {res.description && <div className="text-[11px] text-gray-400 font-normal truncate max-w-sm">{res.description}</div>}
@@ -3316,9 +3354,40 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                       {res.category}
                                     </span>
                                   </td>
-                                  <td className="p-4 font-bold text-gray-500 uppercase">{res.type}</td>
+                                  <td className="p-4">
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                      resStatus === 'published' || resStatus === 'approved'
+                                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                        : resStatus === 'pending_review'
+                                        ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20 animate-pulse'
+                                        : resStatus === 'rejected'
+                                        ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                        : 'bg-gray-500/10 text-gray-500'
+                                    }`}>
+                                      {resStatus === 'pending_review' ? 'Pending AI Review' : resStatus}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-bold text-gray-500 uppercase">{res.type || res.resourceType || 'PDF'}</td>
                                   <td className="p-4 font-normal text-gray-400">{res.downloads || 0}</td>
                                   <td className="p-4 pr-6 text-right space-x-1.5">
+                                    {resStatus === 'pending_review' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleApproveResourceDirect(resId)}
+                                          className="p-1.5 px-2.5 text-emerald-600 hover:text-white hover:bg-emerald-600 bg-emerald-500/10 rounded-lg transition-colors cursor-pointer text-xs font-bold"
+                                          title="Approve & Publish"
+                                        >
+                                          Approve
+                                        </button>
+                                        <button
+                                          onClick={() => handleRejectResourceDirect(resId)}
+                                          className="p-1.5 px-2.5 text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-500/10 rounded-lg transition-colors cursor-pointer text-xs font-bold"
+                                          title="Reject Resource"
+                                        >
+                                          Reject
+                                        </button>
+                                      </>
+                                    )}
                                     <button
                                       onClick={() => {
                                         setSelectedResource(res);
@@ -3326,12 +3395,12 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                           title: res.title,
                                           description: res.description || '',
                                           category: res.category,
-                                          type: res.type,
+                                          type: res.type || res.resourceType || 'PDF',
                                           downloads: res.downloads,
                                           tag: res.tag || '',
                                           tag_color: res.tag_color || 'bg-blue-500/10 text-blue-600',
                                           btn_color: res.btn_color || 'bg-blue-600 hover:bg-blue-700',
-                                          download_url: res.download_url || '',
+                                          download_url: res.download_url || res.fileUrl || '',
                                           is_featured: res.is_featured || false
                                         });
                                         setIsResourceModalOpen(true);
@@ -3341,7 +3410,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                       Edit
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteResource(res.id)}
+                                      onClick={() => handleDeleteResource(resId)}
                                       className="p-1.5 text-red-500 hover:text-red-700 bg-red-500/5 rounded-lg transition-colors cursor-pointer"
                                       title="Delete Resource"
                                     >
@@ -3349,7 +3418,7 @@ export default function AdminDashboard({ onLogout, currentAdminName = "Ahmad Raz
                                     </button>
                                   </td>
                                 </tr>
-                              ))}
+                              );})}
 
                               {paginatedResources.length === 0 && (
                                 <tr>

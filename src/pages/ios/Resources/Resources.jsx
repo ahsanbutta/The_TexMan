@@ -50,11 +50,23 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
 
   const INITIAL_FEATURED_RESOURCES = [
     {
+      id: 100,
+      tag: '🔥 Master Question Bank',
+      title: 'CA Firms FAQ & Interview Master Handbook',
+      desc: 'Complete 200+ real interview questions, technical answers (IFRS/ISA/Tax), partner rounds, and firm induction handbook.',
+      downloads: 1420,
+      type: 'HTML / Document',
+      category: 'Training/Induction',
+      fileUrl: '/CA_Firms_FAQ_Interview.html',
+      tagColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      btnColor: 'bg-brandGreen hover:bg-brandGreen-dark shadow-emerald-500/20'
+    },
+    {
       id: 1,
       tag: 'CV Template',
       title: 'Professional CV Template (CA Student)',
       desc: 'ATS-friendly CV template specially designed for CA/ACCA students for firm inductions.',
-      downloads: 245,
+      downloads: 845,
       type: 'PDF',
       category: 'Training/Induction',
       tagColor: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
@@ -65,7 +77,7 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
       tag: 'Interview',
       title: 'Audit Associate Interview Questions',
       desc: 'Top 50 frequently asked questions with suggested answers for Big 4 audit recruitment.',
-      downloads: 310,
+      downloads: 910,
       type: 'PDF',
       category: 'Training/Induction',
       tagColor: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
@@ -76,26 +88,16 @@ export default function Resources({ selectedCategory: externalCategory, setSelec
       tag: 'Study Guide',
       title: 'FR - Financial Reporting Complete Guide',
       desc: 'Complete coverage of FR with key accounting standards, concepts, and exam tricks.',
-      downloads: 528,
+      downloads: 728,
       type: 'PDF',
       category: 'CAF',
       tagColor: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
       btnColor: 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/15'
-    },
-    {
-      id: 4,
-      tag: 'Firm List',
-      title: 'Top CA Firms in Pakistan',
-      desc: 'List of top audit, advisory, and accounting firms with addresses and contact details.',
-      downloads: 402,
-      type: 'PDF',
-      category: 'Training/Induction',
-      tagColor: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-      btnColor: 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/15'
     }
   ];
 
   const INITIAL_ALL_RESOURCES = [
+    { id: 100, title: 'CA Firms FAQ & Interview Master Handbook', desc: 'Complete 200+ real interview questions, technical answers (IFRS/ISA/Tax), partner rounds, and firm induction handbook.', date: 'Today', downloads: 1420, category: 'Training/Induction', fileUrl: '/CA_Firms_FAQ_Interview.html' },
     { id: 11, title: 'ICAP Code of Ethics', desc: 'Complete ICAP Code of Ethics handbook for CA students.', date: '22 May 2026', downloads: 188, category: 'CFAP & SCS (Finals)' },
     { id: 12, title: 'Taxation MCQs with Answers', desc: 'Important MCQs with detailed explanations for CA Final Taxation.', date: '20 May 2026', downloads: 367, category: 'CAF' },
     { id: 13, title: 'IAS - Important Notes', desc: 'Short notes for International Accounting Standards (CA Final).', date: '18 May 2026', downloads: 289, category: 'CFAP & SCS (Finals)' },

@@ -17,7 +17,7 @@ const blogSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ['Big 4 & Inductions', 'CA Guidance', 'ACCA Careers', 'Tax & Audit', 'Study Tips', 'Industry Insights', 'General'],
+      enum: ['Big 4 & Inductions', 'CA Guidance', 'ACCA Careers', 'Tax & Audit', 'Study Tips', 'Industry Insights', 'Career & Leadership', 'AI & Accounting', 'Technology & AI', 'General'],
       default: 'General'
     },
     author: {
@@ -81,4 +81,5 @@ const blogSchema = new mongoose.Schema(
 blogSchema.index({ title: 'text', summary: 'text', content: 'text', tags: 'text' });
 blogSchema.index({ category: 1, status: 1, createdAt: -1 });
 
-export default mongoose.model('Blog', blogSchema);
+export const Blog = mongoose.model('Blog', blogSchema);
+export default Blog;

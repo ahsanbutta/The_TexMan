@@ -110,7 +110,46 @@ const resourceSchema = new mongoose.Schema(
     },
     published: {
       type: Boolean,
-      default: true
+      default: false,
+      index: true
+    },
+    status: {
+      type: String,
+      enum: ['draft', 'pending_review', 'approved', 'rejected', 'published'],
+      default: 'pending_review',
+      index: true
+    },
+    aiReview: {
+      isRelevant: { type: Boolean, default: true },
+      isDuplicate: { type: Boolean, default: false },
+      duplicateDetails: { type: mongoose.Schema.Types.Mixed, default: null },
+      sourceValid: { type: Boolean, default: true },
+      confidence: { type: Number, default: 0.95 },
+      recommendation: {
+        type: String,
+        enum: ['approve', 'reject', 'needs_review'],
+        default: 'approve'
+      },
+      validationNotes: { type: String, default: '' },
+      reviewedAt: { type: Date, default: Date.now }
+    },
+    rejectionReason: {
+      type: String,
+      default: ''
+    },
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    rejectedAt: {
+      type: Date
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    approvedAt: {
+      type: Date
     }
   },
   {
@@ -121,3 +160,4 @@ const resourceSchema = new mongoose.Schema(
 resourceSchema.index({ title: 'text', description: 'text', subject: 'text' });
 
 export const Resource = mongoose.model('Resource', resourceSchema);
+export default Resource;

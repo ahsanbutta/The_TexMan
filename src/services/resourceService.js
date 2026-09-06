@@ -71,6 +71,19 @@ export const downloadResourceFile = async (resource) => {
       api.post(`/resources/${resource._id || resource.id}/download`, {}).catch(() => {});
     }
 
+    // If specific static file is linked (such as the CA Firms FAQ & Interview Master Handbook)
+    if (resource.fileUrl || (resource.title && resource.title.toLowerCase().includes('ca firms') && resource.title.toLowerCase().includes('faq'))) {
+      const targetUrl = resource.fileUrl || '/CA_Firms_FAQ_Interview.html';
+      const link = document.createElement('a');
+      link.href = targetUrl;
+      link.download = 'CA_Firms_FAQ_Interview.html';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return { success: true, filename: 'CA_Firms_FAQ_Interview.html' };
+    }
+
     const content = generateResourceContent(resource);
     const safeTitle = (resource.title || 'Resource')
       .replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -121,4 +134,28 @@ export const requestResource = async (requestData) => {
     success: true,
     message: 'Your resource request has been recorded successfully.'
   }));
+};
+
+/**
+ * Submit resource for AI review (Admin / Mentor)
+ */
+export const createResource = async (resourceData) => {
+  const res = await api.post('/resources', resourceData);
+  return res?.data || res;
+};
+
+/**
+ * Approve resource (Admin)
+ */
+export const approveResource = async (id) => {
+  const res = await api.post(`/resources/${id}/approve`, {});
+  return res?.data || res;
+};
+
+/**
+ * Reject resource (Admin)
+ */
+export const rejectResource = async (id, reason = 'Rejected by Administrator') => {
+  const res = await api.post(`/resources/${id}/reject`, { reason });
+  return res?.data || res;
 };

@@ -1,24 +1,39 @@
 import mongoose from 'mongoose';
 import { Resource } from '../models/Resource.js';
 import { ResourceRequest } from '../models/ResourceRequest.js';
+import { AIApproval } from '../models/AIApproval.js';
+import { AIActivityLog } from '../models/AIActivityLog.js';
+import { validateResourceWithAI } from '../services/aiTools/resourceTools.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { SEED_RESOURCES } from '../utils/seedData.js';
 
 export const getResources = asyncHandler(async (req, res) => {
-  const { category, qualification, resourceType, q, search, featured, page = 1, limit = 12 } = req.query;
+  const { category, qualification, resourceType, q, search, featured, status, page = 1, limit = 12 } = req.query;
 
   if (mongoose.connection.readyState === 1) {
     try {
-      const filter = { published: true };
+      // Public view: only show approved/published resources
+      const filter = {
+        published: true,
+        status: { $nin: ['draft', 'pending_review', 'rejected'] }
+      };
+
+      // Admin specific status override (e.g. if explicitly passed by admin route)
+      if (status && ['draft', 'pending_review', 'approved', 'rejected', 'published'].includes(status)) {
+        delete filter.published;
+        filter.status = status;
+      }
+
       const keyword = q || search;
       if (keyword) {
+        const safeRegex = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         filter.$or = [
-          { title: { $regex: keyword, $options: 'i' } },
-          { description: { $regex: keyword, $options: 'i' } },
-          { subject: { $regex: keyword, $options: 'i' } },
-          { tag: { $regex: keyword, $options: 'i' } }
+          { title: { $regex: safeRegex, $options: 'i' } },
+          { description: { $regex: safeRegex, $options: 'i' } },
+          { subject: { $regex: safeRegex, $options: 'i' } },
+          { tag: { $regex: safeRegex, $options: 'i' } }
         ];
       }
 
@@ -50,7 +65,7 @@ export const getResources = asyncHandler(async (req, res) => {
     }
   }
 
-  let filtered = [...SEED_RESOURCES].map((r, idx) => ({ ...r, _id: `res-${idx + 1}`, id: `res-${idx + 1}` }));
+  let filtered = [...SEED_RESOURCES].map((r, idx) => ({ ...r, _id: `res-${idx + 1}`, id: `res-${idx + 1}`, status: 'published', published: true }));
   if (category && category !== 'All') filtered = filtered.filter((r) => r.category === category);
 
   return new ApiResponse(200, filtered, 'Resources retrieved (Resilience Mode)', {
@@ -88,6 +103,9 @@ export const incrementDownload = asyncHandler(async (req, res) => {
   return new ApiResponse(200, { downloads: 250, fileUrl: 'https://res.cloudinary.com/sample_download.pdf' }, 'Download recorded').send(res);
 });
 
+/**
+ * Manual Resource Submission with Complete AI Review & Approval Pipeline
+ */
 export const createResource = asyncHandler(async (req, res) => {
   const {
     title,
@@ -106,7 +124,11 @@ export const createResource = asyncHandler(async (req, res) => {
     btn_color,
     btnColor,
     is_featured,
-    isFeatured
+    isFeatured,
+    author,
+    source,
+    sourceUrl,
+    isDraft
   } = req.body;
 
   let normalizedCategory = category || 'CAF';
@@ -120,22 +142,201 @@ export const createResource = asyncHandler(async (req, res) => {
     normalizedCategory = 'CAF';
   }
 
+  const initialStatus = isDraft ? 'draft' : 'pending_review';
+  const targetFileUrl = fileUrl || download_url || downloadUrl || 'https://res.cloudinary.com/sample_resource.pdf';
+  const targetSource = source || author || "The TaxMan's Capital Mentorship Team";
+
+  // 1. Create Resource in pending_review / draft status (NOT published)
   const resource = await Resource.create({
-    title: title || 'Study Pack',
-    description: description || 'Comprehensive CA/ACCA material.',
+    title: title || 'CA / ACCA Study Resource',
+    description: description || 'Comprehensive revision and mentorship material.',
     category: normalizedCategory,
     subject: subject || '',
     qualification: qualification || 'Both',
     resourceType: resourceType || type || 'PDF',
-    fileUrl: fileUrl || download_url || downloadUrl || 'https://res.cloudinary.com/sample_resource.pdf',
+    fileUrl: targetFileUrl,
+    externalUrl: sourceUrl || '',
+    author: targetSource,
     tag: tag || normalizedCategory,
     tagColor: tagColor || tag_color || 'bg-emerald-500/10 text-emerald-600',
     btnColor: btnColor || btn_color || 'bg-brandGreen hover:bg-brandGreen-dark',
     isFeatured: Boolean(isFeatured || is_featured),
-    uploadedBy: req.user?._id || new mongoose.Types.ObjectId()
+    uploadedBy: req.user?._id || new mongoose.Types.ObjectId(),
+    published: false,
+    status: initialStatus
   });
 
-  return new ApiResponse(201, resource, 'Resource uploaded successfully').send(res);
+  // 2. AI Resource Agent Analyzes & Validates the Submission
+  const aiReviewResult = await validateResourceWithAI({
+    title: resource.title,
+    description: resource.description,
+    category: resource.category,
+    qualification: resource.qualification,
+    subject: resource.subject,
+    source: resource.author,
+    sourceUrl: resource.externalUrl,
+    fileUrl: resource.fileUrl
+  });
+
+  // Attach AI Review to Resource
+  resource.aiReview = aiReviewResult;
+  await resource.save();
+
+  // 3. Create Entry in AI Approval Queue
+  let approvalItem = null;
+  if (initialStatus === 'pending_review') {
+    approvalItem = await AIApproval.create({
+      type: 'Resource',
+      title: resource.title,
+      summary: `${resource.category} | ${resource.qualification} - ${resource.description.slice(0, 120)}...`,
+      status: 'Pending',
+      agent: 'Resource Agent',
+      confidence: Math.round(aiReviewResult.confidence * 100),
+      source: resource.author,
+      sourceUrl: resource.externalUrl || resource.fileUrl,
+      targetEntityId: resource._id,
+      payload: {
+        resourceId: resource._id,
+        title: resource.title,
+        description: resource.description,
+        category: resource.category,
+        subject: resource.subject,
+        qualification: resource.qualification,
+        resourceType: resource.resourceType,
+        fileUrl: resource.fileUrl,
+        externalUrl: resource.externalUrl,
+        author: resource.author,
+        aiReview: aiReviewResult
+      }
+    });
+  }
+
+  // 4. Log AI Activity Pipeline Steps
+  await AIActivityLog.create({
+    agent: 'Resource Agent',
+    action: 'RESOURCE_SUBMITTED',
+    toolUsed: 'createResource',
+    input: { title: resource.title, category: resource.category, author: resource.author },
+    output: { resourceId: resource._id, status: resource.status },
+    status: 'info'
+  });
+
+  await AIActivityLog.create({
+    agent: 'Resource Agent',
+    action: 'AI_REVIEW_COMPLETED',
+    toolUsed: 'validateResourceWithAI',
+    input: { title: resource.title, isDuplicateCheck: true },
+    output: {
+      isRelevant: aiReviewResult.isRelevant,
+      isDuplicate: aiReviewResult.isDuplicate,
+      confidence: aiReviewResult.confidence,
+      recommendation: aiReviewResult.recommendation,
+      validationNotes: aiReviewResult.validationNotes
+    },
+    status: aiReviewResult.isDuplicate ? 'warning' : 'success'
+  });
+
+  if (approvalItem) {
+    await AIActivityLog.create({
+      agent: 'Resource Agent',
+      action: 'APPROVAL_PENDING',
+      toolUsed: 'AIApprovalQueue',
+      input: { approvalId: approvalItem._id, resourceId: resource._id },
+      output: { recommendation: aiReviewResult.recommendation },
+      status: 'warning'
+    });
+  }
+
+  return new ApiResponse(201, {
+    resource,
+    aiReview: aiReviewResult,
+    approvalId: approvalItem?._id || null
+  }, 'Resource submitted for AI review.').send(res);
+});
+
+/**
+ * Approve Resource (Admin Only)
+ * Sets status to 'approved' and publishes the resource
+ */
+export const approveResource = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const resource = await Resource.findById(id);
+
+  if (!resource) {
+    throw new ApiError(404, 'Resource not found.');
+  }
+
+  resource.status = 'approved';
+  resource.published = true;
+  resource.approvedBy = req.user?._id;
+  resource.approvedAt = new Date();
+  await resource.save();
+
+  // Sync matching AIApproval item if exists
+  await AIApproval.updateMany(
+    { $or: [{ targetEntityId: resource._id }, { 'payload.resourceId': resource._id }] },
+    { $set: { status: 'Approved', reviewedBy: req.user?._id } }
+  );
+
+  // Log to AI Activity
+  await AIActivityLog.create({
+    agent: 'Admin',
+    action: 'RESOURCE_ADMIN_APPROVED',
+    toolUsed: 'approveResource',
+    input: { resourceId: resource._id, title: resource.title },
+    output: { status: 'approved', published: true },
+    status: 'success'
+  });
+
+  await AIActivityLog.create({
+    agent: 'Resource Agent',
+    action: 'RESOURCE_PUBLISHED',
+    toolUsed: 'approveResource',
+    input: { resourceId: resource._id },
+    output: { published: true },
+    status: 'success'
+  });
+
+  return new ApiResponse(200, resource, 'Resource approved and published successfully.').send(res);
+});
+
+/**
+ * Reject Resource (Admin Only)
+ * Sets status to 'rejected' and stores reason
+ */
+export const rejectResource = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason = 'Rejected by Administrator' } = req.body;
+
+  const resource = await Resource.findById(id);
+  if (!resource) {
+    throw new ApiError(404, 'Resource not found.');
+  }
+
+  resource.status = 'rejected';
+  resource.published = false;
+  resource.rejectionReason = reason;
+  resource.rejectedBy = req.user?._id;
+  resource.rejectedAt = new Date();
+  await resource.save();
+
+  // Sync matching AIApproval item if exists
+  await AIApproval.updateMany(
+    { $or: [{ targetEntityId: resource._id }, { 'payload.resourceId': resource._id }] },
+    { $set: { status: 'Rejected', reviewNotes: reason, reviewedBy: req.user?._id } }
+  );
+
+  // Log to AI Activity
+  await AIActivityLog.create({
+    agent: 'Admin',
+    action: 'RESOURCE_ADMIN_REJECTED',
+    toolUsed: 'rejectResource',
+    input: { resourceId: resource._id, reason },
+    output: { status: 'rejected', published: false },
+    status: 'warning'
+  });
+
+  return new ApiResponse(200, resource, 'Resource rejected.').send(res);
 });
 
 export const requestResource = asyncHandler(async (req, res) => {
@@ -180,3 +381,4 @@ export const deleteResource = asyncHandler(async (req, res) => {
   }
   return new ApiResponse(200, { id: req.params.id }, 'Resource deleted successfully').send(res);
 });
+
